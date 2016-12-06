@@ -499,7 +499,10 @@ SRC_QSTR_AUTO_DEPS +=
 
 all: $(BUILD)/firmware.bin
 
-.PHONY: deploy
+.PHONY: idf-version deploy
+
+idf-version:
+	$(ECHO) "IDF version: eb067ce90827a31a1b01eac531767a17c55048c1"
 
 deploy: $(BUILD)/firmware.bin
 	$(ECHO) "Writing $< to the board"
