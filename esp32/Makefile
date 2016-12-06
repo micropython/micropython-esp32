@@ -178,8 +178,9 @@ ESPIDF_DRIVER_O = $(addprefix $(ESPIDF)/components/driver/,\
 	periph_ctrl.o \
 	ledc.o \
 	gpio.o \
+	timer.o \
 	)
-$(BUILD)/$(ESPIDF)/components/esp32/%.o: CFLAGS = -std=gnu99 -Os -ffunction-sections -fdata-sections -fstrict-volatile-bitfields -mlongcalls -nostdlib -Wall -Werror -Wno-error=unused-function -Wno-error=unused-but-set-variable -Wno-error=unused-variable -Wno-error=deprecated-declarations -DMBEDTLS_CONFIG_FILE='"mbedtls/esp_config.h"' -DHAVE_CONFIG_H -DESP_PLATFORM  -I $(ESPIDF)/components/esp32/include -I $(ESPIDF)/components/freertos/include -I $(ESPIDF)/components/log/include -I $(ESPIDF)/components/lwip/include/lwip -I $(ESPIDF)/components/lwip/include/lwip/port -I $(ESPIDF)/components/lwip/include/lwip/posix -I $(ESPIDF)/components/mbedtls/port/include -I $(ESPIDF)/components/mbedtls/include -I $(ESPIDF)/components/newlib/include -I $(ESPIDF)/components/newlib/platform_include -I $(ESPIDF)/components/nghttp/port/include -I $(ESPIDF)/components/nghttp/include -I $(ESPIDF)/components/nvs_flash/include -I $(ESPIDF)/components/openssl/include -I $(ESPIDF)/components/spi_flash/include -I $(ESPIDF)/components/tcpip_adapter/include -I $(ESPIDF)/components/vfs/include -I $(ESPIDF)/components/wpa_supplicant/include -I $(ESPIDF)/components/wpa_supplicant/port/include -I $(ESPIDF)/components/xtensa-debug-module/include -I.
+$(BUILD)/$(ESPIDF)/components/esp32/%.o: CFLAGS = -std=gnu99 -Os -ffunction-sections -fdata-sections -fstrict-volatile-bitfields -mlongcalls -nostdlib -Wall -Werror -Wno-error=unused-function -Wno-error=unused-but-set-variable -Wno-error=unused-variable -Wno-error=deprecated-declarations -DMBEDTLS_CONFIG_FILE='"mbedtls/esp_config.h"' -DHAVE_CONFIG_H -DESP_PLATFORM  -I $(ESPIDF)/components/esp32/include -I $(ESPIDF)/components/freertos/include -I $(ESPIDF)/components/log/include -I $(ESPIDF)/components/lwip/include/lwip -I $(ESPIDF)/components/lwip/include/lwip/port -I $(ESPIDF)/components/lwip/include/lwip/posix -I $(ESPIDF)/components/mbedtls/port/include -I $(ESPIDF)/components/mbedtls/include -I $(ESPIDF)/components/newlib/include -I $(ESPIDF)/components/newlib/platform_include -I $(ESPIDF)/components/nghttp/port/include -I $(ESPIDF)/components/nghttp/include -I $(ESPIDF)/components/nvs_flash/include -I $(ESPIDF)/components/openssl/include -I $(ESPIDF)/components/spi_flash/include -I $(ESPIDF)/components/tcpip_adapter/include -I $(ESPIDF)/components/vfs/include -I $(ESPIDF)/components/wpa_supplicant/include -I $(ESPIDF)/components/wpa_supplicant/port/include -I $(ESPIDF)/components/xtensa-debug-module/include -I $(ESPIDF)/components/ethernet/include -I $(ESPIDF)/components/driver/include -I.
 $(BUILD)/$(ESPIDF)/components/esp32/%.o: CXXFLAGS = -std=gnu++11 -fno-exceptions -fno-rtti -Og -ggdb -ffunction-sections -fdata-sections -fstrict-volatile-bitfields -mlongcalls -nostdlib -Wall -Werror -Wno-error=unused-function -Wno-error=unused-but-set-variable -Wno-error=unused-variable -Wno-error=deprecated-declarations -DESP_PLATFORM  -I$(ESPIDF)/components/esp32/include -I$(ESPIDF)/components/bt/include -I$(ESPIDF)/components/driver/include -I$(ESPIDF)/components/expat/port/include -I$(ESPIDF)/components/expat/include/expat -I$(ESPIDF)/components/freertos/include -I$(ESPIDF)/components/json/include -I$(ESPIDF)/components/json/port/include -I$(ESPIDF)/components/log/include -I$(ESPIDF)/components/lwip/include/lwip -I$(ESPIDF)/components/lwip/include/lwip/port -I$(ESPIDF)/components/lwip/include/lwip/posix -I$(ESPIDF)/components/mbedtls/port/include -I$(ESPIDF)/components/mbedtls/include -I$(ESPIDF)/components/newlib/include -I$(ESPIDF)/components/newlib/platform_include -I$(ESPIDF)/components/nghttp/port/include -I$(ESPIDF)/components/nghttp/include -I$(ESPIDF)/components/nvs_flash/include -I$(ESPIDF)/components/openssl/include -I$(ESPIDF)/components/spi_flash/include -I$(ESPIDF)/components/tcpip_adapter/include -I$(ESPIDF)/components/vfs/include -I$(ESPIDF)/components/wpa_supplicant/include -I$(ESPIDF)/components/wpa_supplicant/port/include -I$(ESPIDF)/components/xtensa-debug-module/include -I$(ESPIDF)/examples/01_hello_world/main/include -I$(ESPIDF)/examples/01_hello_world/build/include
 ESPIDF_ESP32_O = $(addprefix $(ESPIDF)/components/esp32/,\
 	panic.o \
@@ -198,6 +199,10 @@ ESPIDF_ESP32_O = $(addprefix $(ESPIDF)/components/esp32/,\
 	hwcrypto/sha.o \
 	hwcrypto/aes.o \
 	abi.o \
+	lib_printf.o \
+	freertos_hooks.o \
+	cpu_util.o \
+	system_api.o \
 	)
 
 ESPIDF_EXPAT_O = $(addprefix $(ESPIDF)/components/expat/,\
@@ -502,11 +507,11 @@ all: $(BUILD)/firmware.bin
 .PHONY: idf-version deploy
 
 idf-version:
-	$(ECHO) "IDF version: eb067ce90827a31a1b01eac531767a17c55048c1"
+	$(ECHO) "IDF version: c8685c200276abda4418f1367743f650d2aeacb2"
 
 deploy: $(BUILD)/firmware.bin
 	$(ECHO) "Writing $< to the board"
-	$(Q)$(ESPTOOL) --chip esp32 --port $(PORT) --baud $(BAUD) write_flash -z --flash_mode $(FLASH_MODE) --flash_freq $(FLASH_FREQ) --flash_size $(FLASH_SIZE) 0x1000 $(ESPIDF)/examples/01_hello_world/build/bootloader/bootloader.bin 0x10000 $< 0x4000 $(ESPIDF)/examples/01_hello_world/build/partitions_singleapp.bin
+	$(Q)$(ESPTOOL) --chip esp32 --port $(PORT) --baud $(BAUD) write_flash -z --flash_mode $(FLASH_MODE) --flash_freq $(FLASH_FREQ) --flash_size $(FLASH_SIZE) 0x1000 $(ESPIDF)/examples/01_hello_world/build/bootloader/bootloader.bin 0x10000 $< 0x8000 $(ESPIDF)/examples/01_hello_world/build/partitions_singleapp.bin
 
 $(BUILD)/esp32_out.ld: sdkconfig.h
 	$(Q)$(CC) -I. -C -P -x c -E $(ESPIDF)/components/esp32/ld/esp32.ld -o $@
