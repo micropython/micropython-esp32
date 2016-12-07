@@ -30,21 +30,6 @@
 #include "py/ringbuf.h"
 #include "lib/utils/interrupt_char.h"
 
-void mp_keyboard_interrupt(void);
-
-struct _mp_print_t;
-// Structure for UART-only output via mp_printf()
-extern const struct _mp_print_t mp_debug_print;
-
-extern ringbuf_t input_buf;
-// Call this after putting data to input_buf
-void mp_hal_signal_input(void);
-// Call this when data is available in dupterm object
-void mp_hal_signal_dupterm_input(void);
-
-void mp_hal_init(void);
-void mp_hal_rtc_init(void);
-
 uint32_t mp_hal_ticks_us(void);
 __attribute__((always_inline)) static inline uint32_t mp_hal_ticks_cpu(void) {
   uint32_t ccount;
@@ -56,18 +41,7 @@ void mp_hal_delay_us(uint32_t);
 void mp_hal_set_interrupt_char(int c);
 uint32_t mp_hal_get_cpu_freq(void);
 
-#define UART_TASK_ID 0
-#define DUPTERM_TASK_ID 1
-void uart_task_init();
-void dupterm_task_init();
-
-void ets_event_poll(void);
-#define ETS_POLL_WHILE(cond) { while (cond) ets_event_poll(); }
-
-// needed for machine.I2C
-//#include "osapi.h"
 #define mp_hal_delay_us_fast(us) os_delay_us(us)
-
 #define mp_hal_quiet_timing_enter() disable_irq()
 #define mp_hal_quiet_timing_exit(irq_state) enable_irq(irq_state)
 
