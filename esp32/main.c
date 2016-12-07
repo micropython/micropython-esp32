@@ -42,15 +42,21 @@
 #include "lib/mp-readline/readline.h"
 #include "lib/utils/pyexec.h"
 
-#define MP_TASK_STACK_SIZE (16 * 1024)
+// MicroPython runs as a task under FreeRTOS
+#define MP_TASK_PRIORITY        (5)
+#define MP_TASK_STACK_SIZE      (16 * 1024)
+#define MP_TASK_STACK_LEN       (MP_TASK_STACK_SIZE / sizeof(StackType_t))
+#define MP_TASK_HEAP_SIZE       (64 * 1024)
 
-STATIC char heap[64 * 1024];
+//STATIC StaticTask_t mp_task_tcb;
+//STATIC StackType_t mp_task_stack[MP_TASK_STACK_LEN] __attribute__((aligned (8)));
+STATIC uint8_t mp_task_heap[MP_TASK_HEAP_SIZE];
 
 void mp_task(void *pvParameter) {
 soft_reset:
     mp_stack_set_top((void*)&pvParameter);
     mp_stack_set_limit(MP_TASK_STACK_SIZE - 512);
-    gc_init(heap, heap + sizeof(heap));
+    gc_init(mp_task_heap, mp_task_heap + sizeof(mp_task_heap));
     mp_init();
     MP_STATE_PORT(mp_kbd_exception) = mp_obj_new_exception(&mp_type_KeyboardInterrupt);
     mp_obj_list_init(mp_sys_path, 0);
@@ -77,8 +83,9 @@ soft_reset:
 
 void app_main(void) {
     nvs_flash_init();
-    // TODO use xTaskCreateStatic
-    xTaskCreate(&mp_task, "mp_task", MP_TASK_STACK_SIZE, NULL, 5, NULL);
+    // TODO use xTaskCreateStatic (needs custom FreeRTOSConfig.h)
+    xTaskCreate(mp_task, "mp_task", MP_TASK_STACK_LEN, NULL, MP_TASK_PRIORITY, NULL);
+    //xTaskCreateStatic(mp_task, "mp_task", MP_TASK_STACK_LEN, NULL, MP_TASK_PRIORITY, &mp_task_stack[0], &mp_task_tcb);
 }
 
 void nlr_jump_fail(void *val) {
