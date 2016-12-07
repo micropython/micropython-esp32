@@ -28,12 +28,13 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#include "rom/ets_sys.h"
+#include "esp_system.h"
+
 #include "py/obj.h"
 #include "py/runtime.h"
 #include "extmod/machine_mem.h"
-
-#include "rom/ets_sys.h"
-#include "esp_system.h"
+#include "modmachine.h"
 
 #if MICROPY_PY_MACHINE
 
@@ -71,6 +72,8 @@ STATIC const mp_rom_map_elem_t machine_module_globals_table[] = {
 
     { MP_ROM_QSTR(MP_QSTR_freq), MP_ROM_PTR(&machine_freq_obj) },
     { MP_ROM_QSTR(MP_QSTR_reset), MP_ROM_PTR(&machine_reset_obj) },
+
+    { MP_ROM_QSTR(MP_QSTR_Pin), MP_ROM_PTR(&machine_pin_type) },
 };
 
 STATIC MP_DEFINE_CONST_DICT(machine_module_globals, machine_module_globals_table);

@@ -46,28 +46,31 @@ uint32_t mp_hal_get_cpu_freq(void);
 #define mp_hal_quiet_timing_exit(irq_state) enable_irq(irq_state)
 
 // C-level pin HAL
-//#include "etshal.h"
-//#include "gpio.h"
-//#include "esp8266/modmachine.h"
-#define mp_hal_pin_obj_t uint32_t
-#define mp_hal_get_pin_obj(o) mp_obj_get_pin(o)
-void mp_hal_pin_input(mp_hal_pin_obj_t pin);
-void mp_hal_pin_output(mp_hal_pin_obj_t pin);
-void mp_hal_pin_open_drain(mp_hal_pin_obj_t pin);
-#define mp_hal_pin_od_low(p) do { \
-        if ((p) == 16) { WRITE_PERI_REG(RTC_GPIO_ENABLE, (READ_PERI_REG(RTC_GPIO_ENABLE) & ~1) | 1); } \
-        else { gpio_output_set(0, 1 << (p), 1 << (p), 0); } \
-    } while (0)
-#define mp_hal_pin_od_high(p) do { \
-        if ((p) == 16) { WRITE_PERI_REG(RTC_GPIO_ENABLE, (READ_PERI_REG(RTC_GPIO_ENABLE) & ~1)); } \
-        else { gpio_output_set(1 << (p), 0, 1 << (p), 0); } \
-    } while (0)
-//#define mp_hal_pin_read(p) pin_get(p)
-int mp_hal_pin_read(mp_hal_pin_obj_t p);
-//#define mp_hal_pin_write(p, v) pin_set((p), (v))
-void mp_hal_pin_write(mp_hal_pin_obj_t p, int v);
-
-void *ets_get_esf_buf_ctlblk(void);
-int ets_esf_free_bufs(int idx);
+#include "py/obj.h"
+#include "driver/gpio.h"
+#define mp_hal_pin_obj_t gpio_num_t
+mp_hal_pin_obj_t machine_pin_get_id(mp_obj_t pin_in);
+#define mp_hal_get_pin_obj(o) machine_pin_get_id(o)
+static inline void mp_hal_pin_input(mp_hal_pin_obj_t pin) {
+    gpio_set_direction(pin, GPIO_MODE_INPUT);
+}
+static inline void mp_hal_pin_output(mp_hal_pin_obj_t pin) {
+    gpio_set_direction(pin, GPIO_MODE_OUTPUT);
+}
+static inline void mp_hal_pin_open_drain(mp_hal_pin_obj_t pin) {
+    gpio_set_direction(pin, GPIO_MODE_OUTPUT_OD);
+}
+static inline void mp_hal_pin_od_low(mp_hal_pin_obj_t pin) {
+    gpio_set_level(pin, 0);
+}
+static inline void mp_hal_pin_od_high(mp_hal_pin_obj_t pin) {
+    gpio_set_level(pin, 1);
+}
+static inline int mp_hal_pin_read(mp_hal_pin_obj_t pin) {
+    return gpio_get_level(pin);
+}
+static inline void mp_hal_pin_write(mp_hal_pin_obj_t pin, int v) {
+    gpio_set_level(pin, v);
+}
 
 #endif // INCLUDED_MPHALPORT_H

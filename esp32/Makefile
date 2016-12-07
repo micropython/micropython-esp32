@@ -127,6 +127,7 @@ SRC_C = \
 	help.c \
 	modutime.c \
 	moduos.c \
+	machine_pin.c \
 	modmachine.c \
 	$(SRC_MOD)
 
