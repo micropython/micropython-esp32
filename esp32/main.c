@@ -98,9 +98,9 @@ mp_import_stat_t mp_import_stat(const char *path) {
     #endif
 }
 
-//mp_obj_t vfs_proxy_call(qstr method_name, mp_uint_t n_args, const mp_obj_t *args);
+mp_obj_t vfs_proxy_call(qstr method_name, mp_uint_t n_args, const mp_obj_t *args);
 mp_obj_t mp_builtin_open(uint n_args, const mp_obj_t *args, mp_map_t *kwargs) {
-    #if 0&&MICROPY_VFS_FAT
+    #if MICROPY_VFS_FAT
     // TODO: Handle kwargs!
     return vfs_proxy_call(MP_QSTR_open, n_args, args);
     #else

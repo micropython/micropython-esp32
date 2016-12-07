@@ -126,6 +126,7 @@ SRC_C = \
 	fatfs_port.c \
 	help.c \
 	modutime.c \
+	moduos.c \
 	modmachine.c \
 	$(SRC_MOD)
 
@@ -203,6 +204,7 @@ ESPIDF_ESP32_O = $(addprefix $(ESPIDF)/components/esp32/,\
 	freertos_hooks.o \
 	cpu_util.o \
 	system_api.o \
+	hw_random.o \
 	)
 
 ESPIDF_EXPAT_O = $(addprefix $(ESPIDF)/components/expat/,\
