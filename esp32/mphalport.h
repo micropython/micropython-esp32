@@ -41,7 +41,7 @@ void mp_hal_delay_us(uint32_t);
 void mp_hal_set_interrupt_char(int c);
 uint32_t mp_hal_get_cpu_freq(void);
 
-#define mp_hal_delay_us_fast(us) os_delay_us(us)
+#define mp_hal_delay_us_fast(us) mp_hal_delay_us(us) // TODO
 #define mp_hal_quiet_timing_enter() disable_irq()
 #define mp_hal_quiet_timing_exit(irq_state) enable_irq(irq_state)
 
@@ -55,10 +55,10 @@ static inline void mp_hal_pin_input(mp_hal_pin_obj_t pin) {
     gpio_set_direction(pin, GPIO_MODE_INPUT);
 }
 static inline void mp_hal_pin_output(mp_hal_pin_obj_t pin) {
-    gpio_set_direction(pin, GPIO_MODE_OUTPUT);
+    gpio_set_direction(pin, GPIO_MODE_INPUT_OUTPUT);
 }
 static inline void mp_hal_pin_open_drain(mp_hal_pin_obj_t pin) {
-    gpio_set_direction(pin, GPIO_MODE_OUTPUT_OD);
+    gpio_set_direction(pin, GPIO_MODE_INPUT_OUTPUT_OD);
 }
 static inline void mp_hal_pin_od_low(mp_hal_pin_obj_t pin) {
     gpio_set_level(pin, 0);
