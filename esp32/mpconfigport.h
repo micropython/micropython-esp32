@@ -113,7 +113,7 @@
 #define MICROPY_PY_URANDOM                  (1)
 #define MICROPY_PY_URANDOM_EXTRA_FUNCS      (1)
 #define MICROPY_PY_MACHINE                  (1)
-#define MICROPY_PY_MACHINE_PULSE            (0)
+#define MICROPY_PY_MACHINE_PULSE            (1)
 #define MICROPY_PY_MACHINE_I2C              (0)
 #define MICROPY_PY_MACHINE_SPI              (0)
 #define MICROPY_PY_USSL                     (0)
