@@ -41,6 +41,7 @@
 #include "py/mphal.h"
 #include "lib/mp-readline/readline.h"
 #include "lib/utils/pyexec.h"
+#include "uart.h"
 
 // MicroPython runs as a task under FreeRTOS
 #define MP_TASK_PRIORITY        (5)
@@ -53,6 +54,7 @@
 STATIC uint8_t mp_task_heap[MP_TASK_HEAP_SIZE];
 
 void mp_task(void *pvParameter) {
+    uart_init();
 soft_reset:
     mp_stack_set_top((void*)&pvParameter);
     mp_stack_set_limit(MP_TASK_STACK_SIZE - 512);

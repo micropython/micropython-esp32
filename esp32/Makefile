@@ -121,6 +121,7 @@ endif
 
 SRC_C = \
 	main.c \
+	uart.c \
 	gccollect.c \
 	mphalport.c \
 	fatfs_port.c \

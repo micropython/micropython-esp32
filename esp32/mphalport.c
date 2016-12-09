@@ -36,14 +36,16 @@
 #include "extmod/misc.h"
 #include "lib/utils/pyexec.h"
 
+STATIC uint8_t stdin_ringbuf_array[256];
+ringbuf_t stdin_ringbuf = {stdin_ringbuf_array, sizeof(stdin_ringbuf_array)};
+
 int mp_hal_stdin_rx_chr(void) {
     for (;;) {
-        uint8_t c;
-        STATUS ret = uart_rx_one_char(&c);
-        if (ret == 0) {
+        int c = ringbuf_get(&stdin_ringbuf);
+        if (c != -1) {
             return c;
         }
-        mp_hal_delay_ms(1);
+        vTaskDelay(1);
     }
 }
 
