@@ -78,7 +78,6 @@ LDFLAGS += -L$(ESPIDF)/components/esp32/ld -T $(BUILD)/esp32_out.ld -T esp32.com
 
 LIBGCC_FILE_NAME = $(shell $(CC) $(CFLAGS) -print-libgcc-file-name)
 
-IDFLIB = $(ESPIDF)/examples/01_hello_world/build
 LIBS =
 LIBS += $(LDFLAGS_MOD)
 LIBS += --start-group
@@ -87,16 +86,14 @@ LIBS += $(addprefix $(BUILD)/, $(ESPIDF_ESP32_O))
 LIBS += $(ESPIDF)/components/esp32/libhal.a
 LIBS += -L$(ESPIDF)/components/esp32/lib -lcore -lnet80211 -lphy -lrtc -lpp -lwpa -lsmartconfig -lcoexist
 LIBS += $(addprefix $(BUILD)/, $(ESPIDF_EXPAT_O))
-LIBS += $(IDFLIB)/freertos/libfreertos.a
-#LIBS += $(addprefix $(BUILD)/, $(ESPIDF_FREERTOS_O))
+LIBS += $(addprefix $(BUILD)/, $(ESPIDF_FREERTOS_O))
 LIBS += $(addprefix $(BUILD)/, $(ESPIDF_JSON_O))
 LIBS += $(addprefix $(BUILD)/, $(ESPIDF_LOG_O))
 LIBS += $(addprefix $(BUILD)/, $(ESPIDF_LWIP_O))
 LIBS += $(addprefix $(BUILD)/, $(ESPIDF_MBEDTLS_O))
 LIBS += $(ESPIDF)/components/newlib/lib/libc.a
 LIBS += $(ESPIDF)/components/newlib/lib/libm.a
-LIBS += $(IDFLIB)/newlib/libnewlib.a
-#LIBS += $(addprefix $(BUILD)/, $(ESPIDF_NEWLIB_O))
+LIBS += $(addprefix $(BUILD)/, $(ESPIDF_NEWLIB_O))
 LIBS += $(addprefix $(BUILD)/, $(ESPIDF_NGHTTP_O))
 LIBS += $(addprefix $(BUILD)/, $(ESPIDF_NVSFL_O))
 LIBS += $(addprefix $(BUILD)/, $(ESPIDF_OPENSSL_O))
