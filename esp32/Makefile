@@ -220,25 +220,32 @@ ESPIDF_EXPAT_O = $(addprefix $(ESPIDF)/components/expat/,\
 	port/chardata.o \
 	)
 
+# Assembler .S files need only basic flags, and in particular should not have
+# -Os because that generates subtly different code.
+CFLAGS_ASM = -I$(ESPIDF)/components/esp32/include -I$(ESPIDF)/components/freertos/include/freertos -I.
+$(BUILD)/$(ESPIDF)/components/freertos/portasm.o: CFLAGS = $(CFLAGS_ASM)
+$(BUILD)/$(ESPIDF)/components/freertos/xtensa_context.o: CFLAGS = $(CFLAGS_ASM)
+$(BUILD)/$(ESPIDF)/components/freertos/xtensa_intr_asm.o: CFLAGS = $(CFLAGS_ASM)
+$(BUILD)/$(ESPIDF)/components/freertos/xtensa_vectors.o: CFLAGS = $(CFLAGS_ASM)
 ESPIDF_FREERTOS_O = $(addprefix $(ESPIDF)/components/freertos/,\
-	ringbuf.o \
-	heap_regions_debug.o \
-	xtensa_intr.o \
-	queue.o \
 	croutine.o \
-	list.o \
-	xtensa_init.o \
-	port.o \
-	heap_regions.o \
 	event_groups.o \
+	FreeRTOS-openocd.o \
+	heap_regions_debug.o \
+	heap_regions.o \
+	list.o \
+	portasm.o \
+	port.o \
+	queue.o \
+	ringbuf.o \
 	tasks.o \
 	timers.o \
-	FreeRTOS-openocd.o \
-	xtensa_overlay_os_hook.o \
-	xtensa_intr_asm.o \
 	xtensa_context.o \
+	xtensa_init.o \
+	xtensa_intr_asm.o \
+	xtensa_intr.o \
+	xtensa_overlay_os_hook.o \
 	xtensa_vectors.o \
-	portasm.o \
 	)
 
 ESPIDF_VFS_O = $(addprefix $(ESPIDF)/components/vfs/,\
