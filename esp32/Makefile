@@ -505,16 +505,16 @@ SRC_QSTR += $(SRC_C) $(STM_SRC_C) $(EXTMOD_SRC_C) $(DRIVERS_SRC_C)
 # Append any auto-generated sources that are needed by sources listed in SRC_QSTR
 SRC_QSTR_AUTO_DEPS +=
 
-all: $(BUILD)/firmware.bin
+all: $(BUILD)/bootloader.bin $(BUILD)/partitions.bin $(BUILD)/firmware.bin
 
 .PHONY: idf-version deploy
 
 idf-version:
 	$(ECHO) "IDF version: c8685c200276abda4418f1367743f650d2aeacb2"
 
-deploy: $(BUILD)/firmware.bin
-	$(ECHO) "Writing $< to the board"
-	$(Q)$(ESPTOOL) --chip esp32 --port $(PORT) --baud $(BAUD) write_flash -z --flash_mode $(FLASH_MODE) --flash_freq $(FLASH_FREQ) --flash_size $(FLASH_SIZE) 0x1000 $(ESPIDF)/examples/01_hello_world/build/bootloader/bootloader.bin 0x8000 $(ESPIDF)/examples/01_hello_world/build/partitions_singleapp.bin 0x10000 $<
+deploy: $(BUILD)/bootloader.bin $(BUILD)/partitions.bin $(BUILD)/firmware.bin
+	$(ECHO) "Writing $^ to the board"
+	$(Q)$(ESPTOOL) --chip esp32 --port $(PORT) --baud $(BAUD) write_flash -z --flash_mode $(FLASH_MODE) --flash_freq $(FLASH_FREQ) --flash_size $(FLASH_SIZE) 0x1000 $(BUILD)/bootloader.bin 0x8000 $(BUILD)/partitions.bin 0x10000 $(BUILD)/firmware.bin
 
 $(BUILD)/esp32_out.ld: sdkconfig.h
 	$(Q)$(CC) -I. -C -P -x c -E $(ESPIDF)/components/esp32/ld/esp32.ld -o $@
@@ -543,5 +543,67 @@ endef
 vpath %.cpp . $(TOP)
 $(BUILD)/%.o: %.cpp
 	$(call compile_cxx)
+
+################################################################################
+# Declarations to build the bootloader
+
+$(BUILD)/bootloader/$(ESPIDF)/components/%.o: CFLAGS += -DBOOTLOADER_BUILD=1 -I$(ESPIDF)/components/bootloader_support/include_priv -I$(ESPIDF)/components/bootloader_support/include -I$(ESPIDF)/components/micro-ecc/micro-ecc -Wno-error=format
+BOOTLOADER_OBJ = $(addprefix $(BUILD)/bootloader/$(ESPIDF)/components/,\
+	bootloader_support/src/bootloader_flash.o \
+	bootloader_support/src/secure_boot_signatures.o \
+	bootloader_support/src/secure_boot.o \
+	bootloader_support/src/esp_image_format.o \
+	log/log.o \
+	spi_flash/spi_flash_rom_patch.o \
+	micro-ecc/micro-ecc/uECC.o \
+	bootloader/src/main/bootloader_start.o \
+	bootloader/src/main/flash_encrypt.o \
+	)
+
+BOOTLOADER_LIBS =
+BOOTLOADER_LIBS += -Wl,--start-group
+BOOTLOADER_LIBS += $(BOOTLOADER_OBJ)
+BOOTLOADER_LIBS += -T $(ESPIDF)/components/bootloader/src/main/esp32.bootloader.ld
+BOOTLOADER_LIBS += -T $(ESPIDF)/components/esp32/ld/esp32.rom.ld
+BOOTLOADER_LIBS += -L$(dir $(LIBGCC_FILE_NAME)) -lgcc
+BOOTLOADER_LIBS += -Wl,--end-group
+
+BOOTLOADER_LDFLAGS =
+BOOTLOADER_LDFLAGS += -nostdlib
+BOOTLOADER_LDFLAGS += -L$(ESPIDF)/lib
+BOOTLOADER_LDFLAGS += -L$(ESPIDF)/ld
+BOOTLOADER_LDFLAGS += -u call_user_start_cpu0
+BOOTLOADER_LDFLAGS += -Wl,--gc-sections
+BOOTLOADER_LDFLAGS += -static
+BOOTLOADER_LDFLAGS += -Wl,-EL
+BOOTLOADER_LDFLAGS += -Wl,-Map=$(@:.elf=.map) -Wl,--cref
+
+BOOTLOADER_OBJ_DIRS = $(sort $(dir $(BOOTLOADER_OBJ)))
+$(BOOTLOADER_OBJ): | $(BOOTLOADER_OBJ_DIRS)
+$(BOOTLOADER_OBJ_DIRS):
+	$(MKDIR) -p $@
+
+$(BUILD)/bootloader/%.o: %.c
+	$(call compile_c)
+
+$(BUILD)/bootloader.bin: $(BUILD)/bootloader.elf
+	$(ECHO) "Create $@"
+	$(Q)$(ESPTOOL) --chip esp32 elf2image --flash_mode $(FLASH_MODE) --flash_freq $(FLASH_FREQ) --flash_size $(FLASH_SIZE) $<
+
+$(BUILD)/bootloader.elf: $(BOOTLOADER_OBJ)
+	$(ECHO) "LINK $@"
+	$(Q)$(CC) $(BOOTLOADER_LDFLAGS) -o $@ $(BOOTLOADER_LIBS)
+
+################################################################################
+# Declarations to build the partitions
+
+PYTHON2 ?= python2
+PART_SRC = $(ESPIDF)/components/partition_table/partitions_singleapp.csv
+
+$(BUILD)/partitions.bin: $(PART_SRC)
+	$(ECHO) "Create $@"
+	$(Q)$(PYTHON2) $(ESPIDF)/components/partition_table/gen_esp32part.py -q $< $@
+
+################################################################################
 
 include ../py/mkrules.mk
