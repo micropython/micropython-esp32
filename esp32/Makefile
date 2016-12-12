@@ -506,25 +506,25 @@ SRC_QSTR += $(SRC_C) $(STM_SRC_C) $(EXTMOD_SRC_C) $(DRIVERS_SRC_C)
 # Append any auto-generated sources that are needed by sources listed in SRC_QSTR
 SRC_QSTR_AUTO_DEPS +=
 
-all: $(BUILD)/bootloader.bin $(BUILD)/partitions.bin $(BUILD)/firmware.bin
+all: $(BUILD)/bootloader.bin $(BUILD)/partitions.bin $(BUILD)/application.bin
 
 .PHONY: idf-version deploy
 
 idf-version:
 	$(ECHO) "IDF version: f807d16310719b0dcef07de0276934653b6e48ed"
 
-deploy: $(BUILD)/bootloader.bin $(BUILD)/partitions.bin $(BUILD)/firmware.bin
+deploy: $(BUILD)/bootloader.bin $(BUILD)/partitions.bin $(BUILD)/application.bin
 	$(ECHO) "Writing $^ to the board"
-	$(Q)$(ESPTOOL) --chip esp32 --port $(PORT) --baud $(BAUD) write_flash -z --flash_mode $(FLASH_MODE) --flash_freq $(FLASH_FREQ) --flash_size $(FLASH_SIZE) 0x1000 $(BUILD)/bootloader.bin 0x8000 $(BUILD)/partitions.bin 0x10000 $(BUILD)/firmware.bin
+	$(Q)$(ESPTOOL) --chip esp32 --port $(PORT) --baud $(BAUD) write_flash -z --flash_mode $(FLASH_MODE) --flash_freq $(FLASH_FREQ) --flash_size $(FLASH_SIZE) 0x1000 $(BUILD)/bootloader.bin 0x8000 $(BUILD)/partitions.bin 0x10000 $(BUILD)/application.bin
 
 $(BUILD)/esp32_out.ld: sdkconfig.h
 	$(Q)$(CC) -I. -C -P -x c -E $(ESPIDF)/components/esp32/ld/esp32.ld -o $@
 
-$(BUILD)/firmware.bin: $(BUILD)/firmware.elf
+$(BUILD)/application.bin: $(BUILD)/application.elf
 	$(ECHO) "Create $@"
 	$(Q)$(ESPTOOL) --chip esp32 elf2image --flash_mode $(FLASH_MODE) --flash_freq $(FLASH_FREQ) --flash_size $(FLASH_SIZE) $<
 
-$(BUILD)/firmware.elf: $(OBJ) $(BUILD)/esp32_out.ld
+$(BUILD)/application.elf: $(OBJ) $(BUILD)/esp32_out.ld
 	$(ECHO) "LINK $@"
 	$(Q)$(LD) $(LDFLAGS) -o $@ $(LIBS)
 	$(Q)$(SIZE) $@
