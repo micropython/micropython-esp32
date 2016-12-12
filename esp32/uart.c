@@ -29,6 +29,7 @@
 #include "esp_intr.h"
 #include "soc/uart_struct.h"
 
+#include "py/mpstate.h"
 #include "py/mphal.h"
 
 STATIC void uart_irq_handler(void *arg);
@@ -38,6 +39,7 @@ void uart_init(void) {
     ESP_INTR_ENABLE(ETS_UART0_INUM);
 }
 
+// all code executed in ISR must be in IRAM, and any const data must be in DRAM
 STATIC void IRAM_ATTR uart_irq_handler(void *arg) {
     volatile uart_dev_t *uart = &UART0;
     uart->int_clr.rxfifo_full = 1;
@@ -46,8 +48,10 @@ STATIC void IRAM_ATTR uart_irq_handler(void *arg) {
     while (uart->status.rxfifo_cnt) {
         uint8_t c = uart->fifo.rw_byte;
         if (c == mp_interrupt_char) {
-            mp_keyboard_interrupt();
+            // inline version of mp_keyboard_interrupt();
+            MP_STATE_VM(mp_pending_exception) = MP_STATE_PORT(mp_kbd_exception);
         } else {
+            // this is an inline function so will be in IRAM
             ringbuf_put(&stdin_ringbuf, c);
         }
     }
