@@ -29,12 +29,12 @@ ESPTOOL ?= $(ESPIDF)/components/esptool_py/esptool/esptool.py
 
 INC += -I.
 INC += -I..
-INC += -I../stmhal
 INC += -I../lib/mp-readline
 INC += -I../lib/netutils
 INC += -I../lib/timeutils
 INC += -I$(BUILD)
 INC += -I$(ESPIDF)/components/driver/include
+INC += -I$(ESPIDF)/components/driver/include/driver
 INC += -I$(ESPIDF)/components/nghttp/port/include
 INC += -I$(ESPIDF)/components/nghttp/include
 INC += -I$(ESPIDF)/components/esp32/include
@@ -180,6 +180,7 @@ ESPIDF_DRIVER_O = $(addprefix $(ESPIDF)/components/driver/,\
 	ledc.o \
 	gpio.o \
 	timer.o \
+	rtc_module.o \
 	)
 
 $(BUILD)/$(ESPIDF)/components/esp32/%.o: CFLAGS = -std=gnu99 -Os -ffunction-sections -fdata-sections -fstrict-volatile-bitfields -mlongcalls -nostdlib -Wall -Werror -Wno-error=unused-function -Wno-error=unused-but-set-variable -Wno-error=unused-variable -Wno-error=deprecated-declarations -DMBEDTLS_CONFIG_FILE='"mbedtls/esp_config.h"' -DHAVE_CONFIG_H -DESP_PLATFORM  $(INC)
@@ -510,7 +511,7 @@ all: $(BUILD)/bootloader.bin $(BUILD)/partitions.bin $(BUILD)/firmware.bin
 .PHONY: idf-version deploy
 
 idf-version:
-	$(ECHO) "IDF version: c8685c200276abda4418f1367743f650d2aeacb2"
+	$(ECHO) "IDF version: f807d16310719b0dcef07de0276934653b6e48ed"
 
 deploy: $(BUILD)/bootloader.bin $(BUILD)/partitions.bin $(BUILD)/firmware.bin
 	$(ECHO) "Writing $^ to the board"
