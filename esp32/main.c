@@ -31,6 +31,7 @@
 #include "freertos/task.h"
 #include "esp_system.h"
 #include "nvs_flash.h"
+#include "esp_task.h"
 
 #include "py/stackctrl.h"
 #include "py/nlr.h"
@@ -44,7 +45,7 @@
 #include "uart.h"
 
 // MicroPython runs as a task under FreeRTOS
-#define MP_TASK_PRIORITY        (5)
+#define MP_TASK_PRIORITY        (ESP_TASK_PRIO_MIN + 1)
 #define MP_TASK_STACK_SIZE      (16 * 1024)
 #define MP_TASK_STACK_LEN       (MP_TASK_STACK_SIZE / sizeof(StackType_t))
 #define MP_TASK_HEAP_SIZE       (64 * 1024)
