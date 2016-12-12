@@ -514,7 +514,7 @@ idf-version:
 
 deploy: $(BUILD)/firmware.bin
 	$(ECHO) "Writing $< to the board"
-	$(Q)$(ESPTOOL) --chip esp32 --port $(PORT) --baud $(BAUD) write_flash -z --flash_mode $(FLASH_MODE) --flash_freq $(FLASH_FREQ) --flash_size $(FLASH_SIZE) 0x1000 $(ESPIDF)/examples/01_hello_world/build/bootloader/bootloader.bin 0x10000 $< 0x8000 $(ESPIDF)/examples/01_hello_world/build/partitions_singleapp.bin
+	$(Q)$(ESPTOOL) --chip esp32 --port $(PORT) --baud $(BAUD) write_flash -z --flash_mode $(FLASH_MODE) --flash_freq $(FLASH_FREQ) --flash_size $(FLASH_SIZE) 0x1000 $(ESPIDF)/examples/01_hello_world/build/bootloader/bootloader.bin 0x8000 $(ESPIDF)/examples/01_hello_world/build/partitions_singleapp.bin 0x10000 $<
 
 $(BUILD)/esp32_out.ld: sdkconfig.h
 	$(Q)$(CC) -I. -C -P -x c -E $(ESPIDF)/components/esp32/ld/esp32.ld -o $@
