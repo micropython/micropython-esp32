@@ -66,6 +66,13 @@ soft_reset:
     mp_obj_list_init(mp_sys_argv, 0);
     readline_init0();
 
+    // run boot-up scripts
+    pyexec_frozen_module("_boot.py");
+    pyexec_file("boot.py");
+    if (pyexec_mode_kind == PYEXEC_MODE_FRIENDLY_REPL) {
+        pyexec_file("main.py");
+    }
+
     for (;;) {
         if (pyexec_mode_kind == PYEXEC_MODE_RAW_REPL) {
             if (pyexec_raw_repl() != 0) {
