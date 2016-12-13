@@ -9,7 +9,7 @@ MICROPY_FATFS = 1
 MICROPY_PY_BTREE = 0
 
 #FROZEN_DIR = scripts
-#FROZEN_MPY_DIR = modules
+FROZEN_MPY_DIR = modules
 
 # include py core make definitions
 include ../py/py.mk
