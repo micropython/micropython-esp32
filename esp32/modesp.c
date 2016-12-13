@@ -27,9 +27,10 @@
 
 #include <stdio.h>
 
+#include "esp_spi_flash.h"
+
 #include "py/runtime.h"
 #include "py/mperrno.h"
-#include "esp_spi_flash.h"
 
 STATIC mp_obj_t esp_flash_read(mp_obj_t offset_in, mp_obj_t buf_in) {
     mp_int_t offset = mp_obj_get_int(offset_in);
@@ -71,7 +72,7 @@ STATIC mp_obj_t esp_flash_size(void) {
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(esp_flash_size_obj, esp_flash_size);
 
 STATIC mp_obj_t esp_flash_user_start(void) {
-    return MP_OBJ_NEW_SMALL_INT(0x90000);
+    return MP_OBJ_NEW_SMALL_INT(0x100000);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(esp_flash_user_start_obj, esp_flash_user_start);
 
