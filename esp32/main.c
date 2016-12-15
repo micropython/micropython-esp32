@@ -96,7 +96,7 @@ soft_reset:
 void app_main(void) {
     nvs_flash_init();
     // TODO use xTaskCreateStatic (needs custom FreeRTOSConfig.h)
-    xTaskCreate(mp_task, "mp_task", MP_TASK_STACK_LEN, NULL, MP_TASK_PRIORITY, NULL);
+    xTaskCreatePinnedToCore(mp_task, "mp_task", MP_TASK_STACK_LEN, NULL, MP_TASK_PRIORITY, NULL, 0);
     //xTaskCreateStatic(mp_task, "mp_task", MP_TASK_STACK_LEN, NULL, MP_TASK_PRIORITY, &mp_task_stack[0], &mp_task_tcb);
 }
 
