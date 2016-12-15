@@ -33,6 +33,7 @@ INC += -I../lib/mp-readline
 INC += -I../lib/netutils
 INC += -I../lib/timeutils
 INC += -I$(BUILD)
+INC += -I$(ESPIDF)/components/bootloader_support/include
 INC += -I$(ESPIDF)/components/driver/include
 INC += -I$(ESPIDF)/components/driver/include/driver
 INC += -I$(ESPIDF)/components/nghttp/port/include
@@ -208,6 +209,7 @@ ESPIDF_ESP32_O = $(addprefix $(ESPIDF)/components/esp32/,\
 	cpu_util.o \
 	system_api.o \
 	hw_random.o \
+	intr_alloc.o \
 	)
 
 ESPIDF_EXPAT_O = $(addprefix $(ESPIDF)/components/expat/,\
@@ -519,7 +521,7 @@ all: $(BUILD)/bootloader.bin $(BUILD)/partitions.bin $(BUILD)/application.bin
 .PHONY: idf-version deploy erase
 
 idf-version:
-	$(ECHO) "IDF version: f807d16310719b0dcef07de0276934653b6e48ed"
+	$(ECHO) "IDF version: 2e9c06b584a81f0ea67def05f6204b18bbc54754"
 
 deploy: $(BUILD)/bootloader.bin $(BUILD)/partitions.bin $(BUILD)/application.bin
 	$(ECHO) "Writing $^ to the board"
@@ -566,11 +568,11 @@ BOOTLOADER_OBJ = $(addprefix $(BUILD)/bootloader/$(ESPIDF)/components/,\
 	bootloader_support/src/secure_boot_signatures.o \
 	bootloader_support/src/secure_boot.o \
 	bootloader_support/src/esp_image_format.o \
+	bootloader_support/src/flash_encrypt.o \
 	log/log.o \
 	spi_flash/spi_flash_rom_patch.o \
 	micro-ecc/micro-ecc/uECC.o \
 	bootloader/src/main/bootloader_start.o \
-	bootloader/src/main/flash_encrypt.o \
 	)
 
 BOOTLOADER_LIBS =
