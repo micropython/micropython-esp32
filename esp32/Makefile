@@ -521,7 +521,7 @@ all: $(BUILD)/bootloader.bin $(BUILD)/partitions.bin $(BUILD)/application.bin
 .PHONY: idf-version deploy erase
 
 idf-version:
-	$(ECHO) "IDF version: 2e9c06b584a81f0ea67def05f6204b18bbc54754"
+	$(ECHO) "IDF version: 87d0eb0fdb00b84987f5fed1d6316868dc420896"
 
 deploy: $(BUILD)/bootloader.bin $(BUILD)/partitions.bin $(BUILD)/application.bin
 	$(ECHO) "Writing $^ to the board"
