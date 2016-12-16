@@ -76,7 +76,7 @@ CXXFLAGS = -std=gnu++11 -fno-exceptions -fno-rtti -ffunction-sections -fdata-sec
 LDFLAGS = -nostdlib -Map=$(@:.elf=.map) --cref
 LDFLAGS += --gc-sections -static -EL
 LDFLAGS += -u call_user_start_cpu0 -u uxTopUsedPriority
-LDFLAGS += -L$(ESPIDF)/components/esp32/ld -T $(BUILD)/esp32_out.ld -T esp32.common.ld -T esp32.rom.ld -T esp32.peripherals.ld
+LDFLAGS += -L$(ESPIDF)/components/esp32/ld -T $(BUILD)/esp32_out.ld -T ./esp32.custom_common.ld -T esp32.rom.ld -T esp32.peripherals.ld
 
 LIBGCC_FILE_NAME = $(shell $(CC) $(CFLAGS) -print-libgcc-file-name)
 
