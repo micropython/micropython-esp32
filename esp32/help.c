@@ -31,21 +31,21 @@
 #include "lib/utils/pyhelp.h"
 
 STATIC const char *help_text =
-"Welcome to MicroPython!\n"
+"Welcome to MicroPython on the ESP32!\n"
 "\n"
-"For online docs please visit http://docs.micropython.org/en/latest/esp8266/ .\n"
-"For diagnostic information to include in bug reports execute 'import port_diag'.\n"
+"For generic online docs please visit http://docs.micropython.org/\n"
 "\n"
-"Basic WiFi configuration:\n"
+"For access to the hardware use the 'machine' module:\n"
 "\n"
-"import network\n"
-"sta_if = network.WLAN(network.STA_IF); sta_if.active(True)\n"
-"sta_if.scan()                             # Scan for available access points\n"
-"sta_if.connect(\"<AP_name>\", \"<password>\") # Connect to an AP\n"
-"sta_if.isconnected()                      # Check for successful connection\n"
-"# Change name/password of ESP8266's AP:\n"
-"ap_if = network.WLAN(network.AP_IF)\n"
-"ap_if.config(essid=\"<AP_NAME>\", authmode=network.AUTH_WPA_WPA2_PSK, password=\"<password>\")\n"
+"import machine\n"
+"pin12 = machine.Pin(12, machine.Pin.OUT)\n"
+"pin12.value(1)\n"
+"pin13 = machine.Pin(13, machine.Pin.IN, machine.Pin.PULL_UP)\n"
+"print(pin13.value())\n"
+"i2c = machine.I2C(scl=machine.Pin(21), sda=machine.Pin(22))\n"
+"i2c.scan()\n"
+"i2c.writeto(addr, b'1234')\n"
+"i2c.readfrom(addr, 4)\n"
 "\n"
 "Control commands:\n"
 "  CTRL-A        -- on a blank line, enter raw REPL mode\n"
@@ -60,7 +60,7 @@ STATIC const char *help_text =
 STATIC mp_obj_t builtin_help(uint n_args, const mp_obj_t *args) {
     if (n_args == 0) {
         // print a general help message
-        printf("%s", help_text);
+        mp_printf(MP_PYTHON_PRINTER, "%s", help_text);
 
     } else {
         // try to print something sensible about the given object
