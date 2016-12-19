@@ -98,13 +98,13 @@ LIBS += $(ESPCOMP)/newlib/lib/libc.a
 LIBS += $(ESPCOMP)/newlib/lib/libm.a
 LIBS += $(addprefix $(BUILD)/, $(ESPIDF_NEWLIB_O))
 LIBS += $(addprefix $(BUILD)/, $(ESPIDF_NGHTTP_O))
-LIBS += $(addprefix $(BUILD)/, $(ESPIDF_NVSFL_O))
+LIBS += $(addprefix $(BUILD)/, $(ESPIDF_NVS_FLASH_O))
 LIBS += $(addprefix $(BUILD)/, $(ESPIDF_OPENSSL_O))
-LIBS += $(addprefix $(BUILD)/, $(ESPIDF_SPIFL_O))
-LIBS += $(addprefix $(BUILD)/, $(ESPIDF_TCPIP_O))
+LIBS += $(addprefix $(BUILD)/, $(ESPIDF_SPI_FLASH_O))
+LIBS += $(addprefix $(BUILD)/, $(ESPIDF_TCPIP_ADAPTER_O))
 LIBS += $(addprefix $(BUILD)/, $(ESPIDF_VFS_O))
-LIBS += $(addprefix $(BUILD)/, $(ESPIDF_WPASUP_O))
-LIBS += $(addprefix $(BUILD)/, $(ESPIDF_XTDB_O))
+LIBS += $(addprefix $(BUILD)/, $(ESPIDF_WPA_SUPPLICANT_O))
+LIBS += $(addprefix $(BUILD)/, $(ESPIDF_XTENSA_DEBUG_MODULE_O))
 LIBS += $(OBJ_MP)
 LIBS += -L$(dir $(LIBGCC_FILE_NAME)) -lgcc
 LIBS += --end-group
@@ -266,12 +266,12 @@ ESPIDF_LOG_O = $(addprefix $(ESPCOMP)/log/,\
 	log.o \
 	)
 
-ESPIDF_XTDB_O = $(addprefix $(ESPCOMP)/xtensa-debug-module/,\
+ESPIDF_XTENSA_DEBUG_MODULE_O = $(addprefix $(ESPCOMP)/xtensa-debug-module/,\
 	eri.o \
 	trax.o \
 	)
 
-ESPIDF_TCPIP_O = $(addprefix $(ESPCOMP)/tcpip_adapter/,\
+ESPIDF_TCPIP_ADAPTOR_O = $(addprefix $(ESPCOMP)/tcpip_adapter/,\
 	tcpip_adapter_lwip.o \
 	)
 
@@ -308,7 +308,7 @@ ESPIDF_NGHTTP_O = $(addprefix $(ESPCOMP)/nghttp/,\
 	port/http_parser.o \
 	)
 
-ESPIDF_NVSFL_O = $(addprefix $(ESPCOMP)/nvs_flash/,\
+ESPIDF_NVS_FLASH_O = $(addprefix $(ESPCOMP)/nvs_flash/,\
 	src/nvs_types.o \
 	src/nvs_page.o \
 	src/nvs_item_hash_list.o \
@@ -320,7 +320,7 @@ ESPIDF_NVSFL_O = $(addprefix $(ESPCOMP)/nvs_flash/,\
 ESPIDF_OPENSSL_O = $(addprefix $(ESPCOMP)/openssl/,\
 	)
 
-ESPIDF_SPIFL_O = $(addprefix $(ESPCOMP)/spi_flash/,\
+ESPIDF_SPI_FLASH_O = $(addprefix $(ESPCOMP)/spi_flash/,\
 	flash_mmap.o \
 	partition.o \
 	spi_flash_rom_patch.o \
@@ -459,7 +459,7 @@ ESPIDF_MBEDTLS_O = $(addprefix $(ESPCOMP)/mbedtls/,\
 	port/esp_hardware.o \
 	)
 
-ESPIDF_WPASUP_O = $(addprefix $(ESPCOMP)/wpa_supplicant/,\
+ESPIDF_WPA_SUPPLICANT_O = $(addprefix $(ESPCOMP)/wpa_supplicant/,\
 	src/crypto/aes-internal-enc.o \
 	src/crypto/sha256-internal.o \
 	src/crypto/md5-internal.o \
@@ -502,13 +502,13 @@ OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_JSON_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_LOG_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_LWIP_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_MBEDTLS_O))
-OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_XTDB_O))
-OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_TCPIP_O))
+OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_XTENSA_DEBUG_MODULE_O))
+OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_TCPIP_ADAPTER_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_NGHTTP_O))
-OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_NVSFL_O))
+OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_NVS_FLASH_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_OPENSSL_O))
-OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_SPIFL_O))
-OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_WPASUP_O))
+OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_SPI_FLASH_O))
+OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_WPA_SUPPLICANT_O))
 
 OBJ = $(OBJ_MP) $(OBJ_ESPIDF)
 
