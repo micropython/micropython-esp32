@@ -194,7 +194,7 @@ ESPIDF_ESP32_O = $(addprefix $(ESPIDF)/components/esp32/,\
 	cpu_start.o \
 	gdbstub.o \
 	crosscore_int.o \
-	deepsleep.o \
+	deep_sleep.o \
 	heap_alloc_caps.o \
 	ipc.o \
 	int_wdt.o \
@@ -521,7 +521,7 @@ all: $(BUILD)/bootloader.bin $(BUILD)/partitions.bin $(BUILD)/application.bin
 .PHONY: idf-version deploy erase
 
 idf-version:
-	$(ECHO) "IDF version: 87d0eb0fdb00b84987f5fed1d6316868dc420896"
+	$(ECHO) "IDF version: 576052e5c28eb462cb5f5dd39b40dfcc7a8dc92d"
 
 deploy: $(BUILD)/bootloader.bin $(BUILD)/partitions.bin $(BUILD)/application.bin
 	$(ECHO) "Writing $^ to the board"
