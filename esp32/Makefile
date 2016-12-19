@@ -75,34 +75,6 @@ LDFLAGS += -L$(ESPCOMP)/esp32/ld -T $(BUILD)/esp32_out.ld -T ./esp32.custom_comm
 
 LIBGCC_FILE_NAME = $(shell $(CC) $(CFLAGS) -print-libgcc-file-name)
 
-LIBS =
-LIBS += $(LDFLAGS_MOD)
-LIBS += --start-group
-LIBS += $(addprefix $(BUILD)/, $(ESPIDF_DRIVER_O))
-LIBS += $(addprefix $(BUILD)/, $(ESPIDF_ESP32_O))
-LIBS += $(ESPCOMP)/esp32/libhal.a
-LIBS += -L$(ESPCOMP)/esp32/lib -lcore -lnet80211 -lphy -lrtc -lpp -lwpa -lsmartconfig -lcoexist
-LIBS += $(addprefix $(BUILD)/, $(ESPIDF_EXPAT_O))
-LIBS += $(addprefix $(BUILD)/, $(ESPIDF_FREERTOS_O))
-LIBS += $(addprefix $(BUILD)/, $(ESPIDF_JSON_O))
-LIBS += $(addprefix $(BUILD)/, $(ESPIDF_LOG_O))
-LIBS += $(addprefix $(BUILD)/, $(ESPIDF_LWIP_O))
-LIBS += $(addprefix $(BUILD)/, $(ESPIDF_MBEDTLS_O))
-LIBS += $(ESPCOMP)/newlib/lib/libc.a
-LIBS += $(ESPCOMP)/newlib/lib/libm.a
-LIBS += $(addprefix $(BUILD)/, $(ESPIDF_NEWLIB_O))
-LIBS += $(addprefix $(BUILD)/, $(ESPIDF_NGHTTP_O))
-LIBS += $(addprefix $(BUILD)/, $(ESPIDF_NVS_FLASH_O))
-LIBS += $(addprefix $(BUILD)/, $(ESPIDF_OPENSSL_O))
-LIBS += $(addprefix $(BUILD)/, $(ESPIDF_SPI_FLASH_O))
-LIBS += $(addprefix $(BUILD)/, $(ESPIDF_TCPIP_ADAPTER_O))
-LIBS += $(addprefix $(BUILD)/, $(ESPIDF_VFS_O))
-LIBS += $(addprefix $(BUILD)/, $(ESPIDF_WPA_SUPPLICANT_O))
-LIBS += $(addprefix $(BUILD)/, $(ESPIDF_XTENSA_DEBUG_MODULE_O))
-LIBS += $(OBJ_MP)
-LIBS += -L$(dir $(LIBGCC_FILE_NAME)) -lgcc
-LIBS += --end-group
-
 # Debugging/Optimization
 ifeq ($(DEBUG), 1)
 CFLAGS += -g
@@ -112,6 +84,9 @@ else
 COPT += -Os -DNDEBUG
 #LDFLAGS += --gc-sections
 endif
+
+################################################################################
+# List of MicroPython source and object files
 
 SRC_C = \
 	main.c \
@@ -170,6 +145,22 @@ endif
 
 DRIVERS_SRC_C = $(addprefix drivers/,\
 	)
+
+OBJ_MP =
+OBJ_MP += $(PY_O)
+OBJ_MP += $(addprefix $(BUILD)/, $(SRC_C:.c=.o))
+OBJ_MP += $(addprefix $(BUILD)/, $(STM_SRC_C:.c=.o))
+OBJ_MP += $(addprefix $(BUILD)/, $(EXTMOD_SRC_C:.c=.o))
+OBJ_MP += $(addprefix $(BUILD)/, $(LIB_SRC_C:.c=.o))
+OBJ_MP += $(addprefix $(BUILD)/, $(DRIVERS_SRC_C:.c=.o))
+
+# List of sources for qstr extraction
+SRC_QSTR += $(SRC_C) $(STM_SRC_C) $(EXTMOD_SRC_C) $(DRIVERS_SRC_C)
+# Append any auto-generated sources that are needed by sources listed in SRC_QSTR
+SRC_QSTR_AUTO_DEPS +=
+
+################################################################################
+# List of object files from the ESP32 IDF components
 
 ESPIDF_DRIVER_O = $(addprefix $(ESPCOMP)/driver/,\
 	uart.o \
@@ -478,14 +469,6 @@ ESPIDF_WPA_SUPPLICANT_O = $(addprefix $(ESPCOMP)/wpa_supplicant/,\
 	src/crypto/crypto_internal-cipher.o \
 	)
 
-OBJ_MP =
-OBJ_MP += $(PY_O)
-OBJ_MP += $(addprefix $(BUILD)/, $(SRC_C:.c=.o))
-OBJ_MP += $(addprefix $(BUILD)/, $(STM_SRC_C:.c=.o))
-OBJ_MP += $(addprefix $(BUILD)/, $(EXTMOD_SRC_C:.c=.o))
-OBJ_MP += $(addprefix $(BUILD)/, $(LIB_SRC_C:.c=.o))
-OBJ_MP += $(addprefix $(BUILD)/, $(DRIVERS_SRC_C:.c=.o))
-
 OBJ_ESPIDF =
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_NEWLIB_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_DRIVER_O))
@@ -505,12 +488,8 @@ OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_OPENSSL_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_SPI_FLASH_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_WPA_SUPPLICANT_O))
 
-OBJ = $(OBJ_MP) $(OBJ_ESPIDF)
-
-# List of sources for qstr extraction
-SRC_QSTR += $(SRC_C) $(STM_SRC_C) $(EXTMOD_SRC_C) $(DRIVERS_SRC_C)
-# Append any auto-generated sources that are needed by sources listed in SRC_QSTR
-SRC_QSTR_AUTO_DEPS +=
+################################################################################
+# Main targets
 
 all: $(BUILD)/bootloader.bin $(BUILD)/partitions.bin $(BUILD)/application.bin
 
@@ -527,6 +506,39 @@ erase:
 	$(ECHO) "Erasing flash"
 	$(Q)$(ESPTOOL) --chip esp32 --port $(PORT) --baud $(BAUD) erase_flash
 
+################################################################################
+# Declarations to build the application
+
+OBJ = $(OBJ_MP) $(OBJ_ESPIDF)
+
+APP_LD_ARGS =
+APP_LD_ARGS += $(LDFLAGS_MOD)
+APP_LD_ARGS += --start-group
+APP_LD_ARGS += $(addprefix $(BUILD)/, $(ESPIDF_DRIVER_O))
+APP_LD_ARGS += $(addprefix $(BUILD)/, $(ESPIDF_ESP32_O))
+APP_LD_ARGS += $(ESPCOMP)/esp32/libhal.a
+APP_LD_ARGS += -L$(ESPCOMP)/esp32/lib -lcore -lnet80211 -lphy -lrtc -lpp -lwpa -lsmartconfig -lcoexist
+APP_LD_ARGS += $(addprefix $(BUILD)/, $(ESPIDF_EXPAT_O))
+APP_LD_ARGS += $(addprefix $(BUILD)/, $(ESPIDF_FREERTOS_O))
+APP_LD_ARGS += $(addprefix $(BUILD)/, $(ESPIDF_JSON_O))
+APP_LD_ARGS += $(addprefix $(BUILD)/, $(ESPIDF_LOG_O))
+APP_LD_ARGS += $(addprefix $(BUILD)/, $(ESPIDF_LWIP_O))
+APP_LD_ARGS += $(addprefix $(BUILD)/, $(ESPIDF_MBEDTLS_O))
+APP_LD_ARGS += $(ESPCOMP)/newlib/lib/libc.a
+APP_LD_ARGS += $(ESPCOMP)/newlib/lib/libm.a
+APP_LD_ARGS += $(addprefix $(BUILD)/, $(ESPIDF_NEWLIB_O))
+APP_LD_ARGS += $(addprefix $(BUILD)/, $(ESPIDF_NGHTTP_O))
+APP_LD_ARGS += $(addprefix $(BUILD)/, $(ESPIDF_NVS_FLASH_O))
+APP_LD_ARGS += $(addprefix $(BUILD)/, $(ESPIDF_OPENSSL_O))
+APP_LD_ARGS += $(addprefix $(BUILD)/, $(ESPIDF_SPI_FLASH_O))
+APP_LD_ARGS += $(addprefix $(BUILD)/, $(ESPIDF_TCPIP_ADAPTER_O))
+APP_LD_ARGS += $(addprefix $(BUILD)/, $(ESPIDF_VFS_O))
+APP_LD_ARGS += $(addprefix $(BUILD)/, $(ESPIDF_WPA_SUPPLICANT_O))
+APP_LD_ARGS += $(addprefix $(BUILD)/, $(ESPIDF_XTENSA_DEBUG_MODULE_O))
+APP_LD_ARGS += $(OBJ_MP)
+APP_LD_ARGS += -L$(dir $(LIBGCC_FILE_NAME)) -lgcc
+APP_LD_ARGS += --end-group
+
 $(BUILD)/esp32_out.ld: sdkconfig.h
 	$(Q)$(CC) -I. -C -P -x c -E $(ESPCOMP)/esp32/ld/esp32.ld -o $@
 
@@ -536,7 +548,7 @@ $(BUILD)/application.bin: $(BUILD)/application.elf
 
 $(BUILD)/application.elf: $(OBJ) $(BUILD)/esp32_out.ld
 	$(ECHO) "LINK $@"
-	$(Q)$(LD) $(LDFLAGS) -o $@ $(LIBS)
+	$(Q)$(LD) $(LDFLAGS) -o $@ $(APP_LD_ARGS)
 	$(Q)$(SIZE) $@
 
 define compile_cxx
