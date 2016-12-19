@@ -64,12 +64,6 @@ INC += -I$(ESPCOMP)/wpa_supplicant/include
 INC += -I$(ESPCOMP)/wpa_supplicant/port/include
 
 CFLAGS = -std=gnu99 -Os -ffunction-sections -fdata-sections -fstrict-volatile-bitfields -mlongcalls -nostdlib -Wall -Werror -Wno-error=unused-function -Wno-error=unused-but-set-variable -Wno-error=unused-variable -Wno-error=deprecated-declarations -DMBEDTLS_CONFIG_FILE='"mbedtls/esp_config.h"' -DHAVE_CONFIG_H -DESP_PLATFORM  $(INC)
-# for lwip
-CFLAGS += -Wno-address -Wno-unused-variable -Wno-unused-but-set-variable
-# for wpa_supplicant
-CFLAGS += -DEMBEDDED_SUPP -D__ets__ -Wno-strict-aliasing
-# for expat
-CFLAGS += -Wno-unused-function 
 
 # this is what ESPIDF uses for c++ compilation
 CXXFLAGS = -std=gnu++11 -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -fstrict-volatile-bitfields -mlongcalls -nostdlib -Wall -Werror -Wno-error=unused-function -Wno-error=unused-but-set-variable -Wno-error=unused-variable -Wno-error=deprecated-declarations -DESP_PLATFORM $(INC)
@@ -186,8 +180,6 @@ ESPIDF_DRIVER_O = $(addprefix $(ESPCOMP)/driver/,\
 	rtc_module.o \
 	)
 
-$(BUILD)/$(ESPCOMP)/esp32/%.o: CFLAGS = -std=gnu99 -Os -ffunction-sections -fdata-sections -fstrict-volatile-bitfields -mlongcalls -nostdlib -Wall -Werror -Wno-error=unused-function -Wno-error=unused-but-set-variable -Wno-error=unused-variable -Wno-error=deprecated-declarations -DMBEDTLS_CONFIG_FILE='"mbedtls/esp_config.h"' -DHAVE_CONFIG_H -DESP_PLATFORM  $(INC)
-$(BUILD)/$(ESPCOMP)/esp32/%.o: CXXFLAGS = -std=gnu++11 -fno-exceptions -fno-rtti -Og -ggdb -ffunction-sections -fdata-sections -fstrict-volatile-bitfields -mlongcalls -nostdlib -Wall -Werror -Wno-error=unused-function -Wno-error=unused-but-set-variable -Wno-error=unused-variable -Wno-error=deprecated-declarations -DESP_PLATFORM $(INC)
 ESPIDF_ESP32_O = $(addprefix $(ESPCOMP)/esp32/,\
 	panic.o \
 	event_default_handlers.o \
@@ -213,6 +205,7 @@ ESPIDF_ESP32_O = $(addprefix $(ESPCOMP)/esp32/,\
 	intr_alloc.o \
 	)
 
+$(BUILD)/$(ESPCOMP)/expat/%.o: CFLAGS += -Wno-unused-function
 ESPIDF_EXPAT_O = $(addprefix $(ESPCOMP)/expat/,\
 	library/xmltok_ns.o \
 	library/xmltok.o \
@@ -328,6 +321,7 @@ ESPIDF_SPI_FLASH_O = $(addprefix $(ESPCOMP)/spi_flash/,\
 	flash_ops.o \
 	)
 
+$(BUILD)/$(ESPCOMP)/lwip/%.o: CFLAGS += -Wno-address -Wno-unused-variable -Wno-unused-but-set-variable
 ESPIDF_LWIP_O = $(addprefix $(ESPCOMP)/lwip/,\
 	api/pppapi.o \
 	api/netbuf.o \
@@ -459,6 +453,7 @@ ESPIDF_MBEDTLS_O = $(addprefix $(ESPCOMP)/mbedtls/,\
 	port/esp_hardware.o \
 	)
 
+$(BUILD)/$(ESPCOMP)/wpa_supplicant/%.o: CFLAGS += -DEMBEDDED_SUPP -D__ets__ -Wno-strict-aliasing
 ESPIDF_WPA_SUPPLICANT_O = $(addprefix $(ESPCOMP)/wpa_supplicant/,\
 	src/crypto/aes-internal-enc.o \
 	src/crypto/sha256-internal.o \
