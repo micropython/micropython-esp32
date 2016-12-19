@@ -32,6 +32,7 @@
 #include "py/objlist.h"
 #include "py/runtime.h"
 #include "py/mphal.h"
+#include "py/mperrno.h"
 #include "netutils.h"
 #include "esp_wifi.h"
 #include "esp_wifi_types.h"
@@ -41,40 +42,46 @@
 
 #define MODNETWORK_INCLUDE_CONSTANTS (1)
 
-char *wifi_error_messages(esp_err_t n) {
-   switch (n) {
+NORETURN void _esp_exceptions(esp_err_t e) {
+   switch (e) {
       case ESP_ERR_WIFI_NOT_INIT: 
-        return "Wifi Not Initialized";
+        mp_raise_msg(&mp_type_OSError, "Wifi Not Initialized");
       case ESP_ERR_WIFI_NOT_START:
-        return "Wifi Not Started";
+        mp_raise_msg(&mp_type_OSError, "Wifi Not Started");
       case ESP_ERR_WIFI_CONN:
-        return "Wifi Internal Error";
+        mp_raise_msg(&mp_type_OSError, "Wifi Internal Error");
       case ESP_ERR_WIFI_SSID:
-        return "Wifi SSID Invalid";
+        mp_raise_msg(&mp_type_OSError, "Wifi SSID Invalid");
       case ESP_ERR_WIFI_FAIL:
-        return "Wifi Internal Failure";
+        mp_raise_msg(&mp_type_OSError, "Wifi Internal Failure");
       case ESP_ERR_WIFI_IF:
-        return "Wifi Invalid Interface";
+        mp_raise_msg(&mp_type_OSError, "Wifi Invalid Interface");
       case ESP_ERR_WIFI_MAC:
-        return "Wifi Invalid MAC Address";
+        mp_raise_msg(&mp_type_OSError, "Wifi Invalid MAC Address");
       case ESP_ERR_WIFI_ARG:
-        return "Wifi Invalid Argument";
+        mp_raise_msg(&mp_type_OSError, "Wifi Invalid Argument");
       case ESP_ERR_WIFI_MODE:
-        return "Wifi Invalid Mode";
+        mp_raise_msg(&mp_type_OSError, "Wifi Invalid Mode");
       case ESP_ERR_WIFI_PASSWORD:
-        return "Wifi Invalid Password";
+        mp_raise_msg(&mp_type_OSError, "Wifi Invalid Password");
       case ESP_ERR_WIFI_NVS:
-        return "Wifi Internal NVS Error";
+        mp_raise_msg(&mp_type_OSError, "Wifi Internal NVS Error");
       case ESP_ERR_WIFI_TIMEOUT:
-        return "Wifi Timeout";
+        mp_raise_OSError(MP_ETIMEDOUT);
       case ESP_ERR_WIFI_NO_MEM:
-        return "Wifi Out of Memory";
+        mp_raise_OSError(MP_ENOMEM); 
       default:
-        return "Wifi Unknown Error";
+        nlr_raise(mp_obj_new_exception_msg_varg(
+          &mp_type_RuntimeError, "Wifi Unknown Error %d", e
+        ));
    }
 }
 
-#define ESP_EXCEPTIONS(x) do { if (x != ESP_OK) nlr_raise(mp_obj_new_exception_msg(&mp_type_RuntimeError, wifi_error_messages(x))); } while (0)
+static inline void esp_exceptions(esp_err_t e) {
+    if (e != ESP_OK) _esp_exceptions(e);
+}
+
+#define ESP_EXCEPTIONS(x) do { esp_exceptions(x); } while (0);
 
 typedef struct _wlan_if_obj_t {
     mp_obj_base_t base;
@@ -101,7 +108,7 @@ static esp_err_t event_handler(void *ctx, system_event_t *event) {
         // This is a workaround as ESP32 WiFi libs don't currently
         // auto-reassociate.
         ESP_LOGI("wifi", "STA_DISCONNECTED");
-        esp_wifi_connect(); // XXX error handling
+        ESP_EXCEPTIONS( esp_wifi_connect() );
         break;
     default:
         break;
@@ -109,13 +116,13 @@ static esp_err_t event_handler(void *ctx, system_event_t *event) {
     return ESP_OK;
 }
 
-void error_check(bool status, const char *msg) {
+/*void error_check(bool status, const char *msg) {
     if (!status) {
         nlr_raise(mp_obj_new_exception_msg(&mp_type_OSError, msg));
     }
 }
 
-/*STATIC void require_if(mp_obj_t wlan_if, int if_no) {
+STATIC void require_if(mp_obj_t wlan_if, int if_no) {
     wlan_if_obj_t *self = MP_OBJ_TO_PTR(wlan_if);
     if (self->if_id != if_no) {
         error_check(false, if_no == WIFI_IF_STA ? "STA required" : "AP required");
@@ -129,7 +136,7 @@ STATIC mp_obj_t get_wlan(mp_uint_t n_args, const mp_obj_t *args) {
     } else if (idx == WIFI_IF_AP) {
         return MP_OBJ_FROM_PTR(&wlan_ap_obj);
     } else {
-        nlr_raise(mp_obj_new_exception_msg(&mp_type_ValueError, "invalid WLAN interface identifier"));
+        mp_raise_msg(&mp_type_ValueError, "invalid WLAN interface identifier");
     }
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(get_wlan_obj, 0, 1, get_wlan);
