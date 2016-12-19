@@ -102,6 +102,7 @@ SRC_C = \
 	machine_pin.c \
 	modmachine.c \
 	modnetwork.c \
+	modsocket.c \
 	modesp.c \
 	$(SRC_MOD)
 
