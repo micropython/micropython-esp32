@@ -14,6 +14,31 @@ This is the MicroPython project, which aims to put an implementation
 of Python 3.x on microcontrollers and small embedded systems.
 You can find the official website at [micropython.org](http://www.micropython.org).
 
+A note about this ESP32 repository
+----------------------------------
+
+This repository is a clone of the main, upstream repository found at
+https://github.com/micropython/micropython.  This repository adds a new
+branch called `esp32` which contains a port of MicroPython to the ESP32
+microcontroller, under the MIT license.  Please see the `README.md` file
+in the `esp32/` subdirectory for details of this port.
+
+This `esp32` branch is the default branch and all pull requests should be
+made to this branch, and any issues should discuss only the code developed
+in the `esp32/` subdirectory.
+
+The `esp32` branch will not be rebased so it is safe to clone/fork it and
+base your work on it.  New commits from the upstream repository will
+occasionally be merged in the `esp32` branch.  Any additional branches in
+this repository (apart from `master`) may be rebased or deleted at any time.
+
+If there is enough interest in the port to the ESP32 then this code can
+eventually be merged into the upstream repository.  So please do let your
+interest be known!
+
+About MicroPython
+-----------------
+
 WARNING: this project is in beta stage and is subject to changes of the
 code-base, including project-wide name changes and API changes.
 
