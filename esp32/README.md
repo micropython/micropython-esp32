@@ -14,6 +14,8 @@ Supported features include:
 - Internal filesystem using the flash (currently 256k in size).
 - The machine module with basic GPIO and bit-banging I2C, SPI support.
 
+Development of this ESP32 port was sponsored in part by Microbric Pty Ltd.
+
 Setting up the toolchain and ESP-IDF
 ------------------------------------
 

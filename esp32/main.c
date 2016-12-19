@@ -1,6 +1,8 @@
 /*
  * This file is part of the MicroPython project, http://micropython.org/
  *
+ * Development of the code in this file was sponsored by Microbric Pty Ltd
+ *
  * The MIT License (MIT)
  *
  * Copyright (c) 2016 Damien P. George
