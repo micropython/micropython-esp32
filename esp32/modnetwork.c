@@ -4,6 +4,8 @@
  * The MIT License (MIT)
  *
  * Copyright (c) 2016 Nick Moore
+ * Based on esp8266/modnetwork.c which is Copyright (c) 2015 Paul Sokolovsky
+ * And the ESP IDF example code which is Public Domain / CC0
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -32,49 +34,65 @@
 #include "py/objlist.h"
 #include "py/runtime.h"
 #include "py/mphal.h"
+#include "py/mperrno.h"
 #include "netutils.h"
 #include "esp_wifi.h"
 #include "esp_wifi_types.h"
 #include "esp_log.h"
 #include "esp_event_loop.h"
 #include "esp_log.h"
+#include "lwip/dns.h"
+#include "tcpip_adapter.h"
 
 #define MODNETWORK_INCLUDE_CONSTANTS (1)
 
-char *wifi_error_messages(esp_err_t n) {
-   switch (n) {
+NORETURN void _esp_exceptions(esp_err_t e) {
+   switch (e) {
       case ESP_ERR_WIFI_NOT_INIT: 
-        return "Wifi Not Initialized";
+        mp_raise_msg(&mp_type_OSError, "Wifi Not Initialized");
       case ESP_ERR_WIFI_NOT_START:
-        return "Wifi Not Started";
+        mp_raise_msg(&mp_type_OSError, "Wifi Not Started");
       case ESP_ERR_WIFI_CONN:
-        return "Wifi Internal Error";
+        mp_raise_msg(&mp_type_OSError, "Wifi Internal Error");
       case ESP_ERR_WIFI_SSID:
-        return "Wifi SSID Invalid";
+        mp_raise_msg(&mp_type_OSError, "Wifi SSID Invalid");
       case ESP_ERR_WIFI_FAIL:
-        return "Wifi Internal Failure";
+        mp_raise_msg(&mp_type_OSError, "Wifi Internal Failure");
       case ESP_ERR_WIFI_IF:
-        return "Wifi Invalid Interface";
+        mp_raise_msg(&mp_type_OSError, "Wifi Invalid Interface");
       case ESP_ERR_WIFI_MAC:
-        return "Wifi Invalid MAC Address";
+        mp_raise_msg(&mp_type_OSError, "Wifi Invalid MAC Address");
       case ESP_ERR_WIFI_ARG:
-        return "Wifi Invalid Argument";
+        mp_raise_msg(&mp_type_OSError, "Wifi Invalid Argument");
       case ESP_ERR_WIFI_MODE:
-        return "Wifi Invalid Mode";
+        mp_raise_msg(&mp_type_OSError, "Wifi Invalid Mode");
       case ESP_ERR_WIFI_PASSWORD:
-        return "Wifi Invalid Password";
+        mp_raise_msg(&mp_type_OSError, "Wifi Invalid Password");
       case ESP_ERR_WIFI_NVS:
-        return "Wifi Internal NVS Error";
+        mp_raise_msg(&mp_type_OSError, "Wifi Internal NVS Error");
+      case ESP_ERR_TCPIP_ADAPTER_INVALID_PARAMS:
+        mp_raise_msg(&mp_type_OSError, "TCP/IP Invalid Parameters");
+      case ESP_ERR_TCPIP_ADAPTER_IF_NOT_READY:
+        mp_raise_msg(&mp_type_OSError, "TCP/IP IF Not Ready");
+      case ESP_ERR_TCPIP_ADAPTER_DHCPC_START_FAILED:
+        mp_raise_msg(&mp_type_OSError, "TCP/IP DHCP Client Start Failed");
       case ESP_ERR_WIFI_TIMEOUT:
-        return "Wifi Timeout";
+        mp_raise_OSError(MP_ETIMEDOUT);
+      case ESP_ERR_TCPIP_ADAPTER_NO_MEM:
       case ESP_ERR_WIFI_NO_MEM:
-        return "Wifi Out of Memory";
+        mp_raise_OSError(MP_ENOMEM); 
       default:
-        return "Wifi Unknown Error";
+        nlr_raise(mp_obj_new_exception_msg_varg(
+          &mp_type_RuntimeError, "Wifi Unknown Error 0x%04x", e
+        ));
    }
 }
 
-#define ESP_EXCEPTIONS(x) do { if (x != ESP_OK) nlr_raise(mp_obj_new_exception_msg(&mp_type_RuntimeError, wifi_error_messages(x))); } while (0)
+static inline void esp_exceptions(esp_err_t e) {
+    if (e != ESP_OK) _esp_exceptions(e);
+}
+
+#define ESP_EXCEPTIONS(x) do { esp_exceptions(x); } while (0);
 
 typedef struct _wlan_if_obj_t {
     mp_obj_base_t base;
@@ -101,7 +119,7 @@ static esp_err_t event_handler(void *ctx, system_event_t *event) {
         // This is a workaround as ESP32 WiFi libs don't currently
         // auto-reassociate.
         ESP_LOGI("wifi", "STA_DISCONNECTED");
-        esp_wifi_connect(); // XXX error handling
+        ESP_EXCEPTIONS( esp_wifi_connect() );
         break;
     default:
         break;
@@ -109,13 +127,13 @@ static esp_err_t event_handler(void *ctx, system_event_t *event) {
     return ESP_OK;
 }
 
-void error_check(bool status, const char *msg) {
+/*void error_check(bool status, const char *msg) {
     if (!status) {
         nlr_raise(mp_obj_new_exception_msg(&mp_type_OSError, msg));
     }
 }
 
-/*STATIC void require_if(mp_obj_t wlan_if, int if_no) {
+STATIC void require_if(mp_obj_t wlan_if, int if_no) {
     wlan_if_obj_t *self = MP_OBJ_TO_PTR(wlan_if);
     if (self->if_id != if_no) {
         error_check(false, if_no == WIFI_IF_STA ? "STA required" : "AP required");
@@ -129,7 +147,7 @@ STATIC mp_obj_t get_wlan(mp_uint_t n_args, const mp_obj_t *args) {
     } else if (idx == WIFI_IF_AP) {
         return MP_OBJ_FROM_PTR(&wlan_ap_obj);
     } else {
-        nlr_raise(mp_obj_new_exception_msg(&mp_type_ValueError, "invalid WLAN interface identifier"));
+        mp_raise_msg(&mp_type_ValueError, "invalid WLAN interface identifier");
     }
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(get_wlan_obj, 0, 1, get_wlan);
@@ -249,7 +267,50 @@ STATIC mp_obj_t esp_isconnected(mp_obj_t self_in) {
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(esp_isconnected_obj, esp_isconnected);
 
 STATIC mp_obj_t esp_ifconfig(size_t n_args, const mp_obj_t *args) {
-    return mp_const_none;
+    wlan_if_obj_t *self = MP_OBJ_TO_PTR(args[0]);
+    tcpip_adapter_ip_info_t info;
+    ip_addr_t dns_addr;
+    tcpip_adapter_get_ip_info(self->if_id, &info);
+    if (n_args == 1) {
+        // get
+        dns_addr = dns_getserver(0);
+        mp_obj_t tuple[4] = {
+            netutils_format_ipv4_addr((uint8_t*)&info.ip, NETUTILS_BIG),
+            netutils_format_ipv4_addr((uint8_t*)&info.netmask, NETUTILS_BIG),
+            netutils_format_ipv4_addr((uint8_t*)&info.gw, NETUTILS_BIG),
+            netutils_format_ipv4_addr((uint8_t*)&dns_addr, NETUTILS_BIG),
+        };
+        return mp_obj_new_tuple(4, tuple);
+    } else {
+        // set
+        mp_obj_t *items;
+        mp_obj_get_array_fixed_n(args[1], 4, &items);
+        netutils_parse_ipv4_addr(items[0], (void*)&info.ip, NETUTILS_BIG);
+        if (mp_obj_is_integer(items[1])) {
+            // allow numeric netmask, i.e.:
+            // 24 -> 255.255.255.0
+            // 16 -> 255.255.0.0
+            // etc...
+            uint32_t* m = (uint32_t*)&info.netmask;
+            *m = htonl(0xffffffff << (32 - mp_obj_get_int(items[1])));
+        } else {
+            netutils_parse_ipv4_addr(items[1], (void*)&info.netmask, NETUTILS_BIG);
+        }
+        netutils_parse_ipv4_addr(items[2], (void*)&info.gw, NETUTILS_BIG);
+        netutils_parse_ipv4_addr(items[3], (void*)&dns_addr, NETUTILS_BIG);
+        // To set a static IP we have to disable DHCP first
+        if (self->if_id == WIFI_IF_STA) {
+            esp_err_t e = tcpip_adapter_dhcpc_stop(WIFI_IF_STA);
+            if (e != ESP_OK && e != ESP_ERR_TCPIP_ADAPTER_DHCP_ALREADY_STOPPED) _esp_exceptions(e);
+            ESP_EXCEPTIONS(tcpip_adapter_set_ip_info(WIFI_IF_STA, &info));
+        } else if (self->if_id == WIFI_IF_AP) {
+            esp_err_t e = tcpip_adapter_dhcps_stop(WIFI_IF_AP);
+            if (e != ESP_OK && e != ESP_ERR_TCPIP_ADAPTER_DHCP_ALREADY_STOPPED) _esp_exceptions(e);
+            ESP_EXCEPTIONS(tcpip_adapter_set_ip_info(WIFI_IF_AP, &info));
+            ESP_EXCEPTIONS(tcpip_adapter_dhcps_start(WIFI_IF_AP));
+        }
+        return mp_const_none;
+    }
 }
 
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(esp_ifconfig_obj, 1, 2, esp_ifconfig);
