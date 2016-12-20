@@ -4,6 +4,8 @@
  * The MIT License (MIT)
  *
  * Copyright (c) 2016 Nick Moore
+ * Based on esp8266/modnetwork.c which is Copyright (c) 2015 Paul Sokolovsky
+ * And the ESP IDF example code which is Public Domain / CC0
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -39,6 +41,8 @@
 #include "esp_log.h"
 #include "esp_event_loop.h"
 #include "esp_log.h"
+#include "lwip/dns.h"
+#include "tcpip_adapter.h"
 
 #define MODNETWORK_INCLUDE_CONSTANTS (1)
 
@@ -66,13 +70,20 @@ NORETURN void _esp_exceptions(esp_err_t e) {
         mp_raise_msg(&mp_type_OSError, "Wifi Invalid Password");
       case ESP_ERR_WIFI_NVS:
         mp_raise_msg(&mp_type_OSError, "Wifi Internal NVS Error");
+      case ESP_ERR_TCPIP_ADAPTER_INVALID_PARAMS:
+        mp_raise_msg(&mp_type_OSError, "TCP/IP Invalid Parameters");
+      case ESP_ERR_TCPIP_ADAPTER_IF_NOT_READY:
+        mp_raise_msg(&mp_type_OSError, "TCP/IP IF Not Ready");
+      case ESP_ERR_TCPIP_ADAPTER_DHCPC_START_FAILED:
+        mp_raise_msg(&mp_type_OSError, "TCP/IP DHCP Client Start Failed");
       case ESP_ERR_WIFI_TIMEOUT:
         mp_raise_OSError(MP_ETIMEDOUT);
+      case ESP_ERR_TCPIP_ADAPTER_NO_MEM:
       case ESP_ERR_WIFI_NO_MEM:
         mp_raise_OSError(MP_ENOMEM); 
       default:
         nlr_raise(mp_obj_new_exception_msg_varg(
-          &mp_type_RuntimeError, "Wifi Unknown Error %d", e
+          &mp_type_RuntimeError, "Wifi Unknown Error 0x%04x", e
         ));
    }
 }
@@ -256,7 +267,50 @@ STATIC mp_obj_t esp_isconnected(mp_obj_t self_in) {
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(esp_isconnected_obj, esp_isconnected);
 
 STATIC mp_obj_t esp_ifconfig(size_t n_args, const mp_obj_t *args) {
-    return mp_const_none;
+    wlan_if_obj_t *self = MP_OBJ_TO_PTR(args[0]);
+    tcpip_adapter_ip_info_t info;
+    ip_addr_t dns_addr;
+    tcpip_adapter_get_ip_info(self->if_id, &info);
+    if (n_args == 1) {
+        // get
+        dns_addr = dns_getserver(0);
+        mp_obj_t tuple[4] = {
+            netutils_format_ipv4_addr((uint8_t*)&info.ip, NETUTILS_BIG),
+            netutils_format_ipv4_addr((uint8_t*)&info.netmask, NETUTILS_BIG),
+            netutils_format_ipv4_addr((uint8_t*)&info.gw, NETUTILS_BIG),
+            netutils_format_ipv4_addr((uint8_t*)&dns_addr, NETUTILS_BIG),
+        };
+        return mp_obj_new_tuple(4, tuple);
+    } else {
+        // set
+        mp_obj_t *items;
+        mp_obj_get_array_fixed_n(args[1], 4, &items);
+        netutils_parse_ipv4_addr(items[0], (void*)&info.ip, NETUTILS_BIG);
+        if (mp_obj_is_integer(items[1])) {
+            // allow numeric netmask, i.e.:
+            // 24 -> 255.255.255.0
+            // 16 -> 255.255.0.0
+            // etc...
+            uint32_t* m = (uint32_t*)&info.netmask;
+            *m = htonl(0xffffffff << (32 - mp_obj_get_int(items[1])));
+        } else {
+            netutils_parse_ipv4_addr(items[1], (void*)&info.netmask, NETUTILS_BIG);
+        }
+        netutils_parse_ipv4_addr(items[2], (void*)&info.gw, NETUTILS_BIG);
+        netutils_parse_ipv4_addr(items[3], (void*)&dns_addr, NETUTILS_BIG);
+        // To set a static IP we have to disable DHCP first
+        if (self->if_id == WIFI_IF_STA) {
+            esp_err_t e = tcpip_adapter_dhcpc_stop(WIFI_IF_STA);
+            if (e != ESP_OK && e != ESP_ERR_TCPIP_ADAPTER_DHCP_ALREADY_STOPPED) _esp_exceptions(e);
+            ESP_EXCEPTIONS(tcpip_adapter_set_ip_info(WIFI_IF_STA, &info));
+        } else if (self->if_id == WIFI_IF_AP) {
+            esp_err_t e = tcpip_adapter_dhcps_stop(WIFI_IF_AP);
+            if (e != ESP_OK && e != ESP_ERR_TCPIP_ADAPTER_DHCP_ALREADY_STOPPED) _esp_exceptions(e);
+            ESP_EXCEPTIONS(tcpip_adapter_set_ip_info(WIFI_IF_AP, &info));
+            ESP_EXCEPTIONS(tcpip_adapter_dhcps_start(WIFI_IF_AP));
+        }
+        return mp_const_none;
+    }
 }
 
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(esp_ifconfig_obj, 1, 2, esp_ifconfig);
