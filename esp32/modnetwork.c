@@ -33,6 +33,7 @@
 #include "py/nlr.h"
 #include "py/objlist.h"
 #include "py/runtime.h"
+#include "py/runtime0.h"
 #include "py/mphal.h"
 #include "py/mperrno.h"
 #include "netutils.h"
@@ -96,12 +97,13 @@ static inline void esp_exceptions(esp_err_t e) {
 
 typedef struct _wlan_if_obj_t {
     mp_obj_base_t base;
-    int if_id;
+    wifi_interface_t if_id;
+    uint8_t *mac;
 } wlan_if_obj_t;
 
 const mp_obj_type_t wlan_if_type;
-STATIC const wlan_if_obj_t wlan_sta_obj = {{&wlan_if_type}, WIFI_IF_STA};
-STATIC const wlan_if_obj_t wlan_ap_obj = {{&wlan_if_type}, WIFI_IF_AP};
+STATIC wlan_if_obj_t wlan_sta_obj = {{&wlan_if_type}, WIFI_IF_STA, NULL};
+STATIC wlan_if_obj_t wlan_ap_obj = {{&wlan_if_type}, WIFI_IF_AP, NULL};
 
 //static wifi_config_t wifi_ap_config = {{{0}}};
 static wifi_config_t wifi_sta_config = {{{0}}};
@@ -168,15 +170,37 @@ STATIC void require_if(mp_obj_t wlan_if, int if_no) {
     }
 }*/
 
+void setup_wlan_object(wlan_if_obj_t * wlan_obj) {
+    if (wlan_obj->mac != NULL) {
+        m_free(wlan_obj->mac);
+    }
+
+    wlan_obj->mac = (uint8_t*) m_new(uint8_t, 6);
+
+    if(wlan_obj->if_id == WIFI_IF_STA) {
+        esp_wifi_set_mode(WIFI_MODE_STA);
+        esp_wifi_get_mac(WIFI_IF_STA, wlan_obj->mac);
+    } else if(wlan_obj->if_id == WIFI_IF_AP) {
+        esp_wifi_set_mode(WIFI_MODE_AP);
+        esp_wifi_get_mac(WIFI_IF_AP, wlan_obj->mac);
+    }
+}
+
 STATIC mp_obj_t get_wlan(mp_uint_t n_args, const mp_obj_t *args) {
     int idx = (n_args > 0) ? mp_obj_get_int(args[0]) : WIFI_IF_STA;
+
+    wlan_if_obj_t * wlan_obj;
     if (idx == WIFI_IF_STA) {
-        return MP_OBJ_FROM_PTR(&wlan_sta_obj);
+        wlan_obj = MP_OBJ_FROM_PTR(&wlan_sta_obj);
     } else if (idx == WIFI_IF_AP) {
-        return MP_OBJ_FROM_PTR(&wlan_ap_obj);
+        wlan_obj = MP_OBJ_FROM_PTR(&wlan_ap_obj);
     } else {
         mp_raise_msg(&mp_type_ValueError, "invalid WLAN interface identifier");
     }
+
+    setup_wlan_object(wlan_obj);
+
+    return wlan_obj;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(get_wlan_obj, 0, 1, get_wlan);
 
@@ -345,10 +369,88 @@ STATIC mp_obj_t esp_ifconfig(size_t n_args, const mp_obj_t *args) {
 
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(esp_ifconfig_obj, 1, 2, esp_ifconfig);
 
-STATIC mp_obj_t esp_config(size_t n_args, const mp_obj_t *args, mp_map_t *kwargs) {
+STATIC mp_obj_t esp_mac_set(wlan_if_obj_t *self, mp_obj_t mac_address) {
+    mp_buffer_info_t buffer_info;
+    mp_get_buffer_raise(mac_address, &buffer_info, MP_BUFFER_READ);
+
+    if (buffer_info.len != 6) {
+        mp_raise_ValueError("Invalid mac address: address has incorrect length.");
+        return mp_const_none;
+    }
+
+    // as per https://esp-idf.readthedocs.io/en/latest/api/esp_wifi.html#_CPPv216esp_wifi_set_mac16wifi_interface_tA6_7uint8_t
+    // the first bit must not be 1
+    if (*((uint8_t *) buffer_info.buf) & 1) {
+        mp_raise_ValueError("Invalid mac address: the first bit of the address must not be 1.");
+        return mp_const_none;
+    }
+
+    // as per https://esp-idf.readthedocs.io/en/latest/api/esp_wifi.html#_CPPv216esp_wifi_set_mac16wifi_interface_tA6_7uint8_t
+    // the mac addresses of the STA and AP interfaces must not match
+    uint8_t other_interface_mac[6];
+    esp_wifi_get_mac(self->if_id == WIFI_IF_STA ? WIFI_IF_AP : WIFI_IF_STA, other_interface_mac);
+    if (mp_seq_cmp_bytes(MP_BINARY_OP_EQUAL, buffer_info.buf, 6, other_interface_mac, 6)) {
+        mp_raise_ValueError("Invalid mac address: the addresses of the STA and the AP interface must be different.");
+        return mp_const_none;
+    }
+
+    esp_wifi_stop();
+
+    ESP_EXCEPTIONS(esp_wifi_set_mac(self->if_id, buffer_info.buf));
+    memcpy(self->mac, buffer_info.buf, 6);
+
+    esp_wifi_start();
+
     return mp_const_none;
 }
 
+STATIC mp_obj_t esp_config_get(wlan_if_obj_t *self, mp_obj_t config_parameter_name_obj) {
+
+    mp_uint_t config_parameter_name_length;
+    const char *config_parameter_name = NULL;
+    config_parameter_name = mp_obj_str_get_data(config_parameter_name_obj, &config_parameter_name_length);
+
+    if (strcmp(config_parameter_name, "mac") == 0) {
+        return mp_obj_new_bytes((const byte *) self->mac, 6);
+    }
+
+    return mp_const_none;
+}
+
+STATIC const mp_arg_t esp_config_allowed_args[] = {
+        { MP_QSTR_property_name,    MP_ARG_OBJ                 ,    {.u_obj = mp_const_none} },
+        { MP_QSTR_mac,              MP_ARG_KW_ONLY | MP_ARG_OBJ,    {.u_obj = mp_const_none} },
+//        { MP_QSTR_essid,            MP_ARG_KW_ONLY | MP_ARG_OBJ,    {.u_obj = mp_const_none} },
+//        { MP_QSTR_channel,          MP_ARG_KW_ONLY | MP_ARG_INT,    {.u_obj = MP_OBJ_NULL}},
+//        { MP_QSTR_hidden,           MP_ARG_KW_ONLY | MP_ARG_BOOL,   {.u_bool = false} },
+//        { MP_QSTR_authmode,         MP_ARG_KW_ONLY | MP_ARG_INT,    {.u_int = -1} }
+//        { MP_QSTR_password,         MP_ARG_KW_ONLY | MP_ARG_OBJ,    {.u_obj = mp_const_none} }
+};
+STATIC mp_obj_t esp_config(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+    enum {
+        ARG_property_name = 0,
+        ARG_mac,
+//        ARG_essid,
+//        ARG_channel,
+//        ARG_hidden,
+//        ARG_authmode,
+//        ARG_password
+    };
+
+    wlan_if_obj_t *self = MP_OBJ_TO_PTR(pos_args[0]);
+    mp_arg_val_t args[MP_ARRAY_SIZE(esp_config_allowed_args)];
+    mp_arg_parse_all(n_args - 1, pos_args + 1, kw_args, MP_ARRAY_SIZE(esp_config_allowed_args), esp_config_allowed_args, args);
+
+    if (args[ARG_property_name].u_obj != mp_const_none) {
+        return esp_config_get(self, args[ARG_property_name].u_obj);
+    }
+
+    if (args[ARG_mac].u_obj != mp_const_none) {
+        esp_mac_set(self, args[ARG_mac].u_obj);
+    }
+
+    return mp_const_none;
+}
 STATIC MP_DEFINE_CONST_FUN_OBJ_KW(esp_config_obj, 1, esp_config);
 
 STATIC const mp_map_elem_t wlan_if_locals_dict_table[] = {
