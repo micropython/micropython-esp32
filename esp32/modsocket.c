@@ -4,6 +4,9 @@
  * The MIT License (MIT)
  *
  * Copyright (c) 2016 Nick Moore
+ * Based on extmod/modlwip.c
+ * Copyright (c) 2013, 2014 Damien P. George
+ * Copyright (c) 2015 Galen Hazelwood
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -33,19 +36,21 @@
 #include "py/objlist.h"
 #include "py/runtime.h"
 #include "py/mphal.h"
+#include "py/stream.h"
 
 #include "lwip/sockets.h"
 #include "lwip/netdb.h"
 #include "esp_log.h"
 
-typedef struct _socket_t {
+typedef struct _socket_obj_t {
     mp_obj_base_t base;
     int fd;
-} socket_t;
-
+    uint8_t domain;
+    uint8_t type;
+} socket_obj_t;
 
 STATIC mp_obj_t socket_close(const mp_obj_t arg0) {
-    socket_t *self = MP_OBJ_TO_PTR(arg0);
+    socket_obj_t *self = MP_OBJ_TO_PTR(arg0);
     lwip_close(self->fd);
     return mp_const_none;
 }
@@ -72,7 +77,7 @@ int _socket_getaddrinfo(const mp_obj_t addrtuple, struct addrinfo **resp) {
 }
 
 STATIC mp_obj_t socket_bind(const mp_obj_t arg0, const mp_obj_t arg1) {
-    socket_t *self = MP_OBJ_TO_PTR(arg0);
+    socket_obj_t *self = MP_OBJ_TO_PTR(arg0);
     struct addrinfo *res;
     _socket_getaddrinfo(arg1, &res);
     lwip_bind(self->fd, res->ai_addr, res->ai_addrlen);
@@ -81,7 +86,7 @@ STATIC mp_obj_t socket_bind(const mp_obj_t arg0, const mp_obj_t arg1) {
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(socket_bind_obj, socket_bind);
     
 STATIC mp_obj_t socket_listen(const mp_obj_t arg0, const mp_obj_t arg1) {
-    socket_t *self = MP_OBJ_TO_PTR(arg0);
+    socket_obj_t *self = MP_OBJ_TO_PTR(arg0);
     int backlog = mp_obj_get_int(arg1);
     int x = lwip_listen(self->fd, backlog);
     return (x == 0) ? mp_const_true : mp_const_false;
@@ -89,10 +94,10 @@ STATIC mp_obj_t socket_listen(const mp_obj_t arg0, const mp_obj_t arg1) {
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(socket_listen_obj, socket_listen);
 
 STATIC mp_obj_t socket_accept(const mp_obj_t arg0) {
-    socket_t *self = MP_OBJ_TO_PTR(arg0);
+    socket_obj_t *self = MP_OBJ_TO_PTR(arg0);
     int x = lwip_accept(self->fd, NULL, NULL);
     if (x >= 0) { 
-        socket_t *sock = (socket_t *)calloc(1, sizeof(socket_t));
+        socket_obj_t *sock = (socket_obj_t *)calloc(1, sizeof(socket_obj_t));
         sock->base.type = self->base.type;
         sock->fd = x;
         return MP_OBJ_FROM_PTR(sock);
@@ -102,7 +107,7 @@ STATIC mp_obj_t socket_accept(const mp_obj_t arg0) {
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(socket_accept_obj, socket_accept);
 
 STATIC mp_obj_t socket_connect(const mp_obj_t arg0, const mp_obj_t arg1) {
-    socket_t *self = MP_OBJ_TO_PTR(arg0);
+    socket_obj_t *self = MP_OBJ_TO_PTR(arg0);
     struct addrinfo *res;
     _socket_getaddrinfo(arg1, &res);
     int r = lwip_connect(self->fd, res->ai_addr, res->ai_addrlen);
@@ -112,8 +117,8 @@ STATIC mp_obj_t socket_connect(const mp_obj_t arg0, const mp_obj_t arg1) {
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(socket_connect_obj, socket_connect);
 
 STATIC mp_obj_t socket_settimeout(const mp_obj_t arg0, const mp_obj_t arg1) {
-    socket_t *self = MP_OBJ_TO_PTR(arg0);
-    int timeout = mp_obj_get_int(arg1);
+    //socket_t *self = MP_OBJ_TO_PTR(arg0);
+    //int timeout = mp_obj_get_int(arg1);
     //lwip_settimeout(self->fd, timeout);
     return mp_const_none;
 }
@@ -121,7 +126,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_2(socket_settimeout_obj, socket_settimeout);
 
 STATIC mp_obj_t socket_read(const mp_obj_t arg0) {
     byte buf[1024];
-    socket_t *self = MP_OBJ_TO_PTR(arg0);
+    socket_obj_t *self = MP_OBJ_TO_PTR(arg0);
     int x = lwip_recvfrom(self->fd, buf, sizeof(buf), MSG_DONTWAIT, NULL, NULL);
     if (x >= 0) return mp_obj_new_bytes(buf, x);
     return mp_const_none;
@@ -129,7 +134,7 @@ STATIC mp_obj_t socket_read(const mp_obj_t arg0) {
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(socket_read_obj, socket_read);
 
 STATIC mp_obj_t socket_write(const mp_obj_t arg0, const mp_obj_t arg1) {
-    socket_t *self = MP_OBJ_TO_PTR(arg0);
+    socket_obj_t *self = MP_OBJ_TO_PTR(arg0);
     mp_uint_t datalen;
     const char *data = mp_obj_str_get_data(arg1, &datalen);
     int x = lwip_write(self->fd, data, datalen);
@@ -138,12 +143,33 @@ STATIC mp_obj_t socket_write(const mp_obj_t arg0, const mp_obj_t arg1) {
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(socket_write_obj, socket_write);
 
 STATIC mp_obj_t socket_fileno(const mp_obj_t arg0) {
-    socket_t *self = MP_OBJ_TO_PTR(arg0);
+    socket_obj_t *self = MP_OBJ_TO_PTR(arg0);
     return mp_obj_new_int(self->fd);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(socket_fileno_obj, socket_fileno);
 
+STATIC mp_uint_t socket_stream_read(mp_obj_t self_in, void *buf, mp_uint_t size, int *errcode) {
+    socket_obj_t *socket = self_in;
+    int x = lwip_recvfrom(socket->fd, buf, size, MSG_DONTWAIT, NULL, NULL);
+    if (x >= 0) return x;
+    *errcode = x;
+    return 0;
+}
+
+STATIC mp_uint_t socket_stream_write(mp_obj_t self_in, const void *buf, mp_uint_t size, int *errcode) {
+    socket_obj_t *socket = self_in;
+    int x = lwip_write(socket->fd, buf, size);
+    if (x >= 0) return x;
+    *errcode = x;
+    return 0;
+}
+
+STATIC mp_uint_t socket_stream_ioctl(mp_obj_t self_in, mp_uint_t request, uintptr_t arg, int *errcode) {
+    return 0;
+}
+
 STATIC const mp_map_elem_t socket_locals_dict_table[] = {
+    { MP_OBJ_NEW_QSTR(MP_QSTR___del__), (mp_obj_t)&socket_close_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_close), (mp_obj_t)&socket_close_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_bind), (mp_obj_t)&socket_bind_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_listen), (mp_obj_t)&socket_listen_obj },
@@ -156,24 +182,31 @@ STATIC const mp_map_elem_t socket_locals_dict_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR_recvfrom), mp_const_none },
     { MP_OBJ_NEW_QSTR(MP_QSTR_setsockopt), mp_const_none },
     { MP_OBJ_NEW_QSTR(MP_QSTR_settimeout), mp_const_none },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_setblocking), mp_const_none },
     { MP_OBJ_NEW_QSTR(MP_QSTR_makefile), mp_const_none },
-    { MP_OBJ_NEW_QSTR(MP_QSTR_read), (mp_obj_t)&socket_read_obj },
-    { MP_OBJ_NEW_QSTR(MP_QSTR_readinto), mp_const_none },
-    { MP_OBJ_NEW_QSTR(MP_QSTR_readline), mp_const_none },
-    { MP_OBJ_NEW_QSTR(MP_QSTR_write), (mp_obj_t)&socket_write_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_fileno), (mp_obj_t)&socket_fileno_obj },
-    // XXX also need to catch destructor so we can free!
+
+    { MP_OBJ_NEW_QSTR(MP_QSTR_read), (mp_obj_t)&mp_stream_read_obj },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_readline), (mp_obj_t)&mp_stream_unbuffered_readline_obj},
+    { MP_OBJ_NEW_QSTR(MP_QSTR_write), (mp_obj_t)&mp_stream_write_obj },
 };
 STATIC MP_DEFINE_CONST_DICT(socket_locals_dict, socket_locals_dict_table);
 
-const mp_obj_type_t socket_type = {
+STATIC const mp_stream_p_t socket_stream_p = {
+    .read = socket_stream_read,
+    .write = socket_stream_write,
+    .ioctl = socket_stream_ioctl
+};
+
+STATIC const mp_obj_type_t socket_type = {
     { &mp_type_type },
     .name = MP_QSTR_socket,
+    .protocol = &socket_stream_p,
     .locals_dict = (mp_obj_t)&socket_locals_dict,
 };
 
 STATIC mp_obj_t get_socket(mp_uint_t n_args, const mp_obj_t *args) {
-    socket_t *sock = (socket_t *)calloc(1, sizeof(socket_t));
+    socket_obj_t *sock = (socket_obj_t *)calloc(1, sizeof(socket_obj_t));
     sock->base.type = &socket_type;
     sock->fd = lwip_socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     return MP_OBJ_FROM_PTR(sock);
