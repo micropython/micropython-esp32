@@ -62,6 +62,8 @@ INC += -I$(ESPCOMP)/newlib/platform_include
 INC += -I$(ESPCOMP)/xtensa-debug-module/include
 INC += -I$(ESPCOMP)/wpa_supplicant/include
 INC += -I$(ESPCOMP)/wpa_supplicant/port/include
+INC += -I$(ESPCOMP)/ethernet/include
+INC += -I$(ESPCOMP)/tcpip_adapter/include
 
 CFLAGS = -std=gnu99 -Os -ffunction-sections -fdata-sections -fstrict-volatile-bitfields -mlongcalls -nostdlib -Wall -Werror -Wno-error=unused-function -Wno-error=unused-but-set-variable -Wno-error=unused-variable -Wno-error=deprecated-declarations -DMBEDTLS_CONFIG_FILE='"mbedtls/esp_config.h"' -DHAVE_CONFIG_H -DESP_PLATFORM  $(INC)
 
@@ -99,6 +101,8 @@ SRC_C = \
 	moduos.c \
 	machine_pin.c \
 	modmachine.c \
+	modnetwork.c \
+	modsocket.c \
 	modesp.c \
 	$(SRC_MOD)
 
@@ -193,7 +197,13 @@ ESPIDF_ESP32_O = $(addprefix $(ESPCOMP)/esp32/,\
 	cpu_util.o \
 	system_api.o \
 	hw_random.o \
+	phy_init.o \
 	intr_alloc.o \
+	)
+
+ESPIDF_ETHERNET_O = $(addprefix $(ESPIDF)/components/ethernet/,\
+	emac_dev.o \
+	emac_main.o \
 	)
 
 $(BUILD)/$(ESPCOMP)/expat/%.o: CFLAGS += -Wno-unused-function
@@ -255,7 +265,7 @@ ESPIDF_XTENSA_DEBUG_MODULE_O = $(addprefix $(ESPCOMP)/xtensa-debug-module/,\
 	trax.o \
 	)
 
-ESPIDF_TCPIP_ADAPTOR_O = $(addprefix $(ESPCOMP)/tcpip_adapter/,\
+ESPIDF_TCPIP_ADAPTER_O = $(addprefix $(ESPCOMP)/tcpip_adapter/,\
 	tcpip_adapter_lwip.o \
 	)
 
@@ -366,6 +376,7 @@ ESPIDF_LWIP_O = $(addprefix $(ESPCOMP)/lwip/,\
 	netif/ethernetif.o \
 	port/freertos/sys_arch.o \
 	port/netif/wlanif.o \
+        port/netif/ethernetif.o \
 	)
 
 ESPIDF_MBEDTLS_O = $(addprefix $(ESPCOMP)/mbedtls/,\
@@ -467,12 +478,14 @@ ESPIDF_WPA_SUPPLICANT_O = $(addprefix $(ESPCOMP)/wpa_supplicant/,\
 	src/crypto/bignum.o \
 	src/crypto/crypto_internal-modexp.o \
 	src/crypto/crypto_internal-cipher.o \
+	port/os_xtensa.o \
 	)
 
 OBJ_ESPIDF =
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_NEWLIB_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_DRIVER_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_ESP32_O))
+OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_ETHERNET_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_EXPAT_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_FREERTOS_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_VFS_O))
@@ -487,7 +500,6 @@ OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_NVS_FLASH_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_OPENSSL_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_SPI_FLASH_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_WPA_SUPPLICANT_O))
-
 ################################################################################
 # Main targets
 

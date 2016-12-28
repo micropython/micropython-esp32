@@ -40,6 +40,7 @@
 #define MICROPY_CPYTHON_COMPAT              (1)
 #define MICROPY_STREAMS_NON_BLOCK           (1)
 #define MICROPY_STREAMS_POSIX_API           (0)
+#define MICROPY_MODULE_BUILTIN_INIT         (1)
 #define MICROPY_MODULE_WEAK_LINKS           (1)
 #define MICROPY_MODULE_FROZEN_STR           (0)
 #define MICROPY_MODULE_FROZEN_MPY           (1)
@@ -141,16 +142,16 @@ extern const struct _mp_obj_module_t esp_module;
 extern const struct _mp_obj_module_t utime_module;
 extern const struct _mp_obj_module_t uos_module;
 extern const struct _mp_obj_module_t mp_module_machine;
-//extern const struct _mp_obj_module_t network_module;
+extern const struct _mp_obj_module_t mp_module_network;
+extern const struct _mp_obj_module_t mp_module_socket;
 
 #define MICROPY_PORT_BUILTIN_MODULES \
     { MP_OBJ_NEW_QSTR(MP_QSTR_esp), (mp_obj_t)&esp_module }, \
     { MP_OBJ_NEW_QSTR(MP_QSTR_utime), (mp_obj_t)&utime_module }, \
     { MP_OBJ_NEW_QSTR(MP_QSTR_uos), (mp_obj_t)&uos_module }, \
     { MP_OBJ_NEW_QSTR(MP_QSTR_machine), (mp_obj_t)&mp_module_machine }, \
-    /*
-    { MP_OBJ_NEW_QSTR(MP_QSTR_network), (mp_obj_t)&network_module }, \
-    */
+    { MP_OBJ_NEW_QSTR(MP_QSTR_network), (mp_obj_t)&mp_module_network }, \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_socket), (mp_obj_t)&mp_module_socket }, \
 
 #define MICROPY_PORT_BUILTIN_MODULE_WEAK_LINKS \
     { MP_OBJ_NEW_QSTR(MP_QSTR_binascii), (mp_obj_t)&mp_module_ubinascii }, \
