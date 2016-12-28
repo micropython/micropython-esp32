@@ -117,30 +117,34 @@ STATIC mp_obj_t socket_connect(const mp_obj_t arg0, const mp_obj_t arg1) {
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(socket_connect_obj, socket_connect);
 
 STATIC mp_obj_t socket_settimeout(const mp_obj_t arg0, const mp_obj_t arg1) {
-    //socket_t *self = MP_OBJ_TO_PTR(arg0);
-    //int timeout = mp_obj_get_int(arg1);
-    //lwip_settimeout(self->fd, timeout);
+    socket_obj_t *self = MP_OBJ_TO_PTR(arg0);
+    struct timeval timeout = {
+        .tv_sec = mp_obj_get_int(arg1),
+        .tv_usec = 0
+    };
+    lwip_setsockopt(self->fd, SOL_SOCKET, SO_SNDTIMEO, (const void *)&timeout, sizeof(timeout));
+    lwip_setsockopt(self->fd, SOL_SOCKET, SO_RCVTIMEO, (const void *)&timeout, sizeof(timeout));
     return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(socket_settimeout_obj, socket_settimeout);
 
-STATIC mp_obj_t socket_read(const mp_obj_t arg0) {
+STATIC mp_obj_t socket_recv(const mp_obj_t arg0) {
     byte buf[1024];
     socket_obj_t *self = MP_OBJ_TO_PTR(arg0);
-    int x = lwip_recvfrom(self->fd, buf, sizeof(buf), MSG_DONTWAIT, NULL, NULL);
+    int x = lwip_recvfrom(self->fd, buf, sizeof(buf), 0, NULL, NULL);
     if (x >= 0) return mp_obj_new_bytes(buf, x);
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(socket_read_obj, socket_read);
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(socket_recv_obj, socket_recv);
 
-STATIC mp_obj_t socket_write(const mp_obj_t arg0, const mp_obj_t arg1) {
+STATIC mp_obj_t socket_send(const mp_obj_t arg0, const mp_obj_t arg1) {
     socket_obj_t *self = MP_OBJ_TO_PTR(arg0);
     mp_uint_t datalen;
     const char *data = mp_obj_str_get_data(arg1, &datalen);
     int x = lwip_write(self->fd, data, datalen);
     return mp_obj_new_int(x);
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(socket_write_obj, socket_write);
+STATIC MP_DEFINE_CONST_FUN_OBJ_2(socket_send_obj, socket_send);
 
 STATIC mp_obj_t socket_fileno(const mp_obj_t arg0) {
     socket_obj_t *self = MP_OBJ_TO_PTR(arg0);
@@ -150,7 +154,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(socket_fileno_obj, socket_fileno);
 
 STATIC mp_uint_t socket_stream_read(mp_obj_t self_in, void *buf, mp_uint_t size, int *errcode) {
     socket_obj_t *socket = self_in;
-    int x = lwip_recvfrom(socket->fd, buf, size, MSG_DONTWAIT, NULL, NULL);
+    int x = lwip_recvfrom(socket->fd, buf, size, 0, NULL, NULL);
     if (x >= 0) return x;
     *errcode = x;
     return 0;
@@ -175,13 +179,13 @@ STATIC const mp_map_elem_t socket_locals_dict_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR_listen), (mp_obj_t)&socket_listen_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_accept), (mp_obj_t)&socket_accept_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_connect), (mp_obj_t)&socket_connect_obj },
-    { MP_OBJ_NEW_QSTR(MP_QSTR_send), mp_const_none },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_send), (mp_obj_t)&socket_send_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_sendall), mp_const_none },
-    { MP_OBJ_NEW_QSTR(MP_QSTR_recv), mp_const_none },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_recv), (mp_obj_t)&socket_recv_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_sendto), mp_const_none },
     { MP_OBJ_NEW_QSTR(MP_QSTR_recvfrom), mp_const_none },
     { MP_OBJ_NEW_QSTR(MP_QSTR_setsockopt), mp_const_none },
-    { MP_OBJ_NEW_QSTR(MP_QSTR_settimeout), mp_const_none },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_settimeout), (mp_obj_t)&socket_settimeout_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_setblocking), mp_const_none },
     { MP_OBJ_NEW_QSTR(MP_QSTR_makefile), mp_const_none },
     { MP_OBJ_NEW_QSTR(MP_QSTR_fileno), (mp_obj_t)&socket_fileno_obj },
