@@ -47,6 +47,7 @@ typedef struct _socket_obj_t {
     int fd;
     uint8_t domain;
     uint8_t type;
+    uint8_t proto;
 } socket_obj_t;
 
 STATIC mp_obj_t socket_close(const mp_obj_t arg0) {
@@ -55,6 +56,9 @@ STATIC mp_obj_t socket_close(const mp_obj_t arg0) {
     return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(socket_close_obj, socket_close);
+
+// XXX TODO change calls for bind and connect to work the same as ESP8266
+// micropython
 
 int _socket_getaddrinfo2(const mp_obj_t host, const mp_obj_t port, struct addrinfo **resp) {
     mp_uint_t hostlen, portlen;
@@ -169,8 +173,11 @@ STATIC mp_uint_t socket_stream_write(mp_obj_t self_in, const void *buf, mp_uint_
 }
 
 STATIC mp_uint_t socket_stream_ioctl(mp_obj_t self_in, mp_uint_t request, uintptr_t arg, int *errcode) {
+    // XXX TODO support MP_STREAM_POLL at least.
     return 0;
 }
+
+// XXX TODO missing methods ...
 
 STATIC const mp_map_elem_t socket_locals_dict_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR___del__), (mp_obj_t)&socket_close_obj },
@@ -210,9 +217,13 @@ STATIC const mp_obj_type_t socket_type = {
 };
 
 STATIC mp_obj_t get_socket(mp_uint_t n_args, const mp_obj_t *args) {
+    // XXX TODO support for UDP and RAW.
     socket_obj_t *sock = (socket_obj_t *)calloc(1, sizeof(socket_obj_t));
     sock->base.type = &socket_type;
-    sock->fd = lwip_socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    sock->domain = AF_INET;
+    sock->type = SOCK_STREAM;
+    sock->proto = IPPROTO_TCP;
+    sock->fd = lwip_socket(sock->domain, sock->type, sock->proto);
     return MP_OBJ_FROM_PTR(sock);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(get_socket_obj, 0, 3, get_socket);
@@ -228,6 +239,14 @@ STATIC const mp_map_elem_t mp_module_socket_globals_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR___name__), MP_OBJ_NEW_QSTR(MP_QSTR_socket) },
     { MP_OBJ_NEW_QSTR(MP_QSTR_socket), (mp_obj_t)&get_socket_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_getaddrinfo), (mp_obj_t)&esp_socket_getaddrinfo_obj },
+
+    { MP_OBJ_NEW_QSTR(MP_QSTR_AF_INET), MP_OBJ_NEW_SMALL_INT(AF_INET) },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_AF_INET6), MP_OBJ_NEW_SMALL_INT(AF_INET6) },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_SOCK_STREAM), MP_OBJ_NEW_SMALL_INT(SOCK_STREAM) },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_SOCK_DGRAM), MP_OBJ_NEW_SMALL_INT(SOCK_DGRAM) },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_SOCK_RAW), MP_OBJ_NEW_SMALL_INT(SOCK_RAW) },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_IPPROTO_TCP), MP_OBJ_NEW_SMALL_INT(IPPROTO_TCP) },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_IPPROTO_UDP), MP_OBJ_NEW_SMALL_INT(IPPROTO_UDP) },
 };
 
 STATIC MP_DEFINE_CONST_DICT(mp_module_socket_globals, mp_module_socket_globals_table);
