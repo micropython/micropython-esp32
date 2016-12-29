@@ -228,7 +228,7 @@ STATIC mp_obj_t esp_connect(mp_uint_t n_args, const mp_obj_t *args) {
     mp_uint_t len;
     const char *p;
     if (n_args > 1) {
-        bzero((void *)&wifi_sta_config, sizeof(wifi_sta_config));
+        memset(&wifi_sta_config, 0, sizeof(wifi_sta_config));
         p = mp_obj_str_get_data(args[1], &len);
         memcpy(wifi_sta_config.sta.ssid, p, MIN(len, sizeof(wifi_sta_config.sta.ssid)));
         p = (n_args > 2) ? mp_obj_str_get_data(args[2], &len) : "";
