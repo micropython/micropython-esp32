@@ -106,6 +106,12 @@ STATIC const wlan_if_obj_t wlan_ap_obj = {{&wlan_if_type}, WIFI_IF_AP};
 //static wifi_config_t wifi_ap_config = {{{0}}};
 static wifi_config_t wifi_sta_config = {{{0}}};
 
+// Set to "true" if the STA interface is requested to be connected by the
+// user, used for automatic reassociation.
+static bool wifi_sta_connected = false;
+
+// This function is called by the system-event task and so runs in a different
+// thread to the main MicroPython task.  It must not raise any Python exceptions.
 static esp_err_t event_handler(void *ctx, system_event_t *event) {
    ESP_LOGI("event_handler", "event %d", event->event_id);
    switch(event->event_id) {
@@ -115,12 +121,34 @@ static esp_err_t event_handler(void *ctx, system_event_t *event) {
     case SYSTEM_EVENT_STA_GOT_IP:
         ESP_LOGI("wifi", "GOT_IP");
         break;
-    case SYSTEM_EVENT_STA_DISCONNECTED:
+    case SYSTEM_EVENT_STA_DISCONNECTED: {
         // This is a workaround as ESP32 WiFi libs don't currently
         // auto-reassociate.
-        ESP_LOGI("wifi", "STA_DISCONNECTED");
-        ESP_EXCEPTIONS( esp_wifi_connect() );
+        system_event_sta_disconnected_t *disconn = &event->event_info.disconnected;
+        ESP_LOGI("wifi", "STA_DISCONNECTED, reason:%d", disconn->reason);
+        switch (disconn->reason) {
+            case WIFI_REASON_AUTH_FAIL:
+                mp_printf(MP_PYTHON_PRINTER, "authentication failed");
+                wifi_sta_connected = false;
+                break;
+            default:
+                // Let other errors through and try to reconnect.
+                break;
+        }
+        if (wifi_sta_connected) {
+            wifi_mode_t mode;
+            if (esp_wifi_get_mode(&mode) == ESP_OK) {
+                if (mode & WIFI_MODE_STA) {
+                    // STA is active so attempt to reconnect.
+                    esp_err_t e = esp_wifi_connect();
+                    if (e != ESP_OK) {
+                        mp_printf(MP_PYTHON_PRINTER, "error attempting to reconnect: 0x%04x", e);
+                    }
+                }
+            }
+        }
         break;
+    }
     default:
         break;
     }
@@ -208,6 +236,7 @@ STATIC mp_obj_t esp_connect(mp_uint_t n_args, const mp_obj_t *args) {
         ESP_EXCEPTIONS( esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_sta_config) );
     }
     ESP_EXCEPTIONS( esp_wifi_connect() );
+    wifi_sta_connected = true;
 
     return mp_const_none;
 }
@@ -215,6 +244,7 @@ STATIC mp_obj_t esp_connect(mp_uint_t n_args, const mp_obj_t *args) {
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(esp_connect_obj, 1, 7, esp_connect);
 
 STATIC mp_obj_t esp_disconnect(mp_obj_t self_in) {
+    wifi_sta_connected = false;
     ESP_EXCEPTIONS( esp_wifi_disconnect() );
     return mp_const_none;
 }
