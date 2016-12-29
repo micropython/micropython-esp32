@@ -55,7 +55,8 @@ ESPIDF = <path to root of esp-idf repository>
 
 include Makefile
 ```
-Be sure to enter the correct path to your local copy of the IDF repository.
+Be sure to enter the correct path to your local copy of the IDF repository
+(and use `$(HOME)`, not tilde, to reference your home directory).
 If the Xtensa cross-compiler is not in your path you can use the
 `CROSS_COMPILE` variable to set its location.  Other options of interest
 are `PORT` for the serial port of your esp32 module, and `FLASH_MODE`
