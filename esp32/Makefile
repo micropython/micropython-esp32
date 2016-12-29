@@ -201,7 +201,7 @@ ESPIDF_ESP32_O = $(addprefix $(ESPCOMP)/esp32/,\
 	intr_alloc.o \
 	)
 
-ESPIDF_ETHERNET_O = $(addprefix $(ESPIDF)/components/ethernet/,\
+ESPIDF_ETHERNET_O = $(addprefix $(ESPCOMP)/ethernet/,\
 	emac_dev.o \
 	emac_main.o \
 	)
@@ -376,7 +376,7 @@ ESPIDF_LWIP_O = $(addprefix $(ESPCOMP)/lwip/,\
 	netif/ethernetif.o \
 	port/freertos/sys_arch.o \
 	port/netif/wlanif.o \
-        port/netif/ethernetif.o \
+	port/netif/ethernetif.o \
 	)
 
 ESPIDF_MBEDTLS_O = $(addprefix $(ESPCOMP)/mbedtls/,\
