@@ -257,8 +257,6 @@ STATIC mp_obj_t esp_status(mp_obj_t self_in) {
 
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(esp_status_obj, esp_status);
 
-STATIC mp_obj_t *esp_scan_list = NULL;
-
 STATIC mp_obj_t esp_scan(mp_obj_t self_in) {
     // check that STA mode is active
     wifi_mode_t mode;
@@ -276,7 +274,6 @@ STATIC mp_obj_t esp_scan(mp_obj_t self_in) {
         ESP_EXCEPTIONS( esp_wifi_scan_get_ap_num(&count) );
         wifi_ap_record_t *wifi_ap_records = calloc(count, sizeof(wifi_ap_record_t));
         ESP_EXCEPTIONS( esp_wifi_scan_get_ap_records(&count, wifi_ap_records) );
-        esp_scan_list = &list;
         for (uint16_t i = 0; i < count; i++) {
             mp_obj_tuple_t *t = mp_obj_new_tuple(6, NULL);
             uint8_t *x = memchr(wifi_ap_records[i].ssid, 0, sizeof(wifi_ap_records[i].ssid));
@@ -287,7 +284,7 @@ STATIC mp_obj_t esp_scan(mp_obj_t self_in) {
             t->items[3] = MP_OBJ_NEW_SMALL_INT(wifi_ap_records[i].rssi);
             t->items[4] = MP_OBJ_NEW_SMALL_INT(wifi_ap_records[i].authmode);
             t->items[5] = mp_const_false; // XXX hidden?
-            mp_obj_list_append(*esp_scan_list, MP_OBJ_FROM_PTR(t));
+            mp_obj_list_append(list, MP_OBJ_FROM_PTR(t));
         }
         free(wifi_ap_records);
     }
