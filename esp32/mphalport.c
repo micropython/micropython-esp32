@@ -86,11 +86,11 @@ uint32_t mp_hal_ticks_us(void) {
 }
 
 void mp_hal_delay_ms(uint32_t ms) {
-    vTaskDelay(ms / portTICK_RATE_MS);
+    vTaskDelay(ms / portTICK_PERIOD_MS);
 }
 
 void mp_hal_delay_us(uint32_t us) {
-    vTaskDelay(us / 1000 / portTICK_RATE_MS);
+    vTaskDelay(us / 1000 / portTICK_PERIOD_MS);
 }
 
 /*
