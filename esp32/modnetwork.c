@@ -260,10 +260,16 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(esp_status_obj, esp_status);
 STATIC mp_obj_t *esp_scan_list = NULL;
 
 STATIC mp_obj_t esp_scan(mp_obj_t self_in) {
+    // check that STA mode is active
+    wifi_mode_t mode;
+    ESP_EXCEPTIONS(esp_wifi_get_mode(&mode));
+    if ((mode & WIFI_MODE_STA) == 0) {
+        nlr_raise(mp_obj_new_exception_msg(&mp_type_OSError, "STA must be active"));
+    }
+
     mp_obj_t list = mp_obj_new_list(0, NULL);
     wifi_scan_config_t config = { 0 };
     // XXX how do we scan hidden APs (and if we can scan them, are they really hidden?)
-    // XXX hangs if interface isn't active yet.
     esp_err_t status = esp_wifi_scan_start(&config, 1);
     if (status == 0) {
         uint16_t count = 0;
