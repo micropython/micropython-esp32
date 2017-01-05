@@ -508,7 +508,7 @@ all: $(BUILD)/bootloader.bin $(BUILD)/partitions.bin $(BUILD)/application.bin
 .PHONY: idf-version deploy erase
 
 idf-version:
-	$(ECHO) "IDF version: 05fcdcfedbff88959a5e98c4b44010ac92475b31"
+	$(ECHO) "IDF version: bf3093feca1f470bdd6caf45adf3b71492b84a19"
 
 deploy: $(BUILD)/bootloader.bin $(BUILD)/partitions.bin $(BUILD)/application.bin
 	$(ECHO) "Writing $^ to the board"
@@ -572,6 +572,7 @@ BOOTLOADER_OBJ = $(addprefix $(BUILD)/bootloader/$(ESPCOMP)/,\
 	bootloader_support/src/secure_boot.o \
 	bootloader_support/src/esp_image_format.o \
 	bootloader_support/src/flash_encrypt.o \
+	bootloader_support/src/flash_partitions.o \
 	log/log.o \
 	spi_flash/spi_flash_rom_patch.o \
 	micro-ecc/micro-ecc/uECC.o \
