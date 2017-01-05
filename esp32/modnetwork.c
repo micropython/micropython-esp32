@@ -113,7 +113,6 @@ static bool wifi_sta_connected = false;
 // This function is called by the system-event task and so runs in a different
 // thread to the main MicroPython task.  It must not raise any Python exceptions.
 static esp_err_t event_handler(void *ctx, system_event_t *event) {
-   ESP_LOGI("event_handler", "event %d", event->event_id);
    switch(event->event_id) {
     case SYSTEM_EVENT_STA_START:
         ESP_LOGI("wifi", "STA_START");
@@ -150,6 +149,7 @@ static esp_err_t event_handler(void *ctx, system_event_t *event) {
         break;
     }
     default:
+        ESP_LOGI("wifi", "event %d", event->event_id);
         break;
     }
     return ESP_OK;
