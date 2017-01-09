@@ -117,7 +117,6 @@ static bool wifi_sta_connected = false;
 // This function is called by the system-event task and so runs in a different
 // thread to the main MicroPython task.  It must not raise any Python exceptions.
 static esp_err_t event_handler(void *ctx, system_event_t *event) {
-   ESP_LOGI("event_handler", "event %d", event->event_id);
    switch(event->event_id) {
     case SYSTEM_EVENT_STA_START:
         ESP_LOGI("wifi", "STA_START");
@@ -154,6 +153,7 @@ static esp_err_t event_handler(void *ctx, system_event_t *event) {
         break;
     }
     default:
+        ESP_LOGI("wifi", "event %d", event->event_id);
         break;
     }
     return ESP_OK;
@@ -164,13 +164,14 @@ static esp_err_t event_handler(void *ctx, system_event_t *event) {
         nlr_raise(mp_obj_new_exception_msg(&mp_type_OSError, msg));
     }
 }
+*/
 
 STATIC void require_if(mp_obj_t wlan_if, int if_no) {
     wlan_if_obj_t *self = MP_OBJ_TO_PTR(wlan_if);
     if (self->if_id != if_no) {
-        error_check(false, if_no == WIFI_IF_STA ? "STA required" : "AP required");
+        mp_raise_msg(&mp_type_OSError, if_no == WIFI_IF_STA ? "STA required" : "AP required");
     }
-}*/
+}
 
 STATIC mp_obj_t get_wlan(mp_uint_t n_args, const mp_obj_t *args) {
     int idx = (n_args > 0) ? mp_obj_get_int(args[0]) : WIFI_IF_STA;
@@ -298,9 +299,12 @@ STATIC mp_obj_t esp_scan(mp_obj_t self_in) {
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(esp_scan_obj, esp_scan);
 
 STATIC mp_obj_t esp_isconnected(mp_obj_t self_in) {
-    return mp_const_none;
+    wlan_if_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    require_if(self_in, WIFI_IF_STA);
+    tcpip_adapter_ip_info_t info;
+    tcpip_adapter_get_ip_info(self->if_id, &info);
+    return mp_obj_new_bool(info.ip.addr != 0);
 }
-
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(esp_isconnected_obj, esp_isconnected);
 
 STATIC mp_obj_t esp_ifconfig(size_t n_args, const mp_obj_t *args) {
@@ -353,7 +357,133 @@ STATIC mp_obj_t esp_ifconfig(size_t n_args, const mp_obj_t *args) {
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(esp_ifconfig_obj, 1, 2, esp_ifconfig);
 
 STATIC mp_obj_t esp_config(size_t n_args, const mp_obj_t *args, mp_map_t *kwargs) {
-    return mp_const_none;
+    if (n_args != 1 && kwargs->used != 0) {
+        nlr_raise(mp_obj_new_exception_msg(&mp_type_TypeError,
+            "either pos or kw args are allowed"));
+    }
+
+    wlan_if_obj_t *self = MP_OBJ_TO_PTR(args[0]);
+
+    // get the config for the interface
+    wifi_config_t cfg;
+    ESP_EXCEPTIONS(esp_wifi_get_config(self->if_id, &cfg));
+
+    if (kwargs->used != 0) {
+
+        for (size_t i = 0; i < kwargs->alloc; i++) {
+            if (MP_MAP_SLOT_IS_FILLED(kwargs, i)) {
+                int req_if = -1;
+
+                #define QS(x) (uintptr_t)MP_OBJ_NEW_QSTR(x)
+                switch ((uintptr_t)kwargs->table[i].key) {
+                    case QS(MP_QSTR_mac): {
+                        mp_buffer_info_t bufinfo;
+                        mp_get_buffer_raise(kwargs->table[i].value, &bufinfo, MP_BUFFER_READ);
+                        if (bufinfo.len != 6) {
+                            nlr_raise(mp_obj_new_exception_msg(&mp_type_ValueError,
+                                "invalid buffer length"));
+                        }
+                        ESP_EXCEPTIONS(esp_wifi_set_mac(self->if_id, bufinfo.buf));
+                        break;
+                    }
+                    case QS(MP_QSTR_essid): {
+                        req_if = WIFI_IF_AP;
+                        mp_uint_t len;
+                        const char *s = mp_obj_str_get_data(kwargs->table[i].value, &len);
+                        len = MIN(len, sizeof(cfg.ap.ssid));
+                        memcpy(cfg.ap.ssid, s, len);
+                        cfg.ap.ssid_len = len;
+                        break;
+                    }
+                    case QS(MP_QSTR_hidden): {
+                        req_if = WIFI_IF_AP;
+                        cfg.ap.ssid_hidden = mp_obj_is_true(kwargs->table[i].value);
+                        break;
+                    }
+                    case QS(MP_QSTR_authmode): {
+                        req_if = WIFI_IF_AP;
+                        cfg.ap.authmode = mp_obj_get_int(kwargs->table[i].value);
+                        break;
+                    }
+                    case QS(MP_QSTR_password): {
+                        req_if = WIFI_IF_AP;
+                        mp_uint_t len;
+                        const char *s = mp_obj_str_get_data(kwargs->table[i].value, &len);
+                        len = MIN(len, sizeof(cfg.ap.password) - 1);
+                        memcpy(cfg.ap.password, s, len);
+                        cfg.ap.password[len] = 0;
+                        break;
+                    }
+                    case QS(MP_QSTR_channel): {
+                        req_if = WIFI_IF_AP;
+                        cfg.ap.channel = mp_obj_get_int(kwargs->table[i].value);
+                        break;
+                    }
+                    default:
+                        goto unknown;
+                }
+                #undef QS
+
+                // We post-check interface requirements to save on code size
+                if (req_if >= 0) {
+                    require_if(args[0], req_if);
+                }
+            }
+        }
+
+        ESP_EXCEPTIONS(esp_wifi_set_config(self->if_id, &cfg));
+
+        return mp_const_none;
+    }
+
+    // Get config
+
+    if (n_args != 2) {
+        nlr_raise(mp_obj_new_exception_msg(&mp_type_TypeError,
+            "can query only one param"));
+    }
+
+    int req_if = -1;
+    mp_obj_t val;
+
+    #define QS(x) (uintptr_t)MP_OBJ_NEW_QSTR(x)
+    switch ((uintptr_t)args[1]) {
+        case QS(MP_QSTR_mac): {
+            uint8_t mac[6];
+            ESP_EXCEPTIONS(esp_wifi_get_mac(self->if_id, mac));
+            return mp_obj_new_bytes(mac, sizeof(mac));
+        }
+        case QS(MP_QSTR_essid):
+            req_if = WIFI_IF_AP;
+            val = mp_obj_new_str((char*)cfg.ap.ssid, cfg.ap.ssid_len, false);
+            break;
+        case QS(MP_QSTR_hidden):
+            req_if = WIFI_IF_AP;
+            val = mp_obj_new_bool(cfg.ap.ssid_hidden);
+            break;
+        case QS(MP_QSTR_authmode):
+            req_if = WIFI_IF_AP;
+            val = MP_OBJ_NEW_SMALL_INT(cfg.ap.authmode);
+            break;
+        case QS(MP_QSTR_channel):
+            req_if = WIFI_IF_AP;
+            val = MP_OBJ_NEW_SMALL_INT(cfg.ap.channel);
+            break;
+        default:
+            goto unknown;
+    }
+    #undef QS
+
+    // We post-check interface requirements to save on code size
+    if (req_if >= 0) {
+        require_if(args[0], req_if);
+    }
+
+    return val;
+
+unknown:
+    nlr_raise(mp_obj_new_exception_msg(&mp_type_ValueError,
+        "unknown config param"));
 }
 
 STATIC MP_DEFINE_CONST_FUN_OBJ_KW(esp_config_obj, 1, esp_config);
