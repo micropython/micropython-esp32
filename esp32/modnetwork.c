@@ -1,9 +1,13 @@
 /*
  * This file is part of the Micro Python project, http://micropython.org/
  *
+ * Development of the code in this file was sponsored by Microbric Pty Ltd
+ * and Mnemote Pty Ltd
+ *
  * The MIT License (MIT)
  *
- * Copyright (c) 2016 Nick Moore
+ * Copyright (c) 2016, 2017 Nick Moore @mnemote
+ *
  * Based on esp8266/modnetwork.c which is Copyright (c) 2015 Paul Sokolovsky
  * And the ESP IDF example code which is Public Domain / CC0
  *
@@ -213,7 +217,7 @@ STATIC mp_obj_t esp_active(mp_uint_t n_args, const mp_obj_t *args) {
     int bit = (self->if_id == WIFI_IF_STA) ? WIFI_MODE_STA : WIFI_MODE_AP;
 
     if (n_args > 1) {
-      int active = mp_obj_get_int(args[1]);
+      bool active = mp_obj_is_true(args[1]);
       mode = active ? (mode | bit) : (mode & ~bit);
       ESP_EXCEPTIONS( esp_wifi_set_mode(mode) );
     }
