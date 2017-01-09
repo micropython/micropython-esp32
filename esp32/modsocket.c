@@ -198,11 +198,33 @@ STATIC mp_obj_t socket_send(const mp_obj_t arg0, const mp_obj_t arg1) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(socket_send_obj, socket_send);
 
+STATIC mp_obj_t socket_sendall(const mp_obj_t arg0, const mp_obj_t arg1) {
+    // XXX behaviour when nonblocking (see extmod/modlwip.c)
+    // XXX also timeout behaviour.
+    socket_obj_t *self = MP_OBJ_TO_PTR(arg0);
+    mp_buffer_info_t bufinfo;
+    mp_get_buffer_raise(arg1, &bufinfo, MP_BUFFER_READ);
+    while (bufinfo.len != 0) {
+        int ret = lwip_write(self->fd, bufinfo.buf, bufinfo.len);
+        if (ret < 0) exception_from_errno(errno);
+        bufinfo.len -= ret;
+        bufinfo.buf = (char *)bufinfo.buf + ret;
+    }
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_2(socket_sendall_obj, socket_sendall);
+
 STATIC mp_obj_t socket_fileno(const mp_obj_t arg0) {
     socket_obj_t *self = MP_OBJ_TO_PTR(arg0);
     return mp_obj_new_int(self->fd);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(socket_fileno_obj, socket_fileno);
+
+STATIC mp_obj_t socket_makefile(mp_uint_t n_args, const mp_obj_t *args) {
+    (void)n_args;
+    return args[0];
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(socket_makefile_obj, 1, 3, socket_makefile);
 
 STATIC mp_uint_t socket_stream_read(mp_obj_t self_in, void *buf, mp_uint_t size, int *errcode) {
     socket_obj_t *socket = self_in;
@@ -262,14 +284,14 @@ STATIC const mp_map_elem_t socket_locals_dict_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR_accept), (mp_obj_t)&socket_accept_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_connect), (mp_obj_t)&socket_connect_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_send), (mp_obj_t)&socket_send_obj },
-    { MP_OBJ_NEW_QSTR(MP_QSTR_sendall), mp_const_none },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_sendall), (mp_obj_t)&socket_sendall_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_recv), (mp_obj_t)&socket_recv_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_sendto), mp_const_none },
     { MP_OBJ_NEW_QSTR(MP_QSTR_recvfrom), mp_const_none },
     { MP_OBJ_NEW_QSTR(MP_QSTR_setsockopt), mp_const_none },
     { MP_OBJ_NEW_QSTR(MP_QSTR_settimeout), (mp_obj_t)&socket_settimeout_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_setblocking), (mp_obj_t)&socket_setblocking_obj },
-    { MP_OBJ_NEW_QSTR(MP_QSTR_makefile), mp_const_none },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_makefile), (mp_obj_t)&socket_makefile_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_fileno), (mp_obj_t)&socket_fileno_obj },
 
     { MP_OBJ_NEW_QSTR(MP_QSTR_read), (mp_obj_t)&mp_stream_read_obj },
