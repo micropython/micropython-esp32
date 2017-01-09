@@ -1,9 +1,13 @@
 /*
  * This file is part of the Micro Python project, http://micropython.org/
  *
+ * Development of the code in this file was sponsored by Microbric Pty Ltd
+ * and Mnemote Pty Ltd
+ *
  * The MIT License (MIT)
  *
- * Copyright (c) 2016 Nick Moore
+ * Copyright (c) 2016, 2017 Nick Moore @mnemote
+ *
  * Based on extmod/modlwip.c
  * Copyright (c) 2013, 2014 Damien P. George
  * Copyright (c) 2015 Galen Hazelwood
@@ -59,6 +63,11 @@ STATIC mp_obj_t socket_close(const mp_obj_t arg0) {
     return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(socket_close_obj, socket_close);
+
+static int exception_from_errno(int _errno) {
+    // XXX add more specific exceptions
+    mp_raise_OSError(_errno);
+}
 
 static int _socket_getaddrinfo2(const mp_obj_t host, const mp_obj_t portx, struct addrinfo **resp) {
     const struct addrinfo hints = {
@@ -167,21 +176,25 @@ STATIC mp_obj_t socket_setblocking(const mp_obj_t arg0, const mp_obj_t arg1) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(socket_setblocking_obj, socket_setblocking);
     
-STATIC mp_obj_t socket_recv(const mp_obj_t arg0) {
+STATIC mp_obj_t socket_recv(mp_uint_t n_args, const mp_obj_t *args) {
     byte buf[1024];
-    socket_obj_t *self = MP_OBJ_TO_PTR(arg0);
-    int x = lwip_recvfrom(self->fd, buf, sizeof(buf), 0, NULL, NULL);
+    socket_obj_t *self = MP_OBJ_TO_PTR(args[0]);
+    size_t len = (n_args > 1) ? MIN(mp_obj_get_int(args[1]), sizeof(buf)) : sizeof(buf);
+    int x = lwip_recvfrom(self->fd, buf, len, 0, NULL, NULL);
     if (x >= 0) return mp_obj_new_bytes(buf, x);
-    return mp_const_none;
+    if (errno == EWOULDBLOCK) return b'';
+    exception_from_errno(errno);
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(socket_recv_obj, socket_recv);
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(socket_recv_obj, 1, 2, socket_recv);
 
 STATIC mp_obj_t socket_send(const mp_obj_t arg0, const mp_obj_t arg1) {
     socket_obj_t *self = MP_OBJ_TO_PTR(arg0);
     mp_uint_t datalen;
     const char *data = mp_obj_str_get_data(arg1, &datalen);
     int x = lwip_write(self->fd, data, datalen);
-    return mp_obj_new_int(x);
+    if (x >= 0) return mp_obj_new_int(x);
+    if (errno == EWOULDBLOCK) return mp_obj_new_int(0);
+    exception_from_errno(errno);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(socket_send_obj, socket_send);
 
