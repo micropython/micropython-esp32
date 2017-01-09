@@ -64,7 +64,7 @@ STATIC mp_obj_t socket_close(const mp_obj_t arg0) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(socket_close_obj, socket_close);
 
-static int exception_from_errno(int _errno) {
+NORETURN static void exception_from_errno(int _errno) {
     // XXX add more specific exceptions
     mp_raise_OSError(_errno);
 }
@@ -182,7 +182,7 @@ STATIC mp_obj_t socket_recv(mp_uint_t n_args, const mp_obj_t *args) {
     size_t len = (n_args > 1) ? MIN(mp_obj_get_int(args[1]), sizeof(buf)) : sizeof(buf);
     int x = lwip_recvfrom(self->fd, buf, len, 0, NULL, NULL);
     if (x >= 0) return mp_obj_new_bytes(buf, x);
-    if (errno == EWOULDBLOCK) return b'';
+    if (errno == EWOULDBLOCK) return mp_obj_new_bytes(buf, 0);
     exception_from_errno(errno);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(socket_recv_obj, 1, 2, socket_recv);
