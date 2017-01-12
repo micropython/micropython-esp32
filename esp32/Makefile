@@ -73,9 +73,11 @@ CXXFLAGS = -std=gnu++11 -fno-exceptions -fno-rtti -ffunction-sections -fdata-sec
 LDFLAGS = -nostdlib -Map=$(@:.elf=.map) --cref
 LDFLAGS += --gc-sections -static -EL
 LDFLAGS += -u call_user_start_cpu0 -u uxTopUsedPriority
+LDFLAGS += -u __cxa_guard_dummy # so that implementation of static guards is taken from cxx_guards.o instead of libstdc++.a
 LDFLAGS += -L$(ESPCOMP)/esp32/ld -T $(BUILD)/esp32_out.ld -T ./esp32.custom_common.ld -T esp32.rom.ld -T esp32.peripherals.ld
 
 LIBGCC_FILE_NAME = $(shell $(CC) $(CFLAGS) -print-libgcc-file-name)
+LIBSTDCXX_FILE_NAME = $(shell $(CXX) $(CXXFLAGS) -print-file-name=libstdc++.a)
 
 # Debugging/Optimization
 ifeq ($(DEBUG), 1)
@@ -191,7 +193,6 @@ ESPIDF_ESP32_O = $(addprefix $(ESPCOMP)/esp32/,\
 	brownout.o \
 	hwcrypto/sha.o \
 	hwcrypto/aes.o \
-	abi.o \
 	lib_printf.o \
 	freertos_hooks.o \
 	cpu_util.o \
@@ -199,6 +200,10 @@ ESPIDF_ESP32_O = $(addprefix $(ESPCOMP)/esp32/,\
 	hw_random.o \
 	phy_init.o \
 	intr_alloc.o \
+	)
+
+ESPIDF_CXX_O = $(addprefix $(ESPCOMP)/cxx/,\
+	cxx_guards.o \
 	)
 
 ESPIDF_ETHERNET_O = $(addprefix $(ESPCOMP)/ethernet/,\
@@ -485,6 +490,7 @@ OBJ_ESPIDF =
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_NEWLIB_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_DRIVER_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_ESP32_O))
+OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_CXX_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_ETHERNET_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_EXPAT_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_FREERTOS_O))
@@ -508,7 +514,7 @@ all: $(BUILD)/bootloader.bin $(BUILD)/partitions.bin $(BUILD)/application.bin
 .PHONY: idf-version deploy erase
 
 idf-version:
-	$(ECHO) "IDF version: bf3093feca1f470bdd6caf45adf3b71492b84a19"
+	$(ECHO) "IDF version: 8615dbd486ef123876662a5664b3527a24daa92e"
 
 deploy: $(BUILD)/bootloader.bin $(BUILD)/partitions.bin $(BUILD)/application.bin
 	$(ECHO) "Writing $^ to the board"
@@ -527,6 +533,7 @@ APP_LD_ARGS =
 APP_LD_ARGS += $(LDFLAGS_MOD)
 APP_LD_ARGS += --start-group
 APP_LD_ARGS += -L$(dir $(LIBGCC_FILE_NAME)) -lgcc
+APP_LD_ARGS += -L$(dir $(LIBSTDCXX_FILE_NAME)) -lstdc++
 APP_LD_ARGS += $(ESPCOMP)/newlib/lib/libc.a
 APP_LD_ARGS += $(ESPCOMP)/newlib/lib/libm.a
 APP_LD_ARGS += $(ESPCOMP)/esp32/libhal.a
@@ -565,9 +572,10 @@ $(BUILD)/%.o: %.cpp
 ################################################################################
 # Declarations to build the bootloader
 
-$(BUILD)/bootloader/$(ESPCOMP)/%.o: CFLAGS += -DBOOTLOADER_BUILD=1 -I$(ESPCOMP)/bootloader_support/include_priv -I$(ESPCOMP)/bootloader_support/include -I$(ESPCOMP)/micro-ecc/micro-ecc -Wno-error=format
+$(BUILD)/bootloader/$(ESPCOMP)/%.o: CFLAGS += -DBOOTLOADER_BUILD=1 -I$(ESPCOMP)/bootloader_support/include_priv -I$(ESPCOMP)/bootloader_support/include -I$(ESPCOMP)/micro-ecc/micro-ecc -I$(ESPCOMP)/esp32 -Wno-error=format
 BOOTLOADER_OBJ = $(addprefix $(BUILD)/bootloader/$(ESPCOMP)/,\
 	bootloader_support/src/bootloader_flash.o \
+	bootloader_support/src/bootloader_random.o \
 	bootloader_support/src/secure_boot_signatures.o \
 	bootloader_support/src/secure_boot.o \
 	bootloader_support/src/esp_image_format.o \
@@ -582,8 +590,7 @@ BOOTLOADER_OBJ = $(addprefix $(BUILD)/bootloader/$(ESPCOMP)/,\
 BOOTLOADER_LIBS =
 BOOTLOADER_LIBS += -Wl,--start-group
 BOOTLOADER_LIBS += $(BOOTLOADER_OBJ)
-BOOTLOADER_LIBS += -T $(ESPCOMP)/bootloader/src/main/esp32.bootloader.ld
-BOOTLOADER_LIBS += -T $(ESPCOMP)/esp32/ld/esp32.rom.ld
+BOOTLOADER_LIBS += -L$(ESPCOMP)/esp32/lib -lrtc
 BOOTLOADER_LIBS += -L$(dir $(LIBGCC_FILE_NAME)) -lgcc
 BOOTLOADER_LIBS += -Wl,--end-group
 
@@ -596,6 +603,9 @@ BOOTLOADER_LDFLAGS += -Wl,--gc-sections
 BOOTLOADER_LDFLAGS += -static
 BOOTLOADER_LDFLAGS += -Wl,-EL
 BOOTLOADER_LDFLAGS += -Wl,-Map=$(@:.elf=.map) -Wl,--cref
+BOOTLOADER_LDFLAGS += -T $(ESPCOMP)/bootloader/src/main/esp32.bootloader.ld
+BOOTLOADER_LDFLAGS += -T $(ESPCOMP)/bootloader/src/main/esp32.bootloader.rom.ld
+BOOTLOADER_LDFLAGS += -T $(ESPCOMP)/esp32/ld/esp32.rom.ld
 
 BOOTLOADER_OBJ_DIRS = $(sort $(dir $(BOOTLOADER_OBJ)))
 $(BOOTLOADER_OBJ): | $(BOOTLOADER_OBJ_DIRS)
