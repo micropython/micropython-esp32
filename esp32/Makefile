@@ -28,6 +28,18 @@ endif
 ESPCOMP = $(ESPIDF)/components
 ESPTOOL ?= $(ESPCOMP)/esptool_py/esptool/esptool.py
 
+# verify the ESP IDF version
+ESPIDF_SUPHASH := 8615dbd486ef123876662a5664b3527a24daa92e
+ESPIDF_CURHASH := $(shell cd $(ESPIDF) && git show --pretty=format:'%H')
+ifneq ($(ESPIDF_CURHASH),$(ESPIDF_SUPHASH))
+$(info ** WARNING **)
+$(info The git hash of ESP IDF does not match the supported version)
+$(info The build may complete and the firmware may work but it is not guaranteed)
+$(info ESP IDF path:       $(ESPIDF))
+$(info Current git hash:   $(ESPIDF_CURHASH))
+$(info Supported git hash: $(ESPIDF_SUPHASH))
+endif
+
 INC += -I.
 INC += -I..
 INC += -I../lib/mp-readline
@@ -514,7 +526,7 @@ all: $(BUILD)/bootloader.bin $(BUILD)/partitions.bin $(BUILD)/application.bin
 .PHONY: idf-version deploy erase
 
 idf-version:
-	$(ECHO) "IDF version: 8615dbd486ef123876662a5664b3527a24daa92e"
+	$(ECHO) "ESP IDF supported hash: $(ESPIDF_SUPHASH)"
 
 deploy: $(BUILD)/bootloader.bin $(BUILD)/partitions.bin $(BUILD)/application.bin
 	$(ECHO) "Writing $^ to the board"
