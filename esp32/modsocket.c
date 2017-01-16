@@ -43,6 +43,7 @@
 #include "py/runtime.h"
 #include "py/mphal.h"
 #include "py/stream.h"
+#include "lib/netutils/netutils.h"
 
 #include "lwip/sockets.h"
 #include "lwip/netdb.h"
@@ -117,14 +118,30 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_2(socket_listen_obj, socket_listen);
 
 STATIC mp_obj_t socket_accept(const mp_obj_t arg0) {
     socket_obj_t *self = MP_OBJ_TO_PTR(arg0);
-    int x = lwip_accept(self->fd, NULL, NULL);
-    if (x >= 0) { 
-        socket_obj_t *sock = m_new_obj_with_finaliser(socket_obj_t);
-        sock->base.type = self->base.type;
-        sock->fd = x;
-        return MP_OBJ_FROM_PTR(sock);
+
+    struct sockaddr addr;
+    socklen_t addr_len = sizeof(addr);
+    int x = lwip_accept(self->fd, &addr, &addr_len);
+    if (x < 0) {
+        exception_from_errno(errno);
     }
-    return mp_const_none;
+
+    // create new socket object
+    socket_obj_t *sock = m_new_obj_with_finaliser(socket_obj_t);
+    sock->base.type = self->base.type;
+    sock->fd = x;
+    sock->domain = self->domain;
+    sock->type = self->type;
+    sock->proto = self->proto;
+
+    // make the return value
+    uint8_t *ip = (uint8_t*)&((struct sockaddr_in*)&addr)->sin_addr;
+    mp_uint_t port = ((struct sockaddr_in*)&addr)->sin_port;
+    mp_obj_tuple_t *client = mp_obj_new_tuple(2, NULL);
+    client->items[0] = sock;
+    client->items[1] = netutils_format_inet_addr(ip, port, NETUTILS_BIG);
+
+    return client;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(socket_accept_obj, socket_accept);
 
