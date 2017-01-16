@@ -119,7 +119,7 @@ STATIC mp_obj_t socket_accept(const mp_obj_t arg0) {
     socket_obj_t *self = MP_OBJ_TO_PTR(arg0);
     int x = lwip_accept(self->fd, NULL, NULL);
     if (x >= 0) { 
-        socket_obj_t *sock = (socket_obj_t *)calloc(1, sizeof(socket_obj_t));
+        socket_obj_t *sock = m_new_obj_with_finaliser(socket_obj_t);
         sock->base.type = self->base.type;
         sock->fd = x;
         return MP_OBJ_FROM_PTR(sock);
@@ -315,7 +315,7 @@ STATIC const mp_obj_type_t socket_type = {
 
 STATIC mp_obj_t get_socket(mp_uint_t n_args, const mp_obj_t *args) {
     // XXX TODO support for UDP and RAW.
-    socket_obj_t *sock = (socket_obj_t *)calloc(1, sizeof(socket_obj_t));
+    socket_obj_t *sock = m_new_obj_with_finaliser(socket_obj_t);
     sock->base.type = &socket_type;
     sock->domain = AF_INET;
     sock->type = SOCK_STREAM;
