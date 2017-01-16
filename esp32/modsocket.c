@@ -151,7 +151,10 @@ STATIC mp_obj_t socket_connect(const mp_obj_t arg0, const mp_obj_t arg1) {
     _socket_getaddrinfo(arg1, &res);
     int r = lwip_connect(self->fd, res->ai_addr, res->ai_addrlen);
     lwip_freeaddrinfo(res);
-    return mp_obj_new_int(r);
+    if (r != 0) {
+        exception_from_errno(errno);
+    }
+    return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(socket_connect_obj, socket_connect);
 
