@@ -33,7 +33,9 @@
 
 #include "py/runtime.h"
 #include "py/mperrno.h"
+#include "py/mphal.h"
 #include "drivers/dht/dht.h"
+#include "modesp.h"
 
 STATIC mp_obj_t esp_flash_read(mp_obj_t offset_in, mp_obj_t buf_in) {
     mp_int_t offset = mp_obj_get_int(offset_in);
@@ -79,6 +81,15 @@ STATIC mp_obj_t esp_flash_user_start(void) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(esp_flash_user_start_obj, esp_flash_user_start);
 
+STATIC mp_obj_t esp_neopixel_write_(mp_obj_t pin, mp_obj_t buf, mp_obj_t timing) {
+    mp_buffer_info_t bufinfo;
+    mp_get_buffer_raise(buf, &bufinfo, MP_BUFFER_READ);
+    esp_neopixel_write(mp_hal_get_pin_obj(pin),
+        (uint8_t*)bufinfo.buf, bufinfo.len, mp_obj_get_int(timing));
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_3(esp_neopixel_write_obj, esp_neopixel_write_);
+
 STATIC const mp_rom_map_elem_t esp_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_esp) },
 
@@ -88,6 +99,7 @@ STATIC const mp_rom_map_elem_t esp_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_flash_size), MP_ROM_PTR(&esp_flash_size_obj) },
     { MP_ROM_QSTR(MP_QSTR_flash_user_start), MP_ROM_PTR(&esp_flash_user_start_obj) },
 
+    { MP_ROM_QSTR(MP_QSTR_neopixel_write), MP_ROM_PTR(&esp_neopixel_write_obj) },
     { MP_ROM_QSTR(MP_QSTR_dht_readinto), MP_ROM_PTR(&dht_readinto_obj) },
 };
 
@@ -97,3 +109,4 @@ const mp_obj_module_t esp_module = {
     .base = { &mp_type_module },
     .globals = (mp_obj_dict_t*)&esp_module_globals,
 };
+
