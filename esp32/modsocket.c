@@ -202,16 +202,20 @@ STATIC mp_obj_t socket_setblocking(const mp_obj_t arg0, const mp_obj_t arg1) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(socket_setblocking_obj, socket_setblocking);
     
-STATIC mp_obj_t socket_recv(mp_uint_t n_args, const mp_obj_t *args) {
-    byte buf[1024];
-    socket_obj_t *self = MP_OBJ_TO_PTR(args[0]);
-    size_t len = (n_args > 1) ? MIN(mp_obj_get_int(args[1]), sizeof(buf)) : sizeof(buf);
-    int x = lwip_recvfrom_r(self->fd, buf, len, 0, NULL, NULL);
-    if (x >= 0) return mp_obj_new_bytes(buf, x);
-    if (errno == EWOULDBLOCK) return mp_obj_new_bytes(buf, 0);
+STATIC mp_obj_t socket_recv(mp_obj_t self_in, mp_obj_t len_in) {
+    socket_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    size_t len = mp_obj_get_int(len_in);
+    vstr_t vstr;
+    vstr_init_len(&vstr, len);
+    int x = lwip_recvfrom_r(self->fd, vstr.buf, len, 0, NULL, NULL);
+    if (x >= 0) {
+        vstr.len = x;
+        return mp_obj_new_str_from_vstr(&mp_type_bytes, &vstr);
+    }
+    if (errno == EWOULDBLOCK) return mp_const_empty_bytes;
     exception_from_errno(errno);
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(socket_recv_obj, 1, 2, socket_recv);
+STATIC MP_DEFINE_CONST_FUN_OBJ_2(socket_recv_obj, socket_recv);
 
 STATIC mp_obj_t socket_send(const mp_obj_t arg0, const mp_obj_t arg1) {
     socket_obj_t *self = MP_OBJ_TO_PTR(arg0);
