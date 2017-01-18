@@ -142,7 +142,7 @@ STATIC mp_obj_t socket_accept(const mp_obj_t arg0) {
 
     // make the return value
     uint8_t *ip = (uint8_t*)&((struct sockaddr_in*)&addr)->sin_addr;
-    mp_uint_t port = ((struct sockaddr_in*)&addr)->sin_port;
+    mp_uint_t port = lwip_ntohs(((struct sockaddr_in*)&addr)->sin_port);
     mp_obj_tuple_t *client = mp_obj_new_tuple(2, NULL);
     client->items[0] = sock;
     client->items[1] = netutils_format_inet_addr(ip, port, NETUTILS_BIG);
