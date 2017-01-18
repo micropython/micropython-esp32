@@ -217,6 +217,38 @@ STATIC mp_obj_t socket_recv(mp_obj_t self_in, mp_obj_t len_in) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(socket_recv_obj, socket_recv);
 
+STATIC mp_obj_t socket_recvfrom(mp_obj_t self_in, mp_obj_t len_in) {
+    socket_obj_t *self = MP_OBJ_TO_PTR(self_in);
+
+    // create the destination buffer
+    mp_int_t len = mp_obj_get_int(len_in);
+    vstr_t vstr;
+    vstr_init_len(&vstr, len);
+
+    // do the receive
+    struct sockaddr from;
+    socklen_t fromlen = sizeof(from);
+    int ret = lwip_recvfrom_r(self->fd, vstr.buf, len, 0, &from, &fromlen);
+    if (ret == -1) {
+        exception_from_errno(errno);
+    }
+
+    // make the return value
+    mp_obj_t tuple[2];
+    if (ret == 0) {
+        tuple[0] = mp_const_empty_bytes;
+    } else {
+        vstr.len = ret;
+        tuple[0] = mp_obj_new_str_from_vstr(&mp_type_bytes, &vstr);
+    }
+    uint8_t *ip = (uint8_t*)&((struct sockaddr_in*)&from)->sin_addr;
+    mp_uint_t port = lwip_ntohs(((struct sockaddr_in*)&from)->sin_port);
+    tuple[1] = netutils_format_inet_addr(ip, port, NETUTILS_BIG);
+
+    return mp_obj_new_tuple(2, tuple);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_2(socket_recvfrom_obj, socket_recvfrom);
+
 STATIC mp_obj_t socket_send(const mp_obj_t arg0, const mp_obj_t arg1) {
     socket_obj_t *self = MP_OBJ_TO_PTR(arg0);
     mp_uint_t datalen;
@@ -243,6 +275,29 @@ STATIC mp_obj_t socket_sendall(const mp_obj_t arg0, const mp_obj_t arg1) {
     return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(socket_sendall_obj, socket_sendall);
+
+STATIC mp_obj_t socket_sendto(mp_obj_t self_in, mp_obj_t data_in, mp_obj_t addr_in) {
+    socket_obj_t *self = MP_OBJ_TO_PTR(self_in);
+
+    // get the buffer to send
+    mp_buffer_info_t bufinfo;
+    mp_get_buffer_raise(data_in, &bufinfo, MP_BUFFER_READ);
+
+    // create the destination address
+    struct sockaddr_in to;
+    to.sin_len = sizeof(to);
+    to.sin_family = AF_INET;
+    to.sin_port = lwip_htons(netutils_parse_inet_addr(addr_in, (uint8_t*)&to.sin_addr, NETUTILS_BIG));
+
+    // send the data
+    int ret = lwip_sendto_r(self->fd, bufinfo.buf, bufinfo.len, 0, (struct sockaddr*)&to, sizeof(to));
+    if (ret == -1) {
+        exception_from_errno(errno);
+    }
+
+    return mp_obj_new_int_from_uint(ret);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_3(socket_sendto_obj, socket_sendto);
 
 STATIC mp_obj_t socket_fileno(const mp_obj_t arg0) {
     socket_obj_t *self = MP_OBJ_TO_PTR(arg0);
@@ -315,9 +370,9 @@ STATIC const mp_map_elem_t socket_locals_dict_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR_connect), (mp_obj_t)&socket_connect_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_send), (mp_obj_t)&socket_send_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_sendall), (mp_obj_t)&socket_sendall_obj },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_sendto), (mp_obj_t)&socket_sendto_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_recv), (mp_obj_t)&socket_recv_obj },
-    { MP_OBJ_NEW_QSTR(MP_QSTR_sendto), mp_const_none },
-    { MP_OBJ_NEW_QSTR(MP_QSTR_recvfrom), mp_const_none },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_recvfrom), (mp_obj_t)&socket_recvfrom_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_setsockopt), mp_const_none },
     { MP_OBJ_NEW_QSTR(MP_QSTR_settimeout), (mp_obj_t)&socket_settimeout_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_setblocking), (mp_obj_t)&socket_setblocking_obj },
@@ -344,12 +399,20 @@ STATIC const mp_obj_type_t socket_type = {
 };
 
 STATIC mp_obj_t get_socket(mp_uint_t n_args, const mp_obj_t *args) {
-    // XXX TODO support for UDP and RAW.
     socket_obj_t *sock = m_new_obj_with_finaliser(socket_obj_t);
     sock->base.type = &socket_type;
     sock->domain = AF_INET;
     sock->type = SOCK_STREAM;
-    sock->proto = IPPROTO_TCP;
+    sock->proto = 0;
+    if (n_args > 0) {
+        sock->domain = mp_obj_get_int(args[0]);
+        if (n_args > 1) {
+            sock->type = mp_obj_get_int(args[1]);
+            if (n_args > 2) {
+                sock->proto = mp_obj_get_int(args[2]);
+            }
+        }
+    }
     sock->fd = lwip_socket(sock->domain, sock->type, sock->proto);
     if (sock->fd < 0) {
         exception_from_errno(errno);
