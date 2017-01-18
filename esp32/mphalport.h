@@ -31,6 +31,8 @@
 
 #include "py/ringbuf.h"
 #include "lib/utils/interrupt_char.h"
+#include "xtirq.h"
+#include "py/mpconfig.h"
 
 extern ringbuf_t stdin_ringbuf;
 
