@@ -60,7 +60,7 @@ typedef struct _socket_obj_t {
 
 STATIC mp_obj_t socket_close(const mp_obj_t arg0) {
     socket_obj_t *self = MP_OBJ_TO_PTR(arg0);
-    lwip_close(self->fd);
+    lwip_close_r(self->fd);
     return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(socket_close_obj, socket_close);
@@ -102,7 +102,7 @@ STATIC mp_obj_t socket_bind(const mp_obj_t arg0, const mp_obj_t arg1) {
     socket_obj_t *self = MP_OBJ_TO_PTR(arg0);
     struct addrinfo *res;
     _socket_getaddrinfo(arg1, &res);
-    int r = lwip_bind(self->fd, res->ai_addr, res->ai_addrlen);
+    int r = lwip_bind_r(self->fd, res->ai_addr, res->ai_addrlen);
     lwip_freeaddrinfo(res);
     return mp_obj_new_int(r);
 }
@@ -111,7 +111,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_2(socket_bind_obj, socket_bind);
 STATIC mp_obj_t socket_listen(const mp_obj_t arg0, const mp_obj_t arg1) {
     socket_obj_t *self = MP_OBJ_TO_PTR(arg0);
     int backlog = mp_obj_get_int(arg1);
-    int x = lwip_listen(self->fd, backlog);
+    int x = lwip_listen_r(self->fd, backlog);
     return (x == 0) ? mp_const_true : mp_const_false;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(socket_listen_obj, socket_listen);
@@ -121,7 +121,7 @@ STATIC mp_obj_t socket_accept(const mp_obj_t arg0) {
 
     struct sockaddr addr;
     socklen_t addr_len = sizeof(addr);
-    int x = lwip_accept(self->fd, &addr, &addr_len);
+    int x = lwip_accept_r(self->fd, &addr, &addr_len);
     if (x < 0) {
         exception_from_errno(errno);
     }
@@ -149,7 +149,7 @@ STATIC mp_obj_t socket_connect(const mp_obj_t arg0, const mp_obj_t arg1) {
     socket_obj_t *self = MP_OBJ_TO_PTR(arg0);
     struct addrinfo *res;
     _socket_getaddrinfo(arg1, &res);
-    int r = lwip_connect(self->fd, res->ai_addr, res->ai_addrlen);
+    int r = lwip_connect_r(self->fd, res->ai_addr, res->ai_addrlen);
     lwip_freeaddrinfo(res);
     if (r != 0) {
         exception_from_errno(errno);
@@ -163,16 +163,16 @@ static void _socket_settimeout(int fd, unsigned long timeout_us) {
         .tv_sec = timeout_us / 1000000,
         .tv_usec = timeout_us % 1000000
     };
-    lwip_setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, (const void *)&timeout, sizeof(timeout));
-    lwip_setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (const void *)&timeout, sizeof(timeout));
-    lwip_fcntl(fd, F_SETFL, 0);
+    lwip_setsockopt_r(fd, SOL_SOCKET, SO_SNDTIMEO, (const void *)&timeout, sizeof(timeout));
+    lwip_setsockopt_r(fd, SOL_SOCKET, SO_RCVTIMEO, (const void *)&timeout, sizeof(timeout));
+    lwip_fcntl_r(fd, F_SETFL, 0);
 }
 
 static void _socket_setnonblock(int fd) {
     struct timeval timeout = { .tv_sec = 0, .tv_usec = 0 };
-    lwip_setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, (const void *)&timeout, sizeof(timeout));
-    lwip_setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (const void *)&timeout, sizeof(timeout));
-    lwip_fcntl(fd, F_SETFL, O_NONBLOCK);
+    lwip_setsockopt_r(fd, SOL_SOCKET, SO_SNDTIMEO, (const void *)&timeout, sizeof(timeout));
+    lwip_setsockopt_r(fd, SOL_SOCKET, SO_RCVTIMEO, (const void *)&timeout, sizeof(timeout));
+    lwip_fcntl_r(fd, F_SETFL, O_NONBLOCK);
 }
 
 STATIC mp_obj_t socket_settimeout(const mp_obj_t arg0, const mp_obj_t arg1) {
@@ -200,7 +200,7 @@ STATIC mp_obj_t socket_recv(mp_uint_t n_args, const mp_obj_t *args) {
     byte buf[1024];
     socket_obj_t *self = MP_OBJ_TO_PTR(args[0]);
     size_t len = (n_args > 1) ? MIN(mp_obj_get_int(args[1]), sizeof(buf)) : sizeof(buf);
-    int x = lwip_recvfrom(self->fd, buf, len, 0, NULL, NULL);
+    int x = lwip_recvfrom_r(self->fd, buf, len, 0, NULL, NULL);
     if (x >= 0) return mp_obj_new_bytes(buf, x);
     if (errno == EWOULDBLOCK) return mp_obj_new_bytes(buf, 0);
     exception_from_errno(errno);
@@ -211,7 +211,7 @@ STATIC mp_obj_t socket_send(const mp_obj_t arg0, const mp_obj_t arg1) {
     socket_obj_t *self = MP_OBJ_TO_PTR(arg0);
     mp_uint_t datalen;
     const char *data = mp_obj_str_get_data(arg1, &datalen);
-    int x = lwip_write(self->fd, data, datalen);
+    int x = lwip_write_r(self->fd, data, datalen);
     if (x >= 0) return mp_obj_new_int(x);
     if (errno == EWOULDBLOCK) return mp_obj_new_int(0);
     exception_from_errno(errno);
@@ -225,7 +225,7 @@ STATIC mp_obj_t socket_sendall(const mp_obj_t arg0, const mp_obj_t arg1) {
     mp_buffer_info_t bufinfo;
     mp_get_buffer_raise(arg1, &bufinfo, MP_BUFFER_READ);
     while (bufinfo.len != 0) {
-        int ret = lwip_write(self->fd, bufinfo.buf, bufinfo.len);
+        int ret = lwip_write_r(self->fd, bufinfo.buf, bufinfo.len);
         if (ret < 0) exception_from_errno(errno);
         bufinfo.len -= ret;
         bufinfo.buf = (char *)bufinfo.buf + ret;
@@ -248,7 +248,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(socket_makefile_obj, 1, 3, socket_mak
 
 STATIC mp_uint_t socket_stream_read(mp_obj_t self_in, void *buf, mp_uint_t size, int *errcode) {
     socket_obj_t *socket = self_in;
-    int x = lwip_recvfrom(socket->fd, buf, size, 0, NULL, NULL);
+    int x = lwip_recvfrom_r(socket->fd, buf, size, 0, NULL, NULL);
     if (x >= 0) return x;
     if (errno == EWOULDBLOCK) return 0;
     *errcode = MP_EIO;
@@ -257,7 +257,7 @@ STATIC mp_uint_t socket_stream_read(mp_obj_t self_in, void *buf, mp_uint_t size,
 
 STATIC mp_uint_t socket_stream_write(mp_obj_t self_in, const void *buf, mp_uint_t size, int *errcode) {
     socket_obj_t *socket = self_in;
-    int x = lwip_write(socket->fd, buf, size);
+    int x = lwip_write_r(socket->fd, buf, size);
     if (x >= 0) return x;
     if (errno == EWOULDBLOCK) return 0;
     *errcode = MP_EIO;
@@ -270,7 +270,7 @@ STATIC mp_uint_t socket_stream_ioctl(mp_obj_t self_in, mp_uint_t request, uintpt
         char buf[1];
         mp_uint_t ret = 0;
         if (arg & MP_STREAM_POLL_RD) {
-            int r = lwip_recvfrom(socket->fd, buf, 1, MSG_DONTWAIT | MSG_PEEK, NULL, NULL);
+            int r = lwip_recvfrom_r(socket->fd, buf, 1, MSG_DONTWAIT | MSG_PEEK, NULL, NULL);
             if (r > 0) ret |= MP_STREAM_POLL_RD;
         } 
         if (arg & (MP_STREAM_POLL_WR | MP_STREAM_POLL_HUP)) {
