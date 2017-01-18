@@ -127,3 +127,8 @@ mp_obj_t mp_builtin_open(uint n_args, const mp_obj_t *args, mp_map_t *kwargs) {
     #endif
 }
 MP_DEFINE_CONST_FUN_OBJ_KW(mp_builtin_open_obj, 1, mp_builtin_open);
+
+// modussl_mbedtls uses this function but it's not enabled in ESP IDF
+void mbedtls_debug_set_threshold(int threshold) {
+    (void)threshold;
+}
