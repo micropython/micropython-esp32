@@ -58,17 +58,23 @@ typedef struct _socket_obj_t {
     uint8_t proto;
 } socket_obj_t;
 
-STATIC mp_obj_t socket_close(const mp_obj_t arg0) {
-    socket_obj_t *self = MP_OBJ_TO_PTR(arg0);
-    lwip_close_r(self->fd);
-    return mp_const_none;
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(socket_close_obj, socket_close);
-
 NORETURN static void exception_from_errno(int _errno) {
     // XXX add more specific exceptions
     mp_raise_OSError(_errno);
 }
+
+STATIC mp_obj_t socket_close(const mp_obj_t arg0) {
+    socket_obj_t *self = MP_OBJ_TO_PTR(arg0);
+    if (self->fd >= 0) {
+        int ret = lwip_close_r(self->fd);
+        if (ret != 0) {
+            exception_from_errno(errno);
+        }
+        self->fd = -1;
+    }
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(socket_close_obj, socket_close);
 
 static int _socket_getaddrinfo2(const mp_obj_t host, const mp_obj_t portx, struct addrinfo **resp) {
     const struct addrinfo hints = {
@@ -341,6 +347,9 @@ STATIC mp_obj_t get_socket(mp_uint_t n_args, const mp_obj_t *args) {
     sock->type = SOCK_STREAM;
     sock->proto = IPPROTO_TCP;
     sock->fd = lwip_socket(sock->domain, sock->type, sock->proto);
+    if (sock->fd < 0) {
+        exception_from_errno(errno);
+    }
     return MP_OBJ_FROM_PTR(sock);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(get_socket_obj, 0, 3, get_socket);
