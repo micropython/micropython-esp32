@@ -470,6 +470,9 @@ ESPIDF_MBEDTLS_O = $(addprefix $(ESPCOMP)/mbedtls/,\
 	port/net.o \
 	port/esp_bignum.o \
 	port/esp_hardware.o \
+	port/esp_sha1.o \
+	port/esp_sha256.o \
+	port/esp_sha512.o \
 	)
 
 $(BUILD)/$(ESPCOMP)/wpa_supplicant/%.o: CFLAGS += -DEMBEDDED_SUPP -D__ets__ -Wno-strict-aliasing
