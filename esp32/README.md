@@ -30,12 +30,6 @@ Follow the guide "Setting Up ESP-IDF", for Windows, Mac or Linux.  You
 only need to perform up to "Step 2" of the guide, by which stage you
 should have installed the cross-compile and cloned the ESP-IDF repository.
 
-The instructions provided by the ESP-IDF give a link to download the
-cross-compiler in binary form.  At the time of writing this binary had
-a bug in it for some floating-point operations.  To fix this you will
-need to compile the cross-compiler from source, using crosstool-NG, and
-instructions to do that are also provided in the ESP-IDF set-up guide.
-
 Once everything is set up you should have a functioning toolchain with
 prefix xtensa-esp32-elf- (or otherwise if you configured it differently)
 as well as a copy of the ESP-IDF repository.
