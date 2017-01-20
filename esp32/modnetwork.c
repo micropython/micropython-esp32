@@ -198,6 +198,7 @@ STATIC mp_obj_t esp_initialize() {
         ESP_EXCEPTIONS( esp_wifi_init(&cfg) );
         ESP_EXCEPTIONS( esp_wifi_set_storage(WIFI_STORAGE_RAM) );
         ESP_LOGI("modnetwork", "Initialized");
+        ESP_EXCEPTIONS( esp_wifi_set_mode(0) );
         ESP_EXCEPTIONS( esp_wifi_start() );
         ESP_LOGI("modnetwork", "Started");
         initialized = 1;
