@@ -2,7 +2,14 @@
 
 
 # We need ESPIDF for make to run at all
-export ESPIDF="./"
+if [ ! $ESPIDF  ]
+then
+	export ESPIDF="./"
+fi
+
+cd ../
+make -C mpy-cross
+cd esp32
 
 VER=`make idf-version` 
 #echo $VER
@@ -21,8 +28,6 @@ then
 	git checkout  $IDF_VER 
 fi
 
-GIT_VER=`git -C ./ describe `
-#echo $GIT_VER  
 cd ../ 
 IDF_PATH=./esp-idf 
 ESPIDF=./esp-idf 

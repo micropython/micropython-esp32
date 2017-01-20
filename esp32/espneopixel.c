@@ -9,8 +9,6 @@
 #if MICROPY_ESP32_NEOPIXEL
 
 #include "rom/ets_sys.h"
-
-//#include "py/mphal.h"
 #include "espneopixel.h"
 #include "mphalport.h"
 
@@ -29,20 +27,23 @@ void /*ICACHE_RAM_ATTR*/ esp_neopixel_write(uint8_t pin, uint8_t *pixels, uint32
   startTime = 0;
 
   uint32_t fcpu = ets_get_cpu_frequency() * 1000000;
+  uint32_t micros = ets_get_cpu_frequency();
+// for APA106 - 0.35 us for time0, 1.35 us for time1, inferred period of ~1.75 us
 
 #ifdef NEO_KHZ400
   if(is800KHz) {
 #endif
-    time0  = fcpu / 2857143; // 0.35us
-    time1  = fcpu / 1250000; // 0.8us
-    period = fcpu /  800000; // 1.25us per bit
+    time0  = (fcpu *0.35)/1000000; // 0.35us
+    time1  = (fcpu * 0.8)/1000000 ; // 0.8us
+    period = (fcpu * 1.25)/1000000; // 1.25us per bit
 #ifdef NEO_KHZ400
   } else { // 400 KHz bitstream
-    time0  = fcpu / 2000000; // 0.5uS
-    time1  = fcpu /  833333; // 1.2us
-    period = fcpu /  400000; // 2.5us per bit
+    time0  = (fcpu *0.5)/1000000; // 0.35us
+    time1  = (fcpu * 1.2)/1000000 ; // 0.8us
+    period = (fcpu * 2.5)/1000000; // 1.25us per bit
   }
 #endif
+
 
   uint32_t irq_state = mp_hal_quiet_timing_enter();
   for(t = time0;; t = time0) {
