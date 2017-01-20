@@ -30,7 +30,8 @@
 #include <stdio.h>
 
 #include "esp_spi_flash.h"
-
+#include "espneopixel.h"
+#include "mphalport.h"
 #include "py/runtime.h"
 #include "py/mperrno.h"
 
@@ -78,6 +79,16 @@ STATIC mp_obj_t esp_flash_user_start(void) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(esp_flash_user_start_obj, esp_flash_user_start);
 
+STATIC mp_obj_t esp_neopixel_write_(mp_obj_t pin, mp_obj_t buf, mp_obj_t is800k) {
+
+    mp_buffer_info_t bufinfo;
+    mp_get_buffer_raise(buf, &bufinfo, MP_BUFFER_READ);
+    esp_neopixel_write(mp_hal_get_pin_obj(pin),
+        (uint8_t*)bufinfo.buf, bufinfo.len, mp_obj_is_true(is800k));
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_3(esp_neopixel_write_obj, esp_neopixel_write_);
+
 STATIC const mp_rom_map_elem_t esp_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_esp) },
 
@@ -86,6 +97,11 @@ STATIC const mp_rom_map_elem_t esp_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_flash_erase), MP_ROM_PTR(&esp_flash_erase_obj) },
     { MP_ROM_QSTR(MP_QSTR_flash_size), MP_ROM_PTR(&esp_flash_size_obj) },
     { MP_ROM_QSTR(MP_QSTR_flash_user_start), MP_ROM_PTR(&esp_flash_user_start_obj) },
+
+    #if MICROPY_ESP32_NEOPIXEL
+    { MP_OBJ_NEW_QSTR(MP_QSTR_neopixel_write), (mp_obj_t)&esp_neopixel_write_obj },
+    #endif
+
 };
 
 STATIC MP_DEFINE_CONST_DICT(esp_module_globals, esp_module_globals_table);
@@ -94,3 +110,4 @@ const mp_obj_module_t esp_module = {
     .base = { &mp_type_module },
     .globals = (mp_obj_dict_t*)&esp_module_globals,
 };
+

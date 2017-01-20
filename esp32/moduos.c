@@ -37,6 +37,7 @@
 #include "py/runtime.h"
 #include "py/mperrno.h"
 #include "genhdr/mpversion.h"
+//#include "esp_mphal.h"
 
 extern const mp_obj_type_t mp_fat_vfs_type;
 
