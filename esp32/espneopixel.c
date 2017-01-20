@@ -27,7 +27,6 @@ void /*ICACHE_RAM_ATTR*/ esp_neopixel_write(uint8_t pin, uint8_t *pixels, uint32
   startTime = 0;
 
   uint32_t fcpu = ets_get_cpu_frequency() * 1000000;
-  uint32_t micros = ets_get_cpu_frequency();
 // for APA106 - 0.35 us for time0, 1.35 us for time1, inferred period of ~1.75 us
 
 #ifdef NEO_KHZ400
