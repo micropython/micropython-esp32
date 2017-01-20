@@ -30,7 +30,7 @@ ESPTOOL ?= $(ESPCOMP)/esptool_py/esptool/esptool.py
 
 # verify the ESP IDF version
 ESPIDF_SUPHASH := 0865819cf9de5e7e7a032003db121cc801a3addd
-ESPIDF_CURHASH := $(shell cd $(ESPIDF) && git show --pretty=format:'%H')
+ESPIDF_CURHASH := $(shell git -C $(ESPIDF) show --pretty=format:'%H')
 ifneq ($(ESPIDF_CURHASH),$(ESPIDF_SUPHASH))
 $(info ** WARNING **)
 $(info The git hash of ESP IDF does not match the supported version)
