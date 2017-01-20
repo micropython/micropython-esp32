@@ -164,6 +164,28 @@ STATIC mp_obj_t socket_connect(const mp_obj_t arg0, const mp_obj_t arg1) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(socket_connect_obj, socket_connect);
 
+STATIC mp_obj_t socket_setsockopt(size_t n_args, const mp_obj_t *args) {
+    (void)n_args; // always 4
+    socket_obj_t *self = MP_OBJ_TO_PTR(args[0]);
+
+    int level = mp_obj_get_int(args[1]);
+    if (level != SOL_SOCKET) {
+        mp_raise_ValueError("unsupported level");
+    }
+
+    // only "int" arguments are supported at the moment
+    int opt = mp_obj_get_int(args[2]);
+    int val = mp_obj_get_int(args[3]);
+    int ret = lwip_setsockopt_r(self->fd, SOL_SOCKET, opt, &val, sizeof(int));
+
+    if (ret != 0) {
+        exception_from_errno(errno);
+    }
+
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(socket_setsockopt_obj, 4, 4, socket_setsockopt);
+
 static void _socket_settimeout(int fd, unsigned long timeout_us) {
     struct timeval timeout = {
         .tv_sec = timeout_us / 1000000,
@@ -373,7 +395,7 @@ STATIC const mp_map_elem_t socket_locals_dict_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR_sendto), (mp_obj_t)&socket_sendto_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_recv), (mp_obj_t)&socket_recv_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_recvfrom), (mp_obj_t)&socket_recvfrom_obj },
-    { MP_OBJ_NEW_QSTR(MP_QSTR_setsockopt), mp_const_none },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_setsockopt), (mp_obj_t)&socket_setsockopt_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_settimeout), (mp_obj_t)&socket_settimeout_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_setblocking), (mp_obj_t)&socket_setblocking_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_makefile), (mp_obj_t)&socket_makefile_obj },
@@ -467,6 +489,8 @@ STATIC const mp_map_elem_t mp_module_socket_globals_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR_SOCK_RAW), MP_OBJ_NEW_SMALL_INT(SOCK_RAW) },
     { MP_OBJ_NEW_QSTR(MP_QSTR_IPPROTO_TCP), MP_OBJ_NEW_SMALL_INT(IPPROTO_TCP) },
     { MP_OBJ_NEW_QSTR(MP_QSTR_IPPROTO_UDP), MP_OBJ_NEW_SMALL_INT(IPPROTO_UDP) },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_SOL_SOCKET), MP_OBJ_NEW_SMALL_INT(SOL_SOCKET) },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_SO_REUSEADDR), MP_OBJ_NEW_SMALL_INT(SO_REUSEADDR) },
 };
 
 STATIC MP_DEFINE_CONST_DICT(mp_module_socket_globals, mp_module_socket_globals_table);
