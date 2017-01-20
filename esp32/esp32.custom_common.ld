@@ -19,9 +19,11 @@ SECTIONS
   */
   .rtc.data :
   {
+    _rtc_data_start = ABSOLUTE(.);
     *(.rtc.data)
     *(.rtc.rodata)
     *rtc_wake_stub*.o(.data .rodata .data.* .rodata.* .bss .bss.*)
+    _rtc_data_end = ABSOLUTE(.);
   } > rtc_slow_seg
 
   /* RTC bss, from any source file named rtc_wake_stub*.c */
@@ -82,6 +84,7 @@ SECTIONS
     *librtc.a:(.literal .text .literal.* .text.*)
     *libpp.a:(.literal .text .literal.* .text.*)
     *libhal.a:(.literal .text .literal.* .text.*)
+    *libcoexist.a:(.literal .text .literal.* .text.*)
     _iram_text_end = ABSOLUTE(.);
   } > iram0_0_seg
 

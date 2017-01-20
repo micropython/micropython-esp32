@@ -54,7 +54,7 @@ NORETURN void _esp_exceptions(esp_err_t e) {
    switch (e) {
       case ESP_ERR_WIFI_NOT_INIT: 
         mp_raise_msg(&mp_type_OSError, "Wifi Not Initialized");
-      case ESP_ERR_WIFI_NOT_START:
+      case ESP_ERR_WIFI_NOT_STARTED:
         mp_raise_msg(&mp_type_OSError, "Wifi Not Started");
       case ESP_ERR_WIFI_CONN:
         mp_raise_msg(&mp_type_OSError, "Wifi Internal Error");
