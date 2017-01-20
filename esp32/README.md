@@ -30,6 +30,20 @@ Follow the guide "Setting Up ESP-IDF", for Windows, Mac or Linux.  You
 only need to perform up to "Step 2" of the guide, by which stage you
 should have installed the cross-compile and cloned the ESP-IDF repository.
 
+Be advised that the ESP-IDF is still undergoing changes and only some
+versions are supported.  To find which build is compatible refer to the line
+in the makefile containing the following:
+```
+ESPIDF_SUPHASH := <Current supported ESP-IDF commit hash>
+```
+After finishing "Step 2" you can roll back your current build of
+the ESP-IDF using:
+```
+$ git checkout <Current supported ESP-IDF commit hash>
+```
+Note that you will get a warning when building the code if the ESP-IDF
+version is incorrect.
+
 Once everything is set up you should have a functioning toolchain with
 prefix xtensa-esp32-elf- (or otherwise if you configured it differently)
 as well as a copy of the ESP-IDF repository.
