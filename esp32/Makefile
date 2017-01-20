@@ -29,7 +29,7 @@ ESPCOMP = $(ESPIDF)/components
 ESPTOOL ?= $(ESPCOMP)/esptool_py/esptool/esptool.py
 
 # verify the ESP IDF version
-ESPIDF_SUPHASH := 8615dbd486ef123876662a5664b3527a24daa92e
+ESPIDF_SUPHASH := 0865819cf9de5e7e7a032003db121cc801a3addd
 ESPIDF_CURHASH := $(shell cd $(ESPIDF) && git show --pretty=format:'%H')
 ifneq ($(ESPIDF_CURHASH),$(ESPIDF_SUPHASH))
 $(info ** WARNING **)
@@ -39,6 +39,9 @@ $(info ESP IDF path:       $(ESPIDF))
 $(info Current git hash:   $(ESPIDF_CURHASH))
 $(info Supported git hash: $(ESPIDF_SUPHASH))
 endif
+
+# pretty format of ESP IDF version, used internally by the IDF
+IDF_VER := $(shell git -C $(ESPIDF) describe)
 
 INC += -I.
 INC += -I..
@@ -78,6 +81,7 @@ INC += -I$(ESPCOMP)/ethernet/include
 INC += -I$(ESPCOMP)/tcpip_adapter/include
 
 CFLAGS = -std=gnu99 -Os -ffunction-sections -fdata-sections -fstrict-volatile-bitfields -mlongcalls -nostdlib -Wall -Werror -Wno-error=unused-function -Wno-error=unused-but-set-variable -Wno-error=unused-variable -Wno-error=deprecated-declarations -DMBEDTLS_CONFIG_FILE='"mbedtls/esp_config.h"' -DHAVE_CONFIG_H -DESP_PLATFORM  $(INC)
+CFLAGS += -DIDF_VER=\"$(IDF_VER)\"
 
 # this is what ESPIDF uses for c++ compilation
 CXXFLAGS = -std=gnu++11 -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -fstrict-volatile-bitfields -mlongcalls -nostdlib -Wall -Werror -Wno-error=unused-function -Wno-error=unused-but-set-variable -Wno-error=unused-variable -Wno-error=deprecated-declarations -DESP_PLATFORM $(INC)
