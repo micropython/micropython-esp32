@@ -104,3 +104,42 @@ that is used for programming the firmware.  The baudrate for the REPL is
 ```bash
 $ picocom /dev/ttyUSB0
 ```
+
+Configuring the WiFi and using the board
+----------------------------------------
+
+The ESP32 port is designed to be (almost) equivalent to the ESP8266 in
+terms of the modules and user-facing API.  There are some small differences,
+notably that the ESP32 does not automatically connect to the last access
+point when booting up.  But for the most part the documentation and tutorials
+for the ESP8266 should apply to the ESP32 (at least for the components that
+are implemented).
+
+See http://docs.micropython.org/en/latest/esp8266/esp8266/quickref.html for
+a quick reference, and http://docs.micropython.org/en/latest/esp8266/esp8266/tutorial/intro.html
+for a tutorial.
+
+The following function can be used to connect to a WiFi access point (you can
+either pass in your own SSID and password, or change the defaults so you can
+quickly call `wlan_connect()` and it just works):
+```python
+def wlan_connect(ssid='MYSSID', password='MYPASS'):
+    import network
+    wlan = network.WLAN(network.STA_IF)
+    if not wlan.active() or not wlan.isconnected():
+        wlan.active(True)
+        print('connecting to:', ssid)
+        wlan.connect(ssid, password)
+        while not wlan.isconnected():
+            pass
+    print('network config:', wlan.ifconfig())
+```
+
+Note that some boards require you to configure the WiFi antenna before using
+the WiFi.  On Pycom boards like the LoPy and WiPy 2.0 you need to execute the
+following code to select the internal antenna (best to put this line in your
+boot.py file):
+```python
+import machine
+antenna = machine.Pin(16, machine.Pin.OUT, value=0)
+```
