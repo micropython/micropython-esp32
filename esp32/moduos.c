@@ -67,7 +67,7 @@ STATIC mp_obj_t os_uname(void) {
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(os_uname_obj, os_uname);
 
 #if MICROPY_VFS_FAT
-mp_obj_t vfs_proxy_call(qstr method_name, mp_uint_t n_args, const mp_obj_t *args) {
+mp_obj_t vfs_proxy_call(qstr method_name, size_t n_args, const mp_obj_t *args) {
     if (MP_STATE_PORT(fs_user_mount)[0] == NULL) {
         mp_raise_OSError(MP_ENODEV);
     }
@@ -80,7 +80,7 @@ mp_obj_t vfs_proxy_call(qstr method_name, mp_uint_t n_args, const mp_obj_t *args
     return mp_call_method_n_kw(n_args, 0, meth);
 }
 
-STATIC mp_obj_t os_listdir(mp_uint_t n_args, const mp_obj_t *args) {
+STATIC mp_obj_t os_listdir(size_t n_args, const mp_obj_t *args) {
     return vfs_proxy_call(MP_QSTR_listdir, n_args, args);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(os_listdir_obj, 0, 1, os_listdir);

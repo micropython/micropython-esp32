@@ -173,7 +173,7 @@ STATIC void require_if(mp_obj_t wlan_if, int if_no) {
     }
 }
 
-STATIC mp_obj_t get_wlan(mp_uint_t n_args, const mp_obj_t *args) {
+STATIC mp_obj_t get_wlan(size_t n_args, const mp_obj_t *args) {
     int idx = (n_args > 0) ? mp_obj_get_int(args[0]) : WIFI_IF_STA;
     if (idx == WIFI_IF_STA) {
         return MP_OBJ_FROM_PTR(&wlan_sta_obj);
@@ -211,7 +211,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_0(esp_initialize_obj, esp_initialize);
 #error WIFI_MODE_STA and WIFI_MODE_AP are supposed to be bitfields!
 #endif
 
-STATIC mp_obj_t esp_active(mp_uint_t n_args, const mp_obj_t *args) {
+STATIC mp_obj_t esp_active(size_t n_args, const mp_obj_t *args) {
 
     wlan_if_obj_t *self = MP_OBJ_TO_PTR(args[0]);
     wifi_mode_t mode;
@@ -229,7 +229,7 @@ STATIC mp_obj_t esp_active(mp_uint_t n_args, const mp_obj_t *args) {
 
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(esp_active_obj, 1, 2, esp_active);
 
-STATIC mp_obj_t esp_connect(mp_uint_t n_args, const mp_obj_t *args) {
+STATIC mp_obj_t esp_connect(size_t n_args, const mp_obj_t *args) {
 
     mp_uint_t len;
     const char *p;
@@ -508,7 +508,7 @@ const mp_obj_type_t wlan_if_type = {
     .locals_dict = (mp_obj_t)&wlan_if_locals_dict,
 };
 
-STATIC mp_obj_t esp_phy_mode(mp_uint_t n_args, const mp_obj_t *args) {
+STATIC mp_obj_t esp_phy_mode(size_t n_args, const mp_obj_t *args) {
     return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(esp_phy_mode_obj, 0, 1, esp_phy_mode);
