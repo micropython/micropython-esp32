@@ -15,6 +15,9 @@ include boards/$(BOARD)/mpconfigboard.mk
 # qstr definitions (must come before including py.mk)
 QSTR_DEFS = qstrdefsport.h $(BUILD)/pins_qstr.h $(BUILD)/modstm_qstr.h
 
+# directory containing scripts to be frozen as bytecode
+FROZEN_MPY_DIR ?= modules
+
 # include py core make definitions
 include ../py/py.mk
 
@@ -76,7 +79,7 @@ COPT += -Os -DNDEBUG
 endif
 
 # uncomment this if you want libgcc
-#LIBS += $(shell $(CC) -print-libgcc-file-name)
+#LIBS += $(shell $(CC) $(CFLAGS) -print-libgcc-file-name)
 
 SRC_LIB = $(addprefix lib/,\
 	libc/string0.c \
@@ -112,7 +115,6 @@ SRC_LIB = $(addprefix lib/,\
 	netutils/netutils.c \
 	timeutils/timeutils.c \
 	utils/pyexec.c \
-	utils/pyhelp.c \
 	)
 
 SRC_C = \

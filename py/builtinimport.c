@@ -47,14 +47,6 @@
 
 #define PATH_SEP_CHAR '/'
 
-#if MICROPY_MODULE_WEAK_LINKS
-STATIC const mp_rom_map_elem_t mp_builtin_module_weak_links_table[] = {
-    MICROPY_PORT_BUILTIN_MODULE_WEAK_LINKS
-};
-
-STATIC MP_DEFINE_CONST_MAP(mp_builtin_module_weak_links_map, mp_builtin_module_weak_links_table);
-#endif
-
 bool mp_obj_is_package(mp_obj_t module) {
     mp_obj_t dest[2];
     mp_load_method_maybe(module, MP_QSTR___path__, dest);
@@ -360,8 +352,7 @@ mp_obj_t mp_builtin___import__(size_t n_args, const mp_obj_t *args) {
         qstr new_mod_q = qstr_from_strn(new_mod, new_mod_l);
         DEBUG_printf("Resolved base name for relative import: '%s'\n", qstr_str(new_mod_q));
         if (new_mod_q == MP_QSTR_) {
-            // CPython raises SystemError
-            mp_raise_msg(&mp_type_ImportError, "cannot perform relative import");
+            mp_raise_msg(&mp_type_ValueError, "cannot perform relative import");
         }
         module_name = MP_OBJ_NEW_QSTR(new_mod_q);
         mod_str = new_mod;
@@ -466,21 +457,21 @@ mp_obj_t mp_builtin___import__(size_t n_args, const mp_obj_t *args) {
                     // https://docs.python.org/3/reference/import.html
                     // "Specifically, any module that contains a __path__ attribute is considered a package."
                     mp_store_attr(module_obj, MP_QSTR___path__, mp_obj_new_str(vstr_str(&path), vstr_len(&path), false));
+                    size_t orig_path_len = path.len;
                     vstr_add_char(&path, PATH_SEP_CHAR);
                     vstr_add_str(&path, "__init__.py");
                     if (stat_file_py_or_mpy(&path) != MP_IMPORT_STAT_FILE) {
-                        vstr_cut_tail_bytes(&path, sizeof("/__init__.py") - 1); // cut off /__init__.py
                         //mp_warning("%s is imported as namespace package", vstr_str(&path));
                     } else {
                         do_load(module_obj, &path);
-                        vstr_cut_tail_bytes(&path, sizeof("/__init__.py") - 1); // cut off /__init__.py
                     }
+                    path.len = orig_path_len;
                 } else { // MP_IMPORT_STAT_FILE
                     do_load(module_obj, &path);
-                    // TODO: We cannot just break here, at the very least, we must execute
-                    // trailer code below. But otherwise if there're remaining components,
-                    // that would be (??) object path within module, not modules path within FS.
-                    // break;
+                    // This should be the last component in the import path.  If there are
+                    // remaining components then it's an ImportError because the current path
+                    // (the module that was just loaded) is not a package.  This will be caught
+                    // on the next iteration because the file will not exist.
                 }
             }
             if (outer_module_obj != MP_OBJ_NULL) {
@@ -493,12 +484,6 @@ mp_obj_t mp_builtin___import__(size_t n_args, const mp_obj_t *args) {
             }
             last = i + 1;
         }
-    }
-
-    if (i < mod_len) {
-        // we loaded a package, now need to load objects from within that package
-        // TODO
-        assert(0);
     }
 
     // If fromlist is not empty, return leaf module
