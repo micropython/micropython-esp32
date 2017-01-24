@@ -75,6 +75,7 @@
 #define MICROPY_PY_BUILTINS_MIN_MAX         (1)
 #define MICROPY_PY_BUILTINS_HELP            (1)
 #define MICROPY_PY_BUILTINS_HELP_TEXT       esp32_help_text
+#define MICROPY_PY_BUILTINS_HELP_MODULES    (1)
 #define MICROPY_PY___FILE__                 (1)
 #define MICROPY_PY_MICROPYTHON_MEM_INFO     (1)
 #define MICROPY_PY_ARRAY                    (1)

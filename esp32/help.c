@@ -61,4 +61,5 @@ const char *esp32_help_text =
 "  CTRL-E        -- on a blank line, enter paste mode\n"
 "\n"
 "For further help on a specific object, type help(obj)\n"
+"For a list of available modules, type help('modules')\n"
 ;
