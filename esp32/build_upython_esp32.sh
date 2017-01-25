@@ -1,11 +1,19 @@
 #!/bin/bash
+############
+# This script checks the ESP-IDF version against supported versions, and will download and checkout 
+# the latest supported ESP-IDF. It does this locally and does not gloablly set environment variables
+# because the point is to avoid messing with global ESP-IDF environments. If you want to do that, 
+# just do it.
+
+# We need ESPIDF for make to run at all - I should fix the Makefile for that
 
 
-# We need ESPIDF for make to run at all
 if [ ! $ESPIDF  ]
 then
 	export ESPIDF="./"
 fi
+
+
 
 cd ../
 make -C mpy-cross
@@ -31,5 +39,14 @@ fi
 cd ../ 
 IDF_PATH=./esp-idf 
 ESPIDF=./esp-idf 
-make deploy
+
+if [ $1 == "deploy" ]
+then
+	MAKEFLAGS="FLASH_MODE=dio "
+fi
+MAKEFLAGS="$MAKEFLAGS $1"
+
+
+make $MAKEFLAGS
+
 
