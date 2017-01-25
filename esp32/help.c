@@ -26,11 +26,9 @@
  * THE SOFTWARE.
  */
 
-#include <stdio.h>
+#include "py/builtin.h"
 
-#include "lib/utils/pyhelp.h"
-
-STATIC const char *help_text =
+const char *esp32_help_text =
 "Welcome to MicroPython on the ESP32!\n"
 "\n"
 "For generic online docs please visit http://docs.micropython.org/\n"
@@ -47,6 +45,14 @@ STATIC const char *help_text =
 "i2c.writeto(addr, b'1234')\n"
 "i2c.readfrom(addr, 4)\n"
 "\n"
+"Basic WiFi configuration:\n"
+"\n"
+"import network\n"
+"sta_if = network.WLAN(network.STA_IF); sta_if.active(True)\n"
+"sta_if.scan()                             # Scan for available access points\n"
+"sta_if.connect(\"<AP_name>\", \"<password>\") # Connect to an AP\n"
+"sta_if.isconnected()                      # Check for successful connection\n"
+"\n"
 "Control commands:\n"
 "  CTRL-A        -- on a blank line, enter raw REPL mode\n"
 "  CTRL-B        -- on a blank line, enter normal REPL mode\n"
@@ -55,18 +61,5 @@ STATIC const char *help_text =
 "  CTRL-E        -- on a blank line, enter paste mode\n"
 "\n"
 "For further help on a specific object, type help(obj)\n"
+"For a list of available modules, type help('modules')\n"
 ;
-
-STATIC mp_obj_t builtin_help(uint n_args, const mp_obj_t *args) {
-    if (n_args == 0) {
-        // print a general help message
-        mp_printf(MP_PYTHON_PRINTER, "%s", help_text);
-
-    } else {
-        // try to print something sensible about the given object
-        pyhelp_print_obj(args[0]);
-    }
-
-    return mp_const_none;
-}
-MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mp_builtin_help_obj, 0, 1, builtin_help);

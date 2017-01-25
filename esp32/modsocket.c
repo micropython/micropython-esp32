@@ -1,5 +1,5 @@
 /*
- * This file is part of the Micro Python project, http://micropython.org/
+ * This file is part of the MicroPython project, http://micropython.org/
  *
  * Development of the code in this file was sponsored by Microbric Pty Ltd
  * and Mnemote Pty Ltd
@@ -327,7 +327,7 @@ STATIC mp_obj_t socket_fileno(const mp_obj_t arg0) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(socket_fileno_obj, socket_fileno);
 
-STATIC mp_obj_t socket_makefile(mp_uint_t n_args, const mp_obj_t *args) {
+STATIC mp_obj_t socket_makefile(size_t n_args, const mp_obj_t *args) {
     (void)n_args;
     return args[0];
 }
@@ -420,7 +420,7 @@ STATIC const mp_obj_type_t socket_type = {
     .locals_dict = (mp_obj_t)&socket_locals_dict,
 };
 
-STATIC mp_obj_t get_socket(mp_uint_t n_args, const mp_obj_t *args) {
+STATIC mp_obj_t get_socket(size_t n_args, const mp_obj_t *args) {
     socket_obj_t *sock = m_new_obj_with_finaliser(socket_obj_t);
     sock->base.type = &socket_type;
     sock->domain = AF_INET;

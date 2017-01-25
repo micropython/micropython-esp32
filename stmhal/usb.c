@@ -353,7 +353,7 @@ STATIC void pyb_usb_vcp_print(const mp_print_t *print, mp_obj_t self_in, mp_prin
 
 /// \classmethod \constructor()
 /// Create a new USB_VCP object.
-STATIC mp_obj_t pyb_usb_vcp_make_new(const mp_obj_type_t *type, mp_uint_t n_args, mp_uint_t n_kw, const mp_obj_t *args) {
+STATIC mp_obj_t pyb_usb_vcp_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args) {
     // check arguments
     mp_arg_check_num(n_args, n_kw, 0, 0, false);
 
@@ -541,7 +541,7 @@ typedef struct _pyb_usb_hid_obj_t {
 
 STATIC const pyb_usb_hid_obj_t pyb_usb_hid_obj = {{&pyb_usb_hid_type}};
 
-STATIC mp_obj_t pyb_usb_hid_make_new(const mp_obj_type_t *type, mp_uint_t n_args, mp_uint_t n_kw, const mp_obj_t *args) {
+STATIC mp_obj_t pyb_usb_hid_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args) {
     // check arguments
     mp_arg_check_num(n_args, n_kw, 0, 0, false);
 
@@ -607,7 +607,11 @@ STATIC mp_obj_t pyb_usb_hid_send(mp_obj_t self_in, mp_obj_t report_in) {
     }
 
     // send the data
-    USBD_HID_SendReport(&hUSBDDevice, bufinfo.buf, bufinfo.len);
+    if (USBD_OK == USBD_HID_SendReport(&hUSBDDevice, bufinfo.buf, bufinfo.len)) {
+        return mp_obj_new_int(bufinfo.len);
+    } else {
+        return mp_obj_new_int(0);
+    }
 #endif
 
     return mp_const_none;
@@ -632,6 +636,9 @@ STATIC mp_uint_t pyb_usb_hid_ioctl(mp_obj_t self_in, mp_uint_t request, mp_uint_
     if (request == MP_STREAM_POLL) {
         mp_uint_t flags = arg;
         ret = 0;
+        if ((flags & MP_STREAM_POLL_RD) && USBD_HID_RxNum() > 0) {
+            ret |= MP_STREAM_POLL_RD;
+        }
         if ((flags & MP_STREAM_POLL_WR) && USBD_HID_CanSendReport(&hUSBDDevice)) {
             ret |= MP_STREAM_POLL_WR;
         }

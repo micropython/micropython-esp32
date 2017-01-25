@@ -30,11 +30,19 @@ Follow the guide "Setting Up ESP-IDF", for Windows, Mac or Linux.  You
 only need to perform up to "Step 2" of the guide, by which stage you
 should have installed the cross-compile and cloned the ESP-IDF repository.
 
-The instructions provided by the ESP-IDF give a link to download the
-cross-compiler in binary form.  At the time of writing this binary had
-a bug in it for some floating-point operations.  To fix this you will
-need to compile the cross-compiler from source, using crosstool-NG, and
-instructions to do that are also provided in the ESP-IDF set-up guide.
+Be advised that the ESP-IDF is still undergoing changes and only some
+versions are supported.  To find which build is compatible refer to the line
+in the makefile containing the following:
+```
+ESPIDF_SUPHASH := <Current supported ESP-IDF commit hash>
+```
+After finishing "Step 2" you can roll back your current build of
+the ESP-IDF using:
+```
+$ git checkout <Current supported ESP-IDF commit hash>
+```
+Note that you will get a warning when building the code if the ESP-IDF
+version is incorrect.
 
 Once everything is set up you should have a functioning toolchain with
 prefix xtensa-esp32-elf- (or otherwise if you configured it differently)
@@ -109,4 +117,43 @@ that is used for programming the firmware.  The baudrate for the REPL is
 115200 and you can use a command such as:
 ```bash
 $ picocom /dev/ttyUSB0
+```
+
+Configuring the WiFi and using the board
+----------------------------------------
+
+The ESP32 port is designed to be (almost) equivalent to the ESP8266 in
+terms of the modules and user-facing API.  There are some small differences,
+notably that the ESP32 does not automatically connect to the last access
+point when booting up.  But for the most part the documentation and tutorials
+for the ESP8266 should apply to the ESP32 (at least for the components that
+are implemented).
+
+See http://docs.micropython.org/en/latest/esp8266/esp8266/quickref.html for
+a quick reference, and http://docs.micropython.org/en/latest/esp8266/esp8266/tutorial/intro.html
+for a tutorial.
+
+The following function can be used to connect to a WiFi access point (you can
+either pass in your own SSID and password, or change the defaults so you can
+quickly call `wlan_connect()` and it just works):
+```python
+def wlan_connect(ssid='MYSSID', password='MYPASS'):
+    import network
+    wlan = network.WLAN(network.STA_IF)
+    if not wlan.active() or not wlan.isconnected():
+        wlan.active(True)
+        print('connecting to:', ssid)
+        wlan.connect(ssid, password)
+        while not wlan.isconnected():
+            pass
+    print('network config:', wlan.ifconfig())
+```
+
+Note that some boards require you to configure the WiFi antenna before using
+the WiFi.  On Pycom boards like the LoPy and WiPy 2.0 you need to execute the
+following code to select the internal antenna (best to put this line in your
+boot.py file):
+```python
+import machine
+antenna = machine.Pin(16, machine.Pin.OUT, value=0)
 ```

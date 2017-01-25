@@ -45,7 +45,7 @@
 
 #if MICROPY_PY_MACHINE
 
-STATIC mp_obj_t machine_freq(mp_uint_t n_args, const mp_obj_t *args) {
+STATIC mp_obj_t machine_freq(size_t n_args, const mp_obj_t *args) {
     if (n_args == 0) {
         // get
         return mp_obj_new_int(ets_get_cpu_frequency() * 1000000);
