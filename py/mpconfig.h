@@ -398,9 +398,9 @@
 #define MICROPY_READER_POSIX (0)
 #endif
 
-// Whether to use the FatFS reader for importing files
-#ifndef MICROPY_READER_FATFS
-#define MICROPY_READER_FATFS (0)
+// Whether to use the VFS reader for importing files
+#ifndef MICROPY_READER_VFS
+#define MICROPY_READER_VFS (0)
 #endif
 
 // Hook for the VM at the start of the opcode loop (can contain variable
@@ -616,9 +616,9 @@ typedef double mp_float_t;
 #define MICROPY_USE_INTERNAL_PRINTF (1)
 #endif
 
-// Support for user-space VFS mount (selected ports)
-#ifndef MICROPY_FSUSERMOUNT
-#define MICROPY_FSUSERMOUNT (0)
+// Support for generic VFS sub-system
+#ifndef MICROPY_VFS
+#define MICROPY_VFS (0)
 #endif
 
 /*****************************************************************************/
