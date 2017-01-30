@@ -23,7 +23,7 @@
 #define MICROPY_OPT_MPZ_BITWISE             (1)
 
 // Python internal features
-#define MICROPY_READER_FATFS                (1)
+#define MICROPY_READER_VFS                  (1)
 #define MICROPY_ENABLE_GC                   (1)
 #define MICROPY_ENABLE_FINALISER            (1)
 #define MICROPY_STACK_CHECK                 (1)
@@ -48,6 +48,8 @@
 #define MICROPY_CAN_OVERRIDE_BUILTINS       (1)
 #define MICROPY_USE_INTERNAL_ERRNO          (1)
 #define MICROPY_USE_INTERNAL_PRINTF         (0) // ESP32 SDK requires its own printf
+#define MICROPY_VFS                         (1)
+#define MICROPY_VFS_FAT                     (1)
 
 // control over Python builtins
 #define MICROPY_PY_FUNCTION_ATTRS           (1)
@@ -125,15 +127,17 @@
 #define MICROPY_PY_BTREE                    (0)
 
 // fatfs configuration
-#define MICROPY_VFS_FAT                     (1)
-#define MICROPY_FSUSERMOUNT                 (1)
 #define MICROPY_FATFS_ENABLE_LFN            (1)
 #define MICROPY_FATFS_RPATH                 (2)
-#define MICROPY_FATFS_VOLUMES               (2)
 #define MICROPY_FATFS_MAX_SS                (4096)
 #define MICROPY_FATFS_LFN_CODE_PAGE         (437) /* 1=SFN/ANSI 437=LFN/U.S.(OEM) */
 #define mp_type_fileio                      fatfs_type_fileio
 #define mp_type_textio                      fatfs_type_textio
+
+// use vfs's functions for import stat and builtin open
+#define mp_import_stat mp_vfs_import_stat
+#define mp_builtin_open mp_vfs_open
+#define mp_builtin_open_obj mp_vfs_open_obj
 
 // extra built in names to add to the global namespace
 #define MICROPY_PORT_BUILTINS \

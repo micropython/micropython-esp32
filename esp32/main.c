@@ -106,28 +106,6 @@ void nlr_jump_fail(void *val) {
     }
 }
 
-mp_import_stat_t fat_vfs_import_stat(const char *path);
-
-mp_import_stat_t mp_import_stat(const char *path) {
-    #if MICROPY_VFS_FAT
-    return fat_vfs_import_stat(path);
-    #else
-    (void)path;
-    return MP_IMPORT_STAT_NO_EXIST;
-    #endif
-}
-
-mp_obj_t vfs_proxy_call(qstr method_name, size_t n_args, const mp_obj_t *args);
-mp_obj_t mp_builtin_open(uint n_args, const mp_obj_t *args, mp_map_t *kwargs) {
-    #if MICROPY_VFS_FAT
-    // TODO: Handle kwargs!
-    return vfs_proxy_call(MP_QSTR_open, n_args, args);
-    #else
-    return mp_const_none;
-    #endif
-}
-MP_DEFINE_CONST_FUN_OBJ_KW(mp_builtin_open_obj, 1, mp_builtin_open);
-
 // modussl_mbedtls uses this function but it's not enabled in ESP IDF
 void mbedtls_debug_set_threshold(int threshold) {
     (void)threshold;
