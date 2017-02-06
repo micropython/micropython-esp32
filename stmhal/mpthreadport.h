@@ -1,10 +1,9 @@
 /*
- * This file is part of the Micro Python project, http://micropython.org/
+ * This file is part of the MicroPython project, http://micropython.org/
  *
  * The MIT License (MIT)
  *
- * Copyright (c) 2013, 2014 Damien P. George
- * Copyright (c) 2015 Daniel Campora
+ * Copyright (c) 2016 Damien P. George
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,12 +23,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+#ifndef __MICROPY_INCLUDED_STMHAL_MPTHREADPORT_H__
+#define __MICROPY_INCLUDED_STMHAL_MPTHREADPORT_H__
 
-#ifndef MPSYSTICK_H
-#define MPSYSTICK_H
+#include "py/mpthread.h"
+#include "pybthread.h"
 
-void sys_tick_wait_at_least(uint32_t stc, uint32_t delay_ms);
-bool sys_tick_has_passed(uint32_t stc, uint32_t delay_ms);
-uint32_t sys_tick_get_microseconds(void);
+typedef uint32_t mp_thread_mutex_t;
 
-#endif  // MPSYSTICK_H
+void mp_thread_init(void);
+void mp_thread_gc_others(void);
+
+static inline void mp_thread_set_state(void *state) {
+    pyb_thread_set_local(state);
+}
+
+static inline struct _mp_state_thread_t *mp_thread_get_state(void) {
+    return pyb_thread_get_local();
+}
+
+#endif // __MICROPY_INCLUDED_STMHAL_MPTHREADPORT_H__

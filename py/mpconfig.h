@@ -759,6 +759,11 @@ typedef double mp_float_t;
 #define MICROPY_PY_BUILTINS_MIN_MAX (1)
 #endif
 
+// Support for calls to pow() with 3 integer arguments
+#ifndef MICROPY_PY_BUILTINS_POW3
+#define MICROPY_PY_BUILTINS_POW3 (0)
+#endif
+
 // Whether to provide the help function
 #ifndef MICROPY_PY_BUILTINS_HELP
 #define MICROPY_PY_BUILTINS_HELP (0)
