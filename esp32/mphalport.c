@@ -93,6 +93,15 @@ void mp_hal_delay_us(uint32_t us) {
     vTaskDelay(us / 1000 / portTICK_PERIOD_MS);
 }
 
+// this function could do with improvements
+void mp_hal_delay_us_fast(uint32_t us) {
+    uint32_t delay = ets_get_cpu_frequency() / 19;
+    while (--us) {
+        for (volatile uint32_t i = delay; i; --i) {
+        }
+    }
+}
+
 /*
 extern int mp_stream_errno;
 int *__errno() {
