@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <alloca.h>
+#include "rom/ets_sys.h"
 
 // object representation and NLR handling
 #define MICROPY_OBJ_REPR                    (MICROPY_OBJ_REPR_A)
@@ -121,6 +122,8 @@
 #define MICROPY_PY_MACHINE_PULSE            (1)
 #define MICROPY_PY_MACHINE_I2C              (1)
 #define MICROPY_PY_MACHINE_SPI              (1)
+#define MICROPY_PY_MACHINE_SPI_MIN_DELAY    (0)
+#define MICROPY_PY_MACHINE_SPI_MAX_BAUDRATE (ets_get_cpu_frequency() * 1000000 / 200) // roughly
 #define MICROPY_PY_USSL                     (1)
 #define MICROPY_SSL_MBEDTLS                 (1)
 #define MICROPY_PY_WEBSOCKET                (0)
