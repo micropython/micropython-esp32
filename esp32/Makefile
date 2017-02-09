@@ -120,6 +120,7 @@ SRC_C = \
 	moduos.c \
 	machine_pin.c \
 	machine_touchpad.c \
+	machine_adc.c \
 	modmachine.c \
 	modnetwork.c \
 	modsocket.c \
