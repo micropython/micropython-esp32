@@ -65,6 +65,8 @@ include Makefile
 ```
 Be sure to enter the correct path to your local copy of the IDF repository
 (and use `$(HOME)`, not tilde, to reference your home directory).
+If your filesystem is case-insensitive then you'll need to use `GNUmakefile`
+instead of `makefile`.
 If the Xtensa cross-compiler is not in your path you can use the
 `CROSS_COMPILE` variable to set its location.  Other options of interest
 are `PORT` for the serial port of your esp32 module, and `FLASH_MODE`
