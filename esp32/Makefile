@@ -121,6 +121,7 @@ SRC_C = \
 	machine_pin.c \
 	machine_touchpad.c \
 	machine_adc.c \
+	machine_dac.c \
 	modmachine.c \
 	modnetwork.c \
 	modsocket.c \
