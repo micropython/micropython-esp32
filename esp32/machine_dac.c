@@ -53,7 +53,7 @@ STATIC mp_obj_t mdac_make_new(const mp_obj_type_t *type, size_t n_args, size_t n
     mp_arg_check_num(n_args, n_kw, 1, 1, true);
     gpio_num_t pin_id = machine_pin_get_id(args[0]);
     const mdac_obj_t *self = NULL;
-    for (int i=0; i<MP_ARRAY_SIZE(mdac_obj); i++) {
+    for (int i = 0; i < MP_ARRAY_SIZE(mdac_obj); i++) {
         if (pin_id == mdac_obj[i].gpio_id) { self = &mdac_obj[i]; break; }
     }
     if (!self) nlr_raise(mp_obj_new_exception_msg(&mp_type_ValueError, "invalid Pin for DAC"));

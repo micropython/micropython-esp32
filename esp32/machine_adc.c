@@ -56,10 +56,16 @@ STATIC const madc_obj_t madc_obj[] = {
 STATIC mp_obj_t madc_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw,
         const mp_obj_t *args) {
 
+    static int initialized = 0;
+    if (!initialized) {
+        adc1_config_width(ADC_WIDTH_12Bit);
+        initialized = 1;
+    }
+
     mp_arg_check_num(n_args, n_kw, 1, 1, true);
     gpio_num_t pin_id = machine_pin_get_id(args[0]);
     const madc_obj_t *self = NULL;
-    for (int i=0; i<MP_ARRAY_SIZE(madc_obj); i++) {
+    for (int i = 0; i < MP_ARRAY_SIZE(madc_obj); i++) {
         if (pin_id == madc_obj[i].gpio_id) { self = &madc_obj[i]; break; }
     }
     if (!self) nlr_raise(mp_obj_new_exception_msg(&mp_type_ValueError, "invalid Pin for ADC"));
@@ -90,30 +96,29 @@ STATIC mp_obj_t madc_atten(mp_obj_t self_in, mp_obj_t atten_in) {
 }
 MP_DEFINE_CONST_FUN_OBJ_2(madc_atten_obj, madc_atten);
 
-STATIC mp_obj_t madc_width(mp_obj_t self_in, mp_obj_t width_in) {
-    // XXX This should be a classmethod, as there's only one width
-    // across all ADC channels.
+STATIC mp_obj_t madc_width(mp_obj_t cls_in, mp_obj_t width_in) {
     adc_bits_width_t width = mp_obj_get_int(width_in);
     esp_err_t err = adc1_config_width(width);
     if (err == ESP_OK) return mp_const_none;
     mp_raise_ValueError("Parameter Error");
 }
-MP_DEFINE_CONST_FUN_OBJ_2(madc_width_obj, madc_width);
+MP_DEFINE_CONST_FUN_OBJ_2(madc_width_fun_obj, madc_width);
+MP_DEFINE_CONST_CLASSMETHOD_OBJ(madc_width_obj, MP_ROM_PTR(&madc_width_fun_obj));
 
 STATIC const mp_rom_map_elem_t madc_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_read), MP_ROM_PTR(&madc_read_obj) },
     { MP_ROM_QSTR(MP_QSTR_atten), MP_ROM_PTR(&madc_atten_obj) },
     { MP_ROM_QSTR(MP_QSTR_width), MP_ROM_PTR(&madc_width_obj) },
 
-    { MP_ROM_QSTR(MP_QSTR_ATTN_0db), MP_ROM_INT(ADC_ATTEN_0db) },
-    { MP_ROM_QSTR(MP_QSTR_ATTN_2_5db), MP_ROM_INT(ADC_ATTEN_2_5db) },
-    { MP_ROM_QSTR(MP_QSTR_ATTN_6db), MP_ROM_INT(ADC_ATTEN_6db) },
-    { MP_ROM_QSTR(MP_QSTR_ATTN_11db), MP_ROM_INT(ADC_ATTEN_11db) },
+    { MP_ROM_QSTR(MP_QSTR_ATTN_0DB), MP_ROM_INT(ADC_ATTEN_0db) },
+    { MP_ROM_QSTR(MP_QSTR_ATTN_2_5DB), MP_ROM_INT(ADC_ATTEN_2_5db) },
+    { MP_ROM_QSTR(MP_QSTR_ATTN_6DB), MP_ROM_INT(ADC_ATTEN_6db) },
+    { MP_ROM_QSTR(MP_QSTR_ATTN_11DB), MP_ROM_INT(ADC_ATTEN_11db) },
 
-    { MP_ROM_QSTR(MP_QSTR_WIDTH_9Bit), MP_ROM_INT(ADC_WIDTH_9Bit) },
-    { MP_ROM_QSTR(MP_QSTR_WIDTH_10Bit), MP_ROM_INT(ADC_WIDTH_10Bit) },
-    { MP_ROM_QSTR(MP_QSTR_WIDTH_11Bit), MP_ROM_INT(ADC_WIDTH_11Bit) },
-    { MP_ROM_QSTR(MP_QSTR_WIDTH_12Bit), MP_ROM_INT(ADC_WIDTH_12Bit) },
+    { MP_ROM_QSTR(MP_QSTR_WIDTH_9BIT), MP_ROM_INT(ADC_WIDTH_9Bit) },
+    { MP_ROM_QSTR(MP_QSTR_WIDTH_10BIT), MP_ROM_INT(ADC_WIDTH_10Bit) },
+    { MP_ROM_QSTR(MP_QSTR_WIDTH_11BIT), MP_ROM_INT(ADC_WIDTH_11Bit) },
+    { MP_ROM_QSTR(MP_QSTR_WIDTH_12BIT), MP_ROM_INT(ADC_WIDTH_12Bit) },
 };
 
 STATIC MP_DEFINE_CONST_DICT(madc_locals_dict, madc_locals_dict_table);
