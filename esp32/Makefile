@@ -29,7 +29,7 @@ ESPCOMP = $(ESPIDF)/components
 ESPTOOL ?= $(ESPCOMP)/esptool_py/esptool/esptool.py
 
 # verify the ESP IDF version
-ESPIDF_SUPHASH := 0a678ebe8c8bb78053f2a2dc4bd26124adde9122
+ESPIDF_SUPHASH := 13dfb5568dcc30aa43363c49f7a4505d04036424
 ESPIDF_CURHASH := $(shell git -C $(ESPIDF) show --pretty=format:'%H')
 ifneq ($(ESPIDF_CURHASH),$(ESPIDF_SUPHASH))
 $(info ** WARNING **)
@@ -559,7 +559,7 @@ APP_LD_ARGS += -L$(dir $(LIBSTDCXX_FILE_NAME)) -lstdc++
 APP_LD_ARGS += $(ESPCOMP)/newlib/lib/libc.a
 APP_LD_ARGS += $(ESPCOMP)/newlib/lib/libm.a
 APP_LD_ARGS += $(ESPCOMP)/esp32/libhal.a
-APP_LD_ARGS += -L$(ESPCOMP)/esp32/lib -lcore -lnet80211 -lphy -lrtc -lpp -lwpa -lsmartconfig -lcoexist
+APP_LD_ARGS += -L$(ESPCOMP)/esp32/lib -lcore -lnet80211 -lphy -lrtc -lrtc_clk -lpp -lwpa -lsmartconfig -lcoexist
 APP_LD_ARGS += $(OBJ)
 APP_LD_ARGS += --end-group
 
@@ -612,7 +612,7 @@ BOOTLOADER_OBJ = $(addprefix $(BUILD)/bootloader/$(ESPCOMP)/,\
 BOOTLOADER_LIBS =
 BOOTLOADER_LIBS += -Wl,--start-group
 BOOTLOADER_LIBS += $(BOOTLOADER_OBJ)
-BOOTLOADER_LIBS += -L$(ESPCOMP)/esp32/lib -lrtc
+BOOTLOADER_LIBS += -L$(ESPCOMP)/esp32/lib -lrtc -lrtc_clk
 BOOTLOADER_LIBS += -L$(dir $(LIBGCC_FILE_NAME)) -lgcc
 BOOTLOADER_LIBS += -Wl,--end-group
 
