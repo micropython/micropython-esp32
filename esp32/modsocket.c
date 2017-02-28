@@ -45,6 +45,7 @@
 #include "py/mphal.h"
 #include "py/stream.h"
 #include "lib/netutils/netutils.h"
+#include "tcpip_adapter.h"
 
 #include "lwip/sockets.h"
 #include "lwip/netdb.h"
@@ -481,8 +482,20 @@ STATIC mp_obj_t esp_socket_getaddrinfo(const mp_obj_t host, const mp_obj_t port)
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(esp_socket_getaddrinfo_obj, esp_socket_getaddrinfo);
 
+STATIC mp_obj_t esp_socket_initialize() {
+    static int initialized = 0;
+    if (!initialized) {
+        ESP_LOGI("modsocket", "Initializing");
+        tcpip_adapter_init();
+        initialized = 1;
+    }
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(esp_socket_initialize_obj, esp_socket_initialize);
+
 STATIC const mp_map_elem_t mp_module_socket_globals_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR___name__), MP_OBJ_NEW_QSTR(MP_QSTR_usocket) },
+    { MP_OBJ_NEW_QSTR(MP_QSTR___init__), (mp_obj_t)&esp_socket_initialize_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_socket), (mp_obj_t)&get_socket_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_getaddrinfo), (mp_obj_t)&esp_socket_getaddrinfo_obj },
 
