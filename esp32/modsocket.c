@@ -76,7 +76,7 @@ STATIC mp_obj_t socket_close(const mp_obj_t arg0) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(socket_close_obj, socket_close);
 
-static int _socket_getaddrinfo2(const mp_obj_t host, const mp_obj_t portx, struct addrinfo **resp) {
+void _socket_getaddrinfo2(const mp_obj_t host, const mp_obj_t portx, struct addrinfo **resp) {
     const struct addrinfo hints = {
         .ai_family = AF_INET,
         .ai_socktype = SOCK_STREAM,
@@ -92,25 +92,28 @@ static int _socket_getaddrinfo2(const mp_obj_t host, const mp_obj_t portx, struc
     mp_uint_t host_len, port_len;
     const char *host_str = mp_obj_str_get_data(host, &host_len);
     const char *port_str = mp_obj_str_get_data(port, &port_len);
+    if (host_len == 0) host_str = "0.0.0.0";
 
-    return lwip_getaddrinfo(host_str, port_str, &hints, resp);
+    int e = lwip_getaddrinfo(host_str, port_str, &hints, resp);
+    if (e) mp_raise_OSError(e);
 }
 
-int _socket_getaddrinfo(const mp_obj_t addrtuple, struct addrinfo **resp) {
+void _socket_getaddrinfo(const mp_obj_t addrtuple, struct addrinfo **resp) {
     mp_uint_t len = 0;
     mp_obj_t *elem;
     mp_obj_get_array(addrtuple, &len, &elem);
-    if (len != 2) return -1;
-    return _socket_getaddrinfo2(elem[0], elem[1], resp);
+    if (len != 2) mp_raise_ValueError("Expected (addr, port) pair");
+    _socket_getaddrinfo2(elem[0], elem[1], resp);
 }
 
 STATIC mp_obj_t socket_bind(const mp_obj_t arg0, const mp_obj_t arg1) {
     socket_obj_t *self = MP_OBJ_TO_PTR(arg0);
     struct addrinfo *res;
     _socket_getaddrinfo(arg1, &res);
-    int r = lwip_bind_r(self->fd, res->ai_addr, res->ai_addrlen);
+    int x = lwip_bind_r(self->fd, res->ai_addr, res->ai_addrlen);
     lwip_freeaddrinfo(res);
-    return mp_obj_new_int(r);
+    if (x != 0) mp_raise_OSError(errno);
+    return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(socket_bind_obj, socket_bind);
     
@@ -118,7 +121,8 @@ STATIC mp_obj_t socket_listen(const mp_obj_t arg0, const mp_obj_t arg1) {
     socket_obj_t *self = MP_OBJ_TO_PTR(arg0);
     int backlog = mp_obj_get_int(arg1);
     int x = lwip_listen_r(self->fd, backlog);
-    return (x == 0) ? mp_const_true : mp_const_false;
+    if (x != 0) exception_from_errno(errno);
+    return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(socket_listen_obj, socket_listen);
 
@@ -157,9 +161,7 @@ STATIC mp_obj_t socket_connect(const mp_obj_t arg0, const mp_obj_t arg1) {
     _socket_getaddrinfo(arg1, &res);
     int r = lwip_connect_r(self->fd, res->ai_addr, res->ai_addrlen);
     lwip_freeaddrinfo(res);
-    if (r != 0) {
-        exception_from_errno(errno);
-    }
+    if (r != 0) exception_from_errno(errno);
     return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(socket_connect_obj, socket_connect);
