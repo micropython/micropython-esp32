@@ -41,6 +41,7 @@
 #include "py/objlist.h"
 #include "py/objstr.h"
 #include "py/runtime.h"
+#include "py/mperrno.h"
 #include "py/mphal.h"
 #include "py/stream.h"
 #include "py/mperrno.h"
@@ -63,7 +64,10 @@ typedef struct _socket_obj_t {
 } socket_obj_t;
 
 NORETURN static void exception_from_errno(int _errno) {
-    // XXX add more specific exceptions
+    // Here we need to convert from lwip errno values to MicroPython's standard ones
+    if (_errno == EINPROGRESS) {
+        _errno = MP_EINPROGRESS;
+    }
     mp_raise_OSError(_errno);
 }
 
