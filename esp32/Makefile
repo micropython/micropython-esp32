@@ -169,6 +169,7 @@ LIB_SRC_C += \
 endif
 
 DRIVERS_SRC_C = $(addprefix drivers/,\
+	dht/dht.c \
 	)
 
 OBJ_MP =

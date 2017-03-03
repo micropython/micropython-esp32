@@ -34,6 +34,10 @@
 
 extern ringbuf_t stdin_ringbuf;
 
+// TODO implement me
+#define disable_irq() 0
+#define enable_irq(irq_state) (void)(irq_state)
+
 uint32_t mp_hal_ticks_us(void);
 __attribute__((always_inline)) static inline uint32_t mp_hal_ticks_cpu(void) {
   uint32_t ccount;
