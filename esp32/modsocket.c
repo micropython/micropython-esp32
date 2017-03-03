@@ -271,29 +271,35 @@ STATIC mp_obj_t socket_recvfrom(mp_obj_t self_in, mp_obj_t len_in) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(socket_recvfrom_obj, socket_recvfrom);
 
+int _socket_send(socket_obj_t *sock, const char *data, size_t datalen) {
+    int sentlen = 0;
+    for (int i=0; i<sock->retries && sentlen < datalen; i++) {
+        int r = lwip_write_r(sock->fd, data+sentlen, datalen-sentlen);
+        if (r < 0 && errno != EWOULDBLOCK) exception_from_errno(errno);
+        if (r > 0) sentlen += r;
+        check_for_exceptions();
+    }
+    if (sentlen == 0) mp_raise_OSError(MP_ETIMEDOUT); 
+    return sentlen;
+}
+
 STATIC mp_obj_t socket_send(const mp_obj_t arg0, const mp_obj_t arg1) {
-    socket_obj_t *self = MP_OBJ_TO_PTR(arg0);
+    socket_obj_t *sock = MP_OBJ_TO_PTR(arg0);
     mp_uint_t datalen;
     const char *data = mp_obj_str_get_data(arg1, &datalen);
-    int x = lwip_write_r(self->fd, data, datalen);
-    if (x >= 0) return mp_obj_new_int(x);
-    if (errno == EWOULDBLOCK) return mp_obj_new_int(0);
-    exception_from_errno(errno);
+    int r = _socket_send(sock, data, datalen);
+    return mp_obj_new_int(r);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(socket_send_obj, socket_send);
 
 STATIC mp_obj_t socket_sendall(const mp_obj_t arg0, const mp_obj_t arg1) {
     // XXX behaviour when nonblocking (see extmod/modlwip.c)
     // XXX also timeout behaviour.
-    socket_obj_t *self = MP_OBJ_TO_PTR(arg0);
+    socket_obj_t *sock = MP_OBJ_TO_PTR(arg0);
     mp_buffer_info_t bufinfo;
     mp_get_buffer_raise(arg1, &bufinfo, MP_BUFFER_READ);
-    while (bufinfo.len != 0) {
-        int ret = lwip_write_r(self->fd, bufinfo.buf, bufinfo.len);
-        if (ret < 0) exception_from_errno(errno);
-        bufinfo.len -= ret;
-        bufinfo.buf = (char *)bufinfo.buf + ret;
-    }
+    int r = _socket_send(sock, bufinfo.buf, bufinfo.len);
+    if (r < bufinfo.len) mp_raise_OSError(MP_ETIMEDOUT);
     return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(socket_sendall_obj, socket_sendall);
@@ -312,12 +318,15 @@ STATIC mp_obj_t socket_sendto(mp_obj_t self_in, mp_obj_t data_in, mp_obj_t addr_
     to.sin_port = lwip_htons(netutils_parse_inet_addr(addr_in, (uint8_t*)&to.sin_addr, NETUTILS_BIG));
 
     // send the data
-    int ret = lwip_sendto_r(self->fd, bufinfo.buf, bufinfo.len, 0, (struct sockaddr*)&to, sizeof(to));
-    if (ret == -1) {
-        exception_from_errno(errno);
+    for (int i=0; i<self->retries; i++) {
+        int ret = lwip_sendto_r(self->fd, bufinfo.buf, bufinfo.len, 0, (struct sockaddr*)&to, sizeof(to));
+        if (ret > 0) return mp_obj_new_int_from_uint(ret);
+        if (ret == -1 && errno != EWOULDBLOCK) {
+            exception_from_errno(errno);
+        }
+        check_for_exceptions();
     }
-
-    return mp_obj_new_int_from_uint(ret);
+    mp_raise_OSError(MP_ETIMEDOUT); 
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_3(socket_sendto_obj, socket_sendto);
 
@@ -352,12 +361,14 @@ STATIC mp_uint_t socket_stream_read(mp_obj_t self_in, void *buf, mp_uint_t size,
 }
 
 STATIC mp_uint_t socket_stream_write(mp_obj_t self_in, const void *buf, mp_uint_t size, int *errcode) {
-    socket_obj_t *socket = self_in;
-    int x = lwip_write_r(socket->fd, buf, size);
-    if (x >= 0) return x;
-    if (errno == EWOULDBLOCK) return 0;
-    *errcode = MP_EIO;
-    return MP_STREAM_ERROR;
+    socket_obj_t *sock = self_in;
+    for (int i=0; i<sock->retries; i++) {
+        int r = lwip_write_r(sock->fd, buf, size);
+        if (r > 0) return r;
+        if (r < 0 && errno != EWOULDBLOCK) { *errcode = errno; return MP_STREAM_ERROR; }
+        check_for_exceptions();
+    }
+    return 0;
 }
 
 STATIC mp_uint_t socket_stream_ioctl(mp_obj_t self_in, mp_uint_t request, uintptr_t arg, int *errcode) {
