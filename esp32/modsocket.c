@@ -359,34 +359,31 @@ STATIC mp_uint_t socket_stream_write(mp_obj_t self_in, const void *buf, mp_uint_
 STATIC mp_uint_t socket_stream_ioctl(mp_obj_t self_in, mp_uint_t request, uintptr_t arg, int *errcode) {
     socket_obj_t * socket = self_in;
     if (request == MP_STREAM_POLL) {
-        char buf[1];
-        mp_uint_t ret = 0;
-        if (arg & MP_STREAM_POLL_RD) {
-            int r = lwip_recvfrom_r(socket->fd, buf, 1, MSG_DONTWAIT | MSG_PEEK, NULL, NULL);
-            if (r > 0) ret |= MP_STREAM_POLL_RD;
-        } 
-        if (arg & (MP_STREAM_POLL_WR | MP_STREAM_POLL_HUP)) {
-            fd_set wfds; FD_ZERO(&wfds);
-            fd_set efds; FD_ZERO(&efds);
-            struct timeval timeout = { .tv_sec = 0, .tv_usec = 0 };
-            if (arg & MP_STREAM_POLL_WR) FD_SET(socket->fd, &wfds);
-            if (arg & MP_STREAM_POLL_HUP) FD_SET(socket->fd, &efds);
-            int r = select((socket->fd)+1, NULL, &wfds, &efds, &timeout);
-            if (r < 0) {
-                *errcode = MP_EIO;
-                return MP_STREAM_ERROR;
-            }
-            if (FD_ISSET(socket->fd, &wfds)) ret |= MP_STREAM_POLL_WR;
-            if (FD_ISSET(socket->fd, &efds)) ret |= MP_STREAM_POLL_HUP;
+
+        fd_set rfds; FD_ZERO(&rfds);
+        fd_set wfds; FD_ZERO(&wfds);
+        fd_set efds; FD_ZERO(&efds);
+        struct timeval timeout = { .tv_sec = 0, .tv_usec = 0 };
+        if (arg & MP_STREAM_POLL_RD) FD_SET(socket->fd, &rfds);
+        if (arg & MP_STREAM_POLL_WR) FD_SET(socket->fd, &wfds);
+        if (arg & MP_STREAM_POLL_HUP) FD_SET(socket->fd, &efds);
+
+        int r = select((socket->fd)+1, &rfds, &wfds, &efds, &timeout);
+        if (r < 0) {
+            *errcode = MP_EIO;
+            return MP_STREAM_ERROR;
         }
+
+        mp_uint_t ret = 0;
+        if (FD_ISSET(socket->fd, &rfds)) ret |= MP_STREAM_POLL_RD;
+        if (FD_ISSET(socket->fd, &wfds)) ret |= MP_STREAM_POLL_WR;
+        if (FD_ISSET(socket->fd, &efds)) ret |= MP_STREAM_POLL_HUP;
         return ret;
     }
 
     *errcode = MP_EINVAL;
     return MP_STREAM_ERROR;
 }
-
-// XXX TODO missing methods ...
 
 STATIC const mp_map_elem_t socket_locals_dict_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR___del__), (mp_obj_t)&socket_close_obj },
