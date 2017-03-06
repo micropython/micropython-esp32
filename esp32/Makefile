@@ -29,8 +29,8 @@ ESPCOMP = $(ESPIDF)/components
 ESPTOOL ?= $(ESPCOMP)/esptool_py/esptool/esptool.py
 
 # verify the ESP IDF version
-ESPIDF_SUPHASH := 13dfb5568dcc30aa43363c49f7a4505d04036424
-ESPIDF_CURHASH := $(shell git -C $(ESPIDF) show --pretty=format:'%H')
+ESPIDF_SUPHASH := c06cc31d85cc700e1dbddbe527d4282c4bc5845a
+ESPIDF_CURHASH := $(shell git -C $(ESPIDF) show -s --pretty=format:'%H')
 ifneq ($(ESPIDF_CURHASH),$(ESPIDF_SUPHASH))
 $(info ** WARNING **)
 $(info The git hash of ESP IDF does not match the supported version)
