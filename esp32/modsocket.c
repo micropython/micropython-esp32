@@ -211,7 +211,11 @@ STATIC mp_obj_t socket_setsockopt(size_t n_args, const mp_obj_t *args) {
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(socket_setsockopt_obj, 4, 4, socket_setsockopt);
 
 void _socket_settimeout(socket_obj_t *sock, uint64_t timeout_ms) {
-    sock->retries = timeout_ms * 1000 / SOCKET_POLL_US;
+    // Rather than waiting for the entire timeout specified, we wait sock->retries times
+    // for SOCKET_POLL_US each, checking for a MicroPython interrupt between timeouts.
+    // with SOCKET_POLL_MS == 100ms, sock->retries allows for timeouts up to 13 years.
+    // if timeout_ms == UINT64_MAX, wait forever.
+    sock->retries = (timeout_ms == UINT64_MAX) ? UINT_MAX : timeout_ms * 1000 / SOCKET_POLL_US;
 
     struct timeval timeout = {
         .tv_sec = 0,
@@ -224,7 +228,7 @@ void _socket_settimeout(socket_obj_t *sock, uint64_t timeout_ms) {
 
 STATIC mp_obj_t socket_settimeout(const mp_obj_t arg0, const mp_obj_t arg1) {
     socket_obj_t *self = MP_OBJ_TO_PTR(arg0);
-    if (arg1 == mp_const_none) _socket_settimeout(self, UINT_MAX);
+    if (arg1 == mp_const_none) _socket_settimeout(self, UINT64_MAX);
     else _socket_settimeout(self, mp_obj_get_float(arg1) * 1000L);
     return mp_const_none;
 }
@@ -232,7 +236,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_2(socket_settimeout_obj, socket_settimeout);
 
 STATIC mp_obj_t socket_setblocking(const mp_obj_t arg0, const mp_obj_t arg1) {
     socket_obj_t *self = MP_OBJ_TO_PTR(arg0);
-    if (mp_obj_is_true(arg1)) _socket_settimeout(self, UINT_MAX);
+    if (mp_obj_is_true(arg1)) _socket_settimeout(self, UINT64_MAX);
     else _socket_settimeout(self, 0);
     return mp_const_none;
 }
@@ -462,7 +466,7 @@ STATIC mp_obj_t get_socket(size_t n_args, const mp_obj_t *args) {
     if (sock->fd < 0) {
         exception_from_errno(errno);
     }
-    _socket_settimeout(sock, UINT_MAX);
+    _socket_settimeout(sock, UINT64_MAX);
 
     return MP_OBJ_FROM_PTR(sock);
 }
