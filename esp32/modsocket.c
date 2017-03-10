@@ -64,6 +64,8 @@ typedef struct _socket_obj_t {
     unsigned int retries;
 } socket_obj_t;
 
+void _socket_settimeout(socket_obj_t *sock, uint64_t timeout_ms);
+
 NORETURN static void exception_from_errno(int _errno) {
     // Here we need to convert from lwip errno values to MicroPython's standard ones
     if (_errno == EINPROGRESS) {
@@ -163,6 +165,7 @@ STATIC mp_obj_t socket_accept(const mp_obj_t arg0) {
     sock->domain = self->domain;
     sock->type = self->type;
     sock->proto = self->proto;
+    _socket_settimeout(sock, UINT64_MAX);
 
     // make the return value
     uint8_t *ip = (uint8_t*)&((struct sockaddr_in*)&addr)->sin_addr;
