@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <alloca.h>
+#include "rom/ets_sys.h"
 
 // object representation and NLR handling
 #define MICROPY_OBJ_REPR                    (MICROPY_OBJ_REPR_A)
@@ -23,7 +24,7 @@
 #define MICROPY_OPT_MPZ_BITWISE             (1)
 
 // Python internal features
-#define MICROPY_READER_FATFS                (1)
+#define MICROPY_READER_VFS                  (1)
 #define MICROPY_ENABLE_GC                   (1)
 #define MICROPY_ENABLE_FINALISER            (1)
 #define MICROPY_STACK_CHECK                 (1)
@@ -48,6 +49,8 @@
 #define MICROPY_CAN_OVERRIDE_BUILTINS       (1)
 #define MICROPY_USE_INTERNAL_ERRNO          (1)
 #define MICROPY_USE_INTERNAL_PRINTF         (0) // ESP32 SDK requires its own printf
+#define MICROPY_VFS                         (1)
+#define MICROPY_VFS_FAT                     (1)
 
 // control over Python builtins
 #define MICROPY_PY_FUNCTION_ATTRS           (1)
@@ -73,6 +76,7 @@
 #define MICROPY_PY_BUILTINS_REVERSED        (1)
 #define MICROPY_PY_BUILTINS_NOTIMPLEMENTED  (1)
 #define MICROPY_PY_BUILTINS_MIN_MAX         (1)
+#define MICROPY_PY_BUILTINS_POW3            (1)
 #define MICROPY_PY_BUILTINS_HELP            (1)
 #define MICROPY_PY_BUILTINS_HELP_TEXT       esp32_help_text
 #define MICROPY_PY_BUILTINS_HELP_MODULES    (1)
@@ -118,6 +122,8 @@
 #define MICROPY_PY_MACHINE_PULSE            (1)
 #define MICROPY_PY_MACHINE_I2C              (1)
 #define MICROPY_PY_MACHINE_SPI              (1)
+#define MICROPY_PY_MACHINE_SPI_MIN_DELAY    (0)
+#define MICROPY_PY_MACHINE_SPI_MAX_BAUDRATE (ets_get_cpu_frequency() * 1000000 / 200) // roughly
 #define MICROPY_PY_USSL                     (1)
 #define MICROPY_SSL_MBEDTLS                 (1)
 #define MICROPY_PY_WEBSOCKET                (0)
@@ -125,15 +131,17 @@
 #define MICROPY_PY_BTREE                    (0)
 
 // fatfs configuration
-#define MICROPY_VFS_FAT                     (1)
-#define MICROPY_FSUSERMOUNT                 (1)
 #define MICROPY_FATFS_ENABLE_LFN            (1)
 #define MICROPY_FATFS_RPATH                 (2)
-#define MICROPY_FATFS_VOLUMES               (2)
 #define MICROPY_FATFS_MAX_SS                (4096)
 #define MICROPY_FATFS_LFN_CODE_PAGE         (437) /* 1=SFN/ANSI 437=LFN/U.S.(OEM) */
 #define mp_type_fileio                      fatfs_type_fileio
 #define mp_type_textio                      fatfs_type_textio
+
+// use vfs's functions for import stat and builtin open
+#define mp_import_stat mp_vfs_import_stat
+#define mp_builtin_open mp_vfs_open
+#define mp_builtin_open_obj mp_vfs_open_obj
 
 // extra built in names to add to the global namespace
 #define MICROPY_PORT_BUILTINS \
@@ -144,6 +152,7 @@
 #define MICROPY_ESP32_APA106		(1)
 // extra built in modules to add to the list of known ones
 extern const struct _mp_obj_module_t esp_module;
+extern const struct _mp_obj_module_t onewire_module;
 extern const struct _mp_obj_module_t utime_module;
 extern const struct _mp_obj_module_t uos_module;
 extern const struct _mp_obj_module_t mp_module_usocket;
@@ -152,6 +161,7 @@ extern const struct _mp_obj_module_t mp_module_network;
 
 #define MICROPY_PORT_BUILTIN_MODULES \
     { MP_OBJ_NEW_QSTR(MP_QSTR_esp), (mp_obj_t)&esp_module }, \
+    { MP_OBJ_NEW_QSTR(MP_QSTR__onewire), (mp_obj_t)&onewire_module }, \
     { MP_OBJ_NEW_QSTR(MP_QSTR_utime), (mp_obj_t)&utime_module }, \
     { MP_OBJ_NEW_QSTR(MP_QSTR_uos), (mp_obj_t)&uos_module }, \
     { MP_OBJ_NEW_QSTR(MP_QSTR_usocket), (mp_obj_t)&mp_module_usocket }, \

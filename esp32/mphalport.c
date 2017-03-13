@@ -27,6 +27,7 @@
  */
 
 #include <stdio.h>
+#include <sys/time.h>
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -78,19 +79,40 @@ void mp_hal_stdout_tx_strn_cooked(const char *str, uint32_t len) {
 }
 
 uint32_t mp_hal_ticks_ms(void) {
-    return xTaskGetTickCount() * (1000 / configTICK_RATE_HZ);
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    return tv.tv_sec * 1000 + tv.tv_usec / 1000;
 }
 
 uint32_t mp_hal_ticks_us(void) {
-    return mp_hal_ticks_ms() * 1000;
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    return tv.tv_sec * 1000000 + tv.tv_usec;
 }
 
 void mp_hal_delay_ms(uint32_t ms) {
+    struct timeval tv_start;
+    gettimeofday(&tv_start, NULL);
     vTaskDelay(ms / portTICK_PERIOD_MS);
+    struct timeval tv_end;
+    gettimeofday(&tv_end, NULL);
+    uint64_t dt = (tv_end.tv_sec - tv_start.tv_sec) * 1000 + (tv_end.tv_usec - tv_start.tv_usec) / 1000;
+    if (dt < ms) {
+        ets_delay_us((ms - dt) * 1000);
+    }
 }
 
 void mp_hal_delay_us(uint32_t us) {
-    vTaskDelay(us / 1000 / portTICK_PERIOD_MS);
+    ets_delay_us(us);
+}
+
+// this function could do with improvements (eg use ets_delay_us)
+void mp_hal_delay_us_fast(uint32_t us) {
+    uint32_t delay = ets_get_cpu_frequency() / 19;
+    while (--us) {
+        for (volatile uint32_t i = delay; i; --i) {
+        }
+    }
 }
 
 /*

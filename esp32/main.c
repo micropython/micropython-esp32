@@ -50,7 +50,7 @@
 #define MP_TASK_PRIORITY        (ESP_TASK_PRIO_MIN + 1)
 #define MP_TASK_STACK_SIZE      (16 * 1024)
 #define MP_TASK_STACK_LEN       (MP_TASK_STACK_SIZE / sizeof(StackType_t))
-#define MP_TASK_HEAP_SIZE       (64 * 1024)
+#define MP_TASK_HEAP_SIZE       (96 * 1024)
 
 //STATIC StaticTask_t mp_task_tcb;
 //STATIC StackType_t mp_task_stack[MP_TASK_STACK_LEN] __attribute__((aligned (8)));
@@ -65,6 +65,8 @@ soft_reset:
     mp_init();
     MP_STATE_PORT(mp_kbd_exception) = mp_obj_new_exception(&mp_type_KeyboardInterrupt);
     mp_obj_list_init(mp_sys_path, 0);
+    mp_obj_list_append(mp_sys_path, MP_OBJ_NEW_QSTR(MP_QSTR_));
+    mp_obj_list_append(mp_sys_path, MP_OBJ_NEW_QSTR(MP_QSTR__slash_flash_slash_lib));
     mp_obj_list_init(mp_sys_argv, 0);
     readline_init0();
 
@@ -105,28 +107,6 @@ void nlr_jump_fail(void *val) {
     for (;;) {
     }
 }
-
-mp_import_stat_t fat_vfs_import_stat(const char *path);
-
-mp_import_stat_t mp_import_stat(const char *path) {
-    #if MICROPY_VFS_FAT
-    return fat_vfs_import_stat(path);
-    #else
-    (void)path;
-    return MP_IMPORT_STAT_NO_EXIST;
-    #endif
-}
-
-mp_obj_t vfs_proxy_call(qstr method_name, size_t n_args, const mp_obj_t *args);
-mp_obj_t mp_builtin_open(uint n_args, const mp_obj_t *args, mp_map_t *kwargs) {
-    #if MICROPY_VFS_FAT
-    // TODO: Handle kwargs!
-    return vfs_proxy_call(MP_QSTR_open, n_args, args);
-    #else
-    return mp_const_none;
-    #endif
-}
-MP_DEFINE_CONST_FUN_OBJ_KW(mp_builtin_open_obj, 1, mp_builtin_open);
 
 // modussl_mbedtls uses this function but it's not enabled in ESP IDF
 void mbedtls_debug_set_threshold(int threshold) {

@@ -26,7 +26,7 @@ CMSIS_DIR=cmsis
 HAL_DIR=hal/$(MCU_SERIES)
 USBDEV_DIR=usbdev
 #USBHOST_DIR=usbhost
-FATFS_DIR=lib/fatfs
+FATFS_DIR=lib/oofatfs
 DFU=../tools/dfu.py
 # may need to prefix dfu-util with sudo
 USE_PYDFU ?= 1
@@ -109,12 +109,16 @@ SRC_LIB = $(addprefix lib/,\
 	libm/sf_erf.c \
 	libm/wf_lgamma.c \
 	libm/wf_tgamma.c \
-	fatfs/ff.c \
-	fatfs/option/ccsbcs.c \
+	oofatfs/ff.c \
+	oofatfs/option/unicode.c \
 	mp-readline/readline.c \
 	netutils/netutils.c \
 	timeutils/timeutils.c \
 	utils/pyexec.c \
+	)
+
+DRIVERS_SRC_C = $(addprefix drivers/,\
+	memory/spiflash.c \
 	)
 
 SRC_C = \
@@ -127,9 +131,11 @@ SRC_C = \
 	usbd_hid_interface.c \
 	usbd_msc_storage.c \
 	mphalport.c \
+	mpthreadport.c \
 	irq.c \
 	pendsv.c \
 	systick.c  \
+	pybthread.c \
 	timer.c \
 	led.c \
 	pin.c \
@@ -155,14 +161,12 @@ SRC_C = \
 	modutime.c \
 	modusocket.c \
 	modnetwork.c \
-	import.c \
 	extint.c \
 	usrsw.c \
 	rng.c \
 	rtc.c \
 	flash.c \
 	storage.c \
-	builtin_open.c \
 	sdcard.c \
 	fatfs_port.c \
 	lcd.c \
@@ -256,6 +260,7 @@ endif
 OBJ =
 OBJ += $(PY_O)
 OBJ += $(addprefix $(BUILD)/, $(SRC_LIB:.c=.o))
+OBJ += $(addprefix $(BUILD)/, $(DRIVERS_SRC_C:.c=.o))
 OBJ += $(addprefix $(BUILD)/, $(SRC_C:.c=.o))
 OBJ += $(addprefix $(BUILD)/, $(SRC_O))
 OBJ += $(addprefix $(BUILD)/, $(SRC_HAL:.c=.o))
