@@ -31,7 +31,7 @@
 
 #include "esp_spi_flash.h"
 #include "espneopixel.h"
-#include "mphalport.h"
+#include "py/mphal.h"
 #include "py/runtime.h"
 #include "py/mperrno.h"
 #include "drivers/dht/dht.h"
@@ -80,14 +80,15 @@ STATIC mp_obj_t esp_flash_user_start(void) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(esp_flash_user_start_obj, esp_flash_user_start);
 
-STATIC mp_obj_t esp_neopixel_write_(mp_obj_t pin, mp_obj_t buf, mp_obj_t is800k) {
+STATIC mp_obj_t esp_neopixel_write_(mp_obj_t pin, mp_obj_t buf, mp_obj_t timing) {
 
     mp_buffer_info_t bufinfo;
     mp_get_buffer_raise(buf, &bufinfo, MP_BUFFER_READ);
     esp_neopixel_write(mp_hal_get_pin_obj(pin),
-        (uint8_t*)bufinfo.buf, bufinfo.len, mp_obj_is_true(is800k));
+        (uint8_t*)bufinfo.buf, bufinfo.len, mp_obj_get_int(timing));
     return mp_const_none;
 }
+
 STATIC MP_DEFINE_CONST_FUN_OBJ_3(esp_neopixel_write_obj, esp_neopixel_write_);
 
 STATIC const mp_rom_map_elem_t esp_module_globals_table[] = {
@@ -104,7 +105,6 @@ STATIC const mp_rom_map_elem_t esp_module_globals_table[] = {
     #endif
 
     { MP_ROM_QSTR(MP_QSTR_dht_readinto), MP_ROM_PTR(&dht_readinto_obj) },
->>>>>>> upstream/esp32
 };
 
 STATIC MP_DEFINE_CONST_DICT(esp_module_globals, esp_module_globals_table);

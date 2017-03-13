@@ -149,7 +149,6 @@
     { MP_OBJ_NEW_QSTR(MP_QSTR_open), (mp_obj_t)&mp_builtin_open_obj },
 
 #define MICROPY_ESP32_NEOPIXEL		(1)
-#define MICROPY_ESP32_APA106		(1)
 // extra built in modules to add to the list of known ones
 extern const struct _mp_obj_module_t esp_module;
 extern const struct _mp_obj_module_t onewire_module;

@@ -39,7 +39,6 @@
 #include "extmod/vfs.h"
 #include "extmod/vfs_fat.h"
 #include "genhdr/mpversion.h"
-//#include "esp_mphal.h"
 
 extern const mp_obj_type_t mp_fat_vfs_type;
 

@@ -12,9 +12,8 @@
 #include "espneopixel.h"
 #include "mphalport.h"
 
-#define NEO_KHZ400 (1)
 
-void /*ICACHE_RAM_ATTR*/ esp_neopixel_write(uint8_t pin, uint8_t *pixels, uint32_t numBytes, bool is800KHz) {
+void esp_neopixel_write(uint8_t pin, uint8_t *pixels, uint32_t numBytes, uint8_t timing) {
 
   uint8_t *p, *end, pix, mask;
   uint32_t t, time0, time1, period, c, startTime, pinMask;
@@ -27,21 +26,22 @@ void /*ICACHE_RAM_ATTR*/ esp_neopixel_write(uint8_t pin, uint8_t *pixels, uint32
   startTime = 0;
 
   uint32_t fcpu = ets_get_cpu_frequency() * 1000000;
-// for APA106 - 0.35 us for time0, 1.35 us for time1, inferred period of ~1.75 us
 
-#ifdef NEO_KHZ400
-  if(is800KHz) {
-#endif
+  if(timing == 1) {
+    // 800 KHz
     time0  = (fcpu *0.35)/1000000; // 0.35us
     time1  = (fcpu * 0.8)/1000000 ; // 0.8us
     period = (fcpu * 1.25)/1000000; // 1.25us per bit
-#ifdef NEO_KHZ400
-  } else { // 400 KHz bitstream
+  } else if (timing == 2){
+    time0  = (fcpu *0.35)/1000000; // 0.35us
+    time1  = (fcpu * 1.35)/1000000 ; // 0.8us
+    period = (fcpu * 1.75)/1000000; // 1.25us per bit
+  }else { 
+    // 400 KHz 
     time0  = (fcpu *0.5)/1000000; // 0.35us
     time1  = (fcpu * 1.2)/1000000 ; // 0.8us
     period = (fcpu * 2.5)/1000000; // 1.25us per bit
   }
-#endif
 
 
   uint32_t irq_state = mp_hal_quiet_timing_enter();

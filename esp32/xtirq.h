@@ -24,8 +24,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef __MICROPY_INCLUDED_ESP8266_XTIRQ_H__
-#define __MICROPY_INCLUDED_ESP8266_XTIRQ_H__
+#ifndef __MICROPY_INCLUDED_ESP32_XTIRQ_H__
+#define __MICROPY_INCLUDED_ESP32_XTIRQ_H__
 
 #include <stdint.h>
 
@@ -57,4 +57,4 @@ static inline void enable_irq(uint32_t irq_state) {
     restore_irq_pri(irq_state);
 }
 
-#endif // __MICROPY_INCLUDED_ESP8266_XTIRQ_H__
+#endif // __MICROPY_INCLUDED_ESP32_XTIRQ_H__
