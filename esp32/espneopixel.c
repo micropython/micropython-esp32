@@ -32,10 +32,7 @@ void esp_neopixel_write(uint8_t pin, uint8_t *pixels, uint32_t numBytes, uint8_t
     time0  = (fcpu *0.35)/1000000; // 0.35us
     time1  = (fcpu * 0.8)/1000000 ; // 0.8us
     period = (fcpu * 1.25)/1000000; // 1.25us per bit
-  } else if (timing == 2){
-    time0  = (fcpu *0.35)/1000000; // 0.35us
-    time1  = (fcpu * 1.35)/1000000 ; // 0.8us
-    period = (fcpu * 1.75)/1000000; // 1.25us per bit
+ 
   }else { 
     // 400 KHz 
     time0  = (fcpu *0.5)/1000000; // 0.35us

@@ -6,4 +6,4 @@ from neopixel import NeoPixel
 
 class APA106(NeoPixel):
     ORDER = (0, 1, 2, 3)
-    self.timing=2
+   
