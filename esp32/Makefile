@@ -538,16 +538,20 @@ OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_WPA_SUPPLICANT_O))
 ################################################################################
 # Main targets
 
-all: $(BUILD)/bootloader.bin $(BUILD)/partitions.bin $(BUILD)/application.bin
+all: $(BUILD)/firmware.bin
 
 .PHONY: idf-version deploy erase
 
 idf-version:
 	$(ECHO) "ESP IDF supported hash: $(ESPIDF_SUPHASH)"
 
-deploy: $(BUILD)/bootloader.bin $(BUILD)/partitions.bin $(BUILD)/application.bin
+$(BUILD)/firmware.bin: $(BUILD)/bootloader.bin $(BUILD)/partitions.bin $(BUILD)/application.bin
+	$(ECHO) "Create $@"
+	$(Q)$(PYTHON) makeimg.py $^ $@
+
+deploy: $(BUILD)/firmware.bin
 	$(ECHO) "Writing $^ to the board"
-	$(Q)$(ESPTOOL) --chip esp32 --port $(PORT) --baud $(BAUD) write_flash -z --flash_mode $(FLASH_MODE) --flash_freq $(FLASH_FREQ) --flash_size $(FLASH_SIZE) 0x1000 $(BUILD)/bootloader.bin 0x8000 $(BUILD)/partitions.bin 0x10000 $(BUILD)/application.bin
+	$(Q)$(ESPTOOL) --chip esp32 --port $(PORT) --baud $(BAUD) write_flash -z --flash_mode $(FLASH_MODE) --flash_freq $(FLASH_FREQ) --flash_size $(FLASH_SIZE) 0 $^
 
 erase:
 	$(ECHO) "Erasing flash"
