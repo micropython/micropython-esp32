@@ -127,6 +127,7 @@ SRC_C = \
 	modnetwork.c \
 	modsocket.c \
 	modesp.c \
+	espneopixel.c \
 	$(SRC_MOD)
 
 STM_SRC_C = $(addprefix stmhal/,\
