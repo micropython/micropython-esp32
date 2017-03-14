@@ -365,7 +365,7 @@ STATIC mp_uint_t socket_stream_read(mp_obj_t self_in, void *buf, mp_uint_t size,
     // XXX Would be nicer to use RTC to handle timeouts
     for (int i=0; i<=sock->retries; i++) {
         int x = lwip_recvfrom_r(sock->fd, buf, size, 0, NULL, NULL);
-        if (x > 0) return x;
+        if (x >= 0) return x;
         if (x < 0 && errno != EWOULDBLOCK) { *errcode = errno; return MP_STREAM_ERROR; }
         check_for_exceptions();
     }
