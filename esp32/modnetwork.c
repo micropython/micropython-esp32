@@ -284,7 +284,9 @@ STATIC mp_obj_t esp_scan(mp_obj_t self_in) {
             mp_obj_tuple_t *t = mp_obj_new_tuple(6, NULL);
             uint8_t *x = memchr(wifi_ap_records[i].ssid, 0, sizeof(wifi_ap_records[i].ssid));
             int ssid_len = x ? x - wifi_ap_records[i].ssid : sizeof(wifi_ap_records[i].ssid);
-            t->items[0] = mp_obj_new_bytes(wifi_ap_records[i].ssid, ssid_len);
+            // t->items[0] = mp_obj_new_bytes(wifi_ap_records[i].ssid, ssid_len);
+	    // Assuming only ASCII or UTF-8 is used for SSID values, we can represent them as strings
+            t->items[0] = mp_obj_new_str((char*)wifi_ap_records[i].ssid, ssid_len, false);
             t->items[1] = mp_obj_new_bytes(wifi_ap_records[i].bssid, sizeof(wifi_ap_records[i].bssid));
             t->items[2] = MP_OBJ_NEW_SMALL_INT(wifi_ap_records[i].primary);
             t->items[3] = MP_OBJ_NEW_SMALL_INT(wifi_ap_records[i].rssi);
@@ -455,8 +457,14 @@ STATIC mp_obj_t esp_config(size_t n_args, const mp_obj_t *args, mp_map_t *kwargs
             return mp_obj_new_bytes(mac, sizeof(mac));
         }
         case QS(MP_QSTR_essid):
-            req_if = WIFI_IF_AP;
-            val = mp_obj_new_str((char*)cfg.ap.ssid, cfg.ap.ssid_len, false);
+	    if (self->if_id == WIFI_IF_STA) {
+            	uint8_t *x = memchr(wifi_sta_config.sta.ssid, 0, sizeof(wifi_sta_config.sta.ssid));
+            	int ssid_len = x ? x - wifi_sta_config.sta.ssid : sizeof(wifi_sta_config.sta.ssid);
+            	val = mp_obj_new_str((char*)wifi_sta_config.sta.ssid, ssid_len, false);
+	    } else {
+            	req_if = WIFI_IF_AP;
+            	val = mp_obj_new_str((char*)cfg.ap.ssid, cfg.ap.ssid_len, false);
+            }
             break;
         case QS(MP_QSTR_hidden):
             req_if = WIFI_IF_AP;
