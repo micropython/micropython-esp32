@@ -159,3 +159,10 @@ boot.py file):
 import machine
 antenna = machine.Pin(16, machine.Pin.OUT, value=0)
 ```
+
+Troubleshooting
+---------------
+
+* Continuous reboots after programming: Ensure FLASH_MODE is correct for your
+  board (e.g. ESP-WROOM-32 should be DIO). Then perform a `make clean`, rebuild,
+  redeploy.
