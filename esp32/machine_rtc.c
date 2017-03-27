@@ -132,7 +132,6 @@ STATIC mp_obj_t machine_rtc_alarm(mp_obj_t self_in, mp_obj_t alarm_id, mp_obj_t 
 
     // set expiry time (in microseconds)
     machine_rtc_expiry = (uint64_t)mp_obj_get_int(time_in) * 1000;
-    printf("Setting machine_rtc_expiry to %lld\n", machine_rtc_expiry);
 
     return mp_const_none;
 
