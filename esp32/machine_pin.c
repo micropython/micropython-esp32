@@ -95,6 +95,13 @@ STATIC void machine_pin_print(const mp_print_t *print, mp_obj_t self_in, mp_prin
     mp_printf(print, "Pin(%u)", self->id);
 }
 
+mp_obj_t machine_pin_get_pin_object_ptr(int wanted_pin) {
+    if (0 <= wanted_pin && wanted_pin < MP_ARRAY_SIZE(machine_pin_obj)) {
+        return (machine_pin_obj_t*)&machine_pin_obj[wanted_pin];
+    }
+    return NULL;
+}
+
 // pin.init(mode, pull=None, *, value)
 STATIC mp_obj_t machine_pin_obj_init_helper(const machine_pin_obj_t *self, size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_mode, ARG_pull, ARG_value };
@@ -135,10 +142,8 @@ STATIC mp_obj_t machine_pin_make_new(const mp_obj_type_t *type, size_t n_args, s
 
     // get the wanted pin object
     int wanted_pin = mp_obj_get_int(args[0]);
-    const machine_pin_obj_t *self = NULL;
-    if (0 <= wanted_pin && wanted_pin < MP_ARRAY_SIZE(machine_pin_obj)) {
-        self = (machine_pin_obj_t*)&machine_pin_obj[wanted_pin];
-    }
+    const machine_pin_obj_t *self = machine_pin_get_pin_object_ptr(wanted_pin);
+
     if (self == NULL || self->base.type == NULL) {
         nlr_raise(mp_obj_new_exception_msg(&mp_type_ValueError, "invalid pin"));
     }
