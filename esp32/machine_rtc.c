@@ -29,23 +29,49 @@
 
 #include <time.h>
 #include <sys/time.h>
+#include "driver/gpio.h"
 
 #include "py/nlr.h"
 #include "py/obj.h"
 #include "py/runtime.h"
+#include "py/mphal.h"
 #include "timeutils.h"
 #include "modmachine.h"
+#include "machine_rtc.h"
+#include "machine_pin.h"
 
 typedef struct _machine_rtc_obj_t {
     mp_obj_base_t base;
 } machine_rtc_obj_t;
 
+#define MACHINE_RTC_VALID_EXT_PINS \
+( \
+    (1ll << 0)  | \
+    (1ll << 2)  | \
+    (1ll << 4)  | \
+    (1ll << 12) | \
+    (1ll << 13) | \
+    (1ll << 14) | \
+    (1ll << 15) | \
+    (1ll << 25) | \
+    (1ll << 26) | \
+    (1ll << 27) | \
+    (1ll << 32) | \
+    (1ll << 33) | \
+    (1ll << 34) | \
+    (1ll << 35) | \
+    (1ll << 36) | \
+    (1ll << 37) | \
+    (1ll << 38) | \
+    (1ll << 39)   \
+)
+
+#define MACHINE_RTC_LAST_EXT_PIN 39
 
 // singleton RTC object
 STATIC const machine_rtc_obj_t machine_rtc_obj = {{&machine_rtc_type}};
 
-// Sleep time
-uint64_t machine_rtc_expiry = 0; // in microseconds
+machine_rtc_config_t machine_rtc_config = { 0 };
 
 STATIC mp_obj_t machine_rtc_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args) {
     // check arguments
@@ -80,7 +106,7 @@ STATIC mp_obj_t machine_rtc_datetime(mp_uint_t n_args, const mp_obj_t *args) {
         return mp_obj_new_tuple(8, tuple);
     } else {
         // Set time
-        
+
         mp_obj_t *items;
         mp_obj_get_array_fixed_n(args[1], 8, &items);
         struct tm tm;
@@ -107,14 +133,14 @@ STATIC mp_obj_t machine_rtc_memory(mp_uint_t n_args, const mp_obj_t *args) {
 
     if (n_args == 1) {
         // read RTC memory
-        
-        // FIXME; need to update IDF 
+
+        // FIXME; need to update IDF
 
         return mp_const_none;
     } else {
         // write RTC memory
 
-        // FIXME; need to update IDF 
+        // FIXME; need to update IDF
 
         return mp_const_none;
     }
@@ -131,12 +157,113 @@ STATIC mp_obj_t machine_rtc_alarm(mp_obj_t self_in, mp_obj_t alarm_id, mp_obj_t 
     }
 
     // set expiry time (in microseconds)
-    machine_rtc_expiry = (uint64_t)mp_obj_get_int(time_in) * 1000;
+    machine_rtc_config.expiry = (uint64_t)mp_obj_get_int(time_in) * 1000;
 
     return mp_const_none;
 
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_3(machine_rtc_alarm_obj, machine_rtc_alarm);
+
+STATIC mp_obj_t machine_rtc_wake_on_touch(size_t n_args, const mp_obj_t *args) {
+    if (n_args == 2) {
+        machine_rtc_config.wake_on_touch = mp_obj_get_int(args[1]);
+    }
+    return mp_obj_new_bool(machine_rtc_config.wake_on_touch);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(machine_rtc_wake_on_touch_obj, 1, 2, machine_rtc_wake_on_touch);
+
+STATIC mp_obj_t machine_rtc_wake_on_ext0(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+    enum {ARG_pin, ARG_level};
+    const mp_arg_t allowed_args[] = {
+        { MP_QSTR_pin, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_obj_new_int(machine_rtc_config.ext0_pin)} },
+        { MP_QSTR_level, MP_ARG_KW_ONLY | MP_ARG_BOOL, {.u_bool = machine_rtc_config.ext0_level} },
+    };
+    mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
+    mp_arg_parse_all(n_args - 1, pos_args + 1, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
+
+    if (args[ARG_pin].u_obj == mp_const_none) {
+        machine_rtc_config.ext0_pin = -1; // "None"
+    } else {
+        gpio_num_t pin_id = machine_pin_get_id(args[ARG_pin].u_obj);
+        if (pin_id != machine_rtc_config.ext0_pin) {
+            if (!((1ll << pin_id) & MACHINE_RTC_VALID_EXT_PINS)) {
+                nlr_raise(mp_obj_new_exception_msg(&mp_type_ValueError, "invalid pin"));
+            }
+            machine_rtc_config.ext0_pin = pin_id;
+        }
+    }
+
+    machine_rtc_config.ext0_level = args[ARG_level].u_bool;
+
+    mp_obj_t tuple[2] = {
+        machine_rtc_config.ext0_pin > 0 ? MP_OBJ_FROM_PTR(machine_pin_get_pin_object_ptr(machine_rtc_config.ext0_pin)) : mp_const_none,
+        mp_obj_new_bool(machine_rtc_config.ext0_level),
+    };
+
+    return mp_obj_new_tuple(2, tuple);
+
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_KW(machine_rtc_wake_on_ext0_obj, 1, machine_rtc_wake_on_ext0);
+
+STATIC mp_obj_t machine_rtc_wake_on_ext1(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+    enum {ARG_pins, ARG_level};
+    const mp_arg_t allowed_args[] = {
+        { MP_QSTR_pins, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_const_none} },
+        { MP_QSTR_level, MP_ARG_KW_ONLY | MP_ARG_BOOL, {.u_bool = machine_rtc_config.ext1_level} },
+    };
+    mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
+    mp_arg_parse_all(n_args - 1, pos_args + 1, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
+    uint64_t ext1_pins = machine_rtc_config.ext1_pins;
+
+
+    // Check that all pins are allowed
+    if(args[ARG_pins].u_obj != mp_const_none) {
+        mp_uint_t len = 0;
+        mp_obj_t *elem;
+        mp_obj_get_array(args[ARG_pins].u_obj, &len, &elem);
+        ext1_pins = 0;
+
+        for(int i = 0; i < len; i++) {
+
+            gpio_num_t pin_id = machine_pin_get_id(elem[i]);
+            // mp_int_t pin = mp_obj_get_int(elem[i]);
+            uint64_t pin_bit = (1ll << pin_id);
+
+            if (!(pin_bit & MACHINE_RTC_VALID_EXT_PINS)) {
+                nlr_raise(mp_obj_new_exception_msg(&mp_type_ValueError, "invalid pin"));
+                break;
+            }
+            ext1_pins |= pin_bit;
+        }
+    }
+
+    machine_rtc_config.ext1_level = args[ARG_level].u_bool;
+    machine_rtc_config.ext1_pins = ext1_pins;
+
+    // construct return tuple
+    int num_pins;
+    for(num_pins = 0; ext1_pins; num_pins++) { // count set bits in ext1_pins
+        ext1_pins &= ext1_pins - 1;
+    }
+
+    mp_obj_t pin_tuple[num_pins];
+    ext1_pins = machine_rtc_config.ext1_pins; // because bit counting is destructive to ext1_pins
+    int index = 0;
+    for (int i = 0; i <= MACHINE_RTC_LAST_EXT_PIN; i++) {
+        if ((1ll << i) & ext1_pins) {
+            pin_tuple[index++] = MP_OBJ_FROM_PTR(machine_pin_get_pin_object_ptr(i));
+        }
+    }
+
+    mp_obj_t return_tuple[2] = {
+        mp_obj_new_tuple(num_pins, pin_tuple),
+        mp_obj_new_bool(machine_rtc_config.ext1_level),
+    };
+
+    return mp_obj_new_tuple(2, return_tuple);
+
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_KW(machine_rtc_wake_on_ext1_obj, 1, machine_rtc_wake_on_ext1);
 
 STATIC mp_obj_t machine_rtc_irq(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     // This function essentially does nothing, for backwards compatibility
@@ -162,8 +289,13 @@ STATIC const mp_map_elem_t machine_rtc_locals_dict_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR_datetime), (mp_obj_t)&machine_rtc_datetime_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_memory), (mp_obj_t)&machine_rtc_memory_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_alarm), (mp_obj_t)&machine_rtc_alarm_obj },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_wake_on_touch), (mp_obj_t)&machine_rtc_wake_on_touch_obj },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_wake_on_ext0), (mp_obj_t)&machine_rtc_wake_on_ext0_obj },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_wake_on_ext1), (mp_obj_t)&machine_rtc_wake_on_ext1_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_irq), (mp_obj_t)&machine_rtc_irq_obj},
     { MP_OBJ_NEW_QSTR(MP_QSTR_ALARM0), MP_OBJ_NEW_SMALL_INT(0) },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_WAKEUP_ALL_LOW), mp_const_false },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_WAKEUP_ANY_HIGH), mp_const_true },
 };
 STATIC MP_DEFINE_CONST_DICT(machine_rtc_locals_dict, machine_rtc_locals_dict_table);
 
