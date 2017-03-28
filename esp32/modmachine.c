@@ -34,6 +34,7 @@
 #include "freertos/task.h"
 #include "rom/ets_sys.h"
 #include "esp_system.h"
+#include "driver/touch_pad.h"
 
 #include "py/obj.h"
 #include "py/runtime.h"
@@ -42,11 +43,12 @@
 #include "extmod/machine_i2c.h"
 #include "extmod/machine_spi.h"
 #include "modmachine.h"
+#include "machine_rtc.h"
 
 #if MICROPY_PY_MACHINE
 
 // amount of time to sleep
-extern uint64_t machine_rtc_expiry;
+extern machine_rtc_config_t machine_rtc_config;
 #define MACHINE_WAKE_DEEPSLEEP (0x04)
 
 STATIC mp_obj_t machine_freq(size_t n_args, const mp_obj_t *args) {
@@ -69,9 +71,26 @@ STATIC mp_obj_t machine_freq(size_t n_args, const mp_obj_t *args) {
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(machine_freq_obj, 0, 1, machine_freq);
 
 STATIC mp_obj_t machine_deepsleep(void) {
-    if (machine_rtc_expiry != 0) {
-        esp_deep_sleep_enable_timer_wakeup(machine_rtc_expiry);
+
+    if (machine_rtc_config.expiry != 0) {
+        esp_deep_sleep_enable_timer_wakeup(machine_rtc_config.expiry);
     }
+
+    if (machine_rtc_config.ext0_pin != -1) {
+        esp_deep_sleep_enable_ext0_wakeup(machine_rtc_config.ext0_pin, machine_rtc_config.ext0_level ? 1 : 0);
+    }
+
+    if (machine_rtc_config.ext1_pins != 0) {
+        esp_deep_sleep_enable_ext1_wakeup(
+            machine_rtc_config.ext1_pins,
+            machine_rtc_config.ext1_level ? ESP_EXT1_WAKEUP_ANY_HIGH : ESP_EXT1_WAKEUP_ALL_LOW);
+    }
+
+    if (machine_rtc_config.wake_on_touch) {
+        // esp_deep_sleep_enable_touchpad_wakeup();
+        nlr_raise(mp_obj_new_exception_msg(&mp_type_RuntimeError, "touchpad wakeup not available for this version of ESP-IDF"));
+    }
+
     esp_deep_sleep_start();
     return mp_const_none;
 }
