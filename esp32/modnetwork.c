@@ -47,12 +47,13 @@
 #include "esp_log.h"
 #include "lwip/dns.h"
 #include "tcpip_adapter.h"
+#include "esp_smartconfig.h"
 
 #define MODNETWORK_INCLUDE_CONSTANTS (1)
 
 NORETURN void _esp_exceptions(esp_err_t e) {
    switch (e) {
-      case ESP_ERR_WIFI_NOT_INIT: 
+      case ESP_ERR_WIFI_NOT_INIT:
         mp_raise_msg(&mp_type_OSError, "Wifi Not Initialized");
       case ESP_ERR_WIFI_NOT_STARTED:
         mp_raise_msg(&mp_type_OSError, "Wifi Not Started");
@@ -84,7 +85,7 @@ NORETURN void _esp_exceptions(esp_err_t e) {
         mp_raise_OSError(MP_ETIMEDOUT);
       case ESP_ERR_TCPIP_ADAPTER_NO_MEM:
       case ESP_ERR_WIFI_NO_MEM:
-        mp_raise_OSError(MP_ENOMEM); 
+        mp_raise_OSError(MP_ENOMEM);
       default:
         nlr_raise(mp_obj_new_exception_msg_varg(
           &mp_type_RuntimeError, "Wifi Unknown Error 0x%04x", e
@@ -119,16 +120,16 @@ static bool wifi_sta_connected = false;
 static esp_err_t event_handler(void *ctx, system_event_t *event) {
    switch(event->event_id) {
     case SYSTEM_EVENT_STA_START:
-        ESP_LOGI("wifi", "STA_START");
+        printf("STA_START\r\n");
         break;
     case SYSTEM_EVENT_STA_GOT_IP:
-        ESP_LOGI("wifi", "GOT_IP");
+        printf("GOT_IP\r\n");
         break;
     case SYSTEM_EVENT_STA_DISCONNECTED: {
         // This is a workaround as ESP32 WiFi libs don't currently
         // auto-reassociate.
         system_event_sta_disconnected_t *disconn = &event->event_info.disconnected;
-        ESP_LOGI("wifi", "STA_DISCONNECTED, reason:%d", disconn->reason);
+        printf("STA_DISCONNECTED, reason:%d\r\n", disconn->reason);
         switch (disconn->reason) {
             case WIFI_REASON_AUTH_FAIL:
                 mp_printf(MP_PYTHON_PRINTER, "authentication failed");
@@ -153,7 +154,7 @@ static esp_err_t event_handler(void *ctx, system_event_t *event) {
         break;
     }
     default:
-        ESP_LOGI("wifi", "event %d", event->event_id);
+        printf("event %d\r\n", event->event_id);
         break;
     }
     return ESP_OK;
@@ -489,6 +490,100 @@ unknown:
 
 STATIC MP_DEFINE_CONST_FUN_OBJ_KW(esp_config_obj, 1, esp_config);
 
+/******************************************************************************
+ * FunctionName : smartconfig_ed
+ * Description  : callback function which be called during the samrtconfig process
+ * Parameters   : status -- the samrtconfig status
+ *                pdata --
+ * Returns      : none
+*******************************************************************************/
+
+STATIC void smartconfig_ed(smartconfig_status_t status, void *pdata)
+{
+    wifi_config_t sta_conf;
+    printf("lapsule debug, smartconfig_ed\nstatus:%d\r\n", status);
+    switch (status) {
+    case SC_STATUS_WAIT:
+        printf("SC_STATUS_WAIT\r\n");
+        break;
+    case SC_STATUS_FIND_CHANNEL:
+        printf("SC_STATUS_FIND_CHANNEL\r\n");
+        break;
+    case SC_STATUS_GETTING_SSID_PSWD:
+        printf("SC_STATUS_GETTING_SSID_PSWD\r\n");
+        smartconfig_type_t *type = pdata;
+        if (*type == SC_TYPE_ESPTOUCH) {
+            printf("SC_TYPE:SC_TYPE_ESPTOUCH\r\n");
+        } else {
+            printf("SC_TYPE:SC_TYPE_AIRKISS\r\n");
+        }
+        break;
+    case SC_STATUS_LINK:
+        printf("SC_STATUS_LINK\r\n");
+
+        esp_wifi_disconnect();
+        memset(&sta_conf, 0x00, sizeof(sta_conf));
+        esp_wifi_get_config(WIFI_IF_STA, &sta_conf);
+        memcpy(&(sta_conf.sta), pdata, sizeof(wifi_sta_config_t));
+
+        printf("<link>ssid:%s\r\n", sta_conf.sta.ssid);
+        char ssid_buf[32];
+        char password_buf[64];
+        sprintf(ssid_buf, "%s", sta_conf.sta.ssid);
+
+        // tim comment
+        // _self->ssid = mp_obj_new_str(ssid_buf, strlen(ssid_buf), false);
+
+        char* p = strchr((char*)sta_conf.sta.password, (char)14);
+    	if(p){
+    		*p = '\0';
+    		++p;
+    		printf("<link>pass:%s userid:%s\r\n", sta_conf.sta.password, p);
+
+            // tim comment
+            // if (_self){
+            //     _self->userid = mp_obj_new_str(p, strlen(p), false);
+            // }
+    	}else{
+    		printf("<link>pass:%s\r\n", sta_conf.sta.password);
+    	}
+
+        sprintf(password_buf, "%s", sta_conf.sta.password);
+
+        // tim comment
+        // _self->password = mp_obj_new_str(password_buf, strlen(password_buf), false);
+
+        if (esp_wifi_set_config(WIFI_IF_STA, &sta_conf)) {
+            printf("[%s] set_config fail\r\n", __func__);
+        }
+        if (esp_wifi_connect()) {
+            printf("[%s] wifi_connect fail\r\n", __func__);
+        }
+        break;
+    case SC_STATUS_LINK_OVER:
+        printf("SC_STATUS_LINK_OVER\r\n");
+        if (pdata != NULL) {
+            uint8_t phone_ip[4] = {0};
+            memcpy(phone_ip, (const void *)pdata, 4);
+            printf("Phone ip: %d.%d.%d.%d\r\n", phone_ip[0], phone_ip[1], phone_ip[2], phone_ip[3]);
+            char ip_buf[16];
+            sprintf(ip_buf,"%d.%d.%d.%d", phone_ip[0], phone_ip[1], phone_ip[2], phone_ip[3]);
+
+            // tim comment
+            // _self->phone_ip = mp_obj_new_str(ip_buf, strlen(ip_buf), false);
+        }
+        esp_smartconfig_stop();
+        break;
+    }
+}
+
+STATIC mp_obj_t esp_smartconfig(mp_obj_t self_in) {
+    esp_smartconfig_start(smartconfig_ed, 1);
+    return mp_const_none;
+}
+
+STATIC MP_DEFINE_CONST_FUN_OBJ_KW(esp_smartconfig_obj, 1, esp_smartconfig);
+
 STATIC const mp_map_elem_t wlan_if_locals_dict_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR_active), (mp_obj_t)&esp_active_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_connect), (mp_obj_t)&esp_connect_obj },
@@ -498,6 +593,7 @@ STATIC const mp_map_elem_t wlan_if_locals_dict_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR_isconnected), (mp_obj_t)&esp_isconnected_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_config), (mp_obj_t)&esp_config_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_ifconfig), (mp_obj_t)&esp_ifconfig_obj },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_smartconfig), (mp_obj_t)&esp_smartconfig_obj },
 };
 
 STATIC MP_DEFINE_CONST_DICT(wlan_if_locals_dict, wlan_if_locals_dict_table);
