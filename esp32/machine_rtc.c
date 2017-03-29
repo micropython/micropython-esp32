@@ -38,7 +38,6 @@
 #include "timeutils.h"
 #include "modmachine.h"
 #include "machine_rtc.h"
-#include "machine_pin.h"
 
 typedef struct _machine_rtc_obj_t {
     mp_obj_base_t base;
@@ -164,13 +163,13 @@ STATIC mp_obj_t machine_rtc_alarm(mp_obj_t self_in, mp_obj_t alarm_id, mp_obj_t 
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_3(machine_rtc_alarm_obj, machine_rtc_alarm);
 
-STATIC mp_obj_t machine_rtc_wake_on_touch(size_t n_args, const mp_obj_t *args) {
-    if (n_args == 2) {
-        machine_rtc_config.wake_on_touch = mp_obj_get_int(args[1]);
-    }
-    return mp_obj_new_bool(machine_rtc_config.wake_on_touch);
+STATIC mp_obj_t machine_rtc_wake_on_touch(mp_obj_t self_in, const mp_obj_t wake) {
+    (void)self_in; // unused
+    
+    machine_rtc_config.wake_on_touch = mp_obj_get_int(wake);
+    return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(machine_rtc_wake_on_touch_obj, 1, 2, machine_rtc_wake_on_touch);
+STATIC MP_DEFINE_CONST_FUN_OBJ_2(machine_rtc_wake_on_touch_obj, machine_rtc_wake_on_touch);
 
 STATIC mp_obj_t machine_rtc_wake_on_ext0(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum {ARG_pin, ARG_level};
@@ -195,13 +194,7 @@ STATIC mp_obj_t machine_rtc_wake_on_ext0(size_t n_args, const mp_obj_t *pos_args
 
     machine_rtc_config.ext0_level = args[ARG_level].u_bool;
 
-    mp_obj_t tuple[2] = {
-        machine_rtc_config.ext0_pin > 0 ? MP_OBJ_FROM_PTR(machine_pin_get_pin_object_ptr(machine_rtc_config.ext0_pin)) : mp_const_none,
-        mp_obj_new_bool(machine_rtc_config.ext0_level),
-    };
-
-    return mp_obj_new_tuple(2, tuple);
-
+    return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_KW(machine_rtc_wake_on_ext0_obj, 1, machine_rtc_wake_on_ext0);
 
@@ -240,34 +233,13 @@ STATIC mp_obj_t machine_rtc_wake_on_ext1(size_t n_args, const mp_obj_t *pos_args
     machine_rtc_config.ext1_level = args[ARG_level].u_bool;
     machine_rtc_config.ext1_pins = ext1_pins;
 
-    // construct return tuple
-    int num_pins;
-    for(num_pins = 0; ext1_pins; num_pins++) { // count set bits in ext1_pins
-        ext1_pins &= ext1_pins - 1;
-    }
-
-    mp_obj_t pin_tuple[num_pins];
-    ext1_pins = machine_rtc_config.ext1_pins; // because bit counting is destructive to ext1_pins
-    int index = 0;
-    for (int i = 0; i <= MACHINE_RTC_LAST_EXT_PIN; i++) {
-        if ((1ll << i) & ext1_pins) {
-            pin_tuple[index++] = MP_OBJ_FROM_PTR(machine_pin_get_pin_object_ptr(i));
-        }
-    }
-
-    mp_obj_t return_tuple[2] = {
-        mp_obj_new_tuple(num_pins, pin_tuple),
-        mp_obj_new_bool(machine_rtc_config.ext1_level),
-    };
-
-    return mp_obj_new_tuple(2, return_tuple);
-
+    return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_KW(machine_rtc_wake_on_ext1_obj, 1, machine_rtc_wake_on_ext1);
 
 STATIC mp_obj_t machine_rtc_irq(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     // This function essentially does nothing, for backwards compatibility
-    
+
     enum { ARG_trigger, ARG_wake };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_trigger, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 0} },
