@@ -128,6 +128,7 @@ SRC_C = \
 	modsocket.c \
 	modesp.c \
 	espneopixel.c \
+	machine_hw_spi.c \
 	$(SRC_MOD)
 
 STM_SRC_C = $(addprefix stmhal/,\
@@ -201,6 +202,7 @@ ESPIDF_DRIVER_O = $(addprefix $(ESPCOMP)/driver/,\
 	ledc.o \
 	gpio.o \
 	timer.o \
+	spi_master.o \
 	rtc_module.o \
 	)
 
