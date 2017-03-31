@@ -33,7 +33,7 @@
 #include "py/stream.h"
 #include "py/mphal.h"
 #include "extmod/machine_spi.h"
-#include "machine_hspi.h"
+#include "machine_hw_spi.h"
 #include "modmachine.h"
 
 
@@ -45,8 +45,8 @@
 
 
 
-STATIC void machine_hspi_transfer(mp_obj_base_t *self_in, size_t len, const uint8_t *src, uint8_t *dest) {
-    machine_hspi_obj_t *self = MP_OBJ_TO_PTR(self_in);
+STATIC void machine_hw_spi_transfer(mp_obj_base_t *self_in, size_t len, const uint8_t *src, uint8_t *dest) {
+    machine_hw_spi_obj_t *self = MP_OBJ_TO_PTR(self_in);
     int bits_to_send = len * self->bits;
     if (self->deinitialized) {
         return;
@@ -82,18 +82,18 @@ STATIC void machine_hspi_transfer(mp_obj_base_t *self_in, size_t len, const uint
 }
 
 /******************************************************************************/
-// MicroPython bindings for HSPI
+// MicroPython bindings for hw_spi
 
-STATIC void machine_hspi_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
-    machine_hspi_obj_t *self = MP_OBJ_TO_PTR(self_in);
-    mp_printf(print, "HSPI(id=%u, baudrate=%u, polarity=%u, phase=%u, bits=%u, firstbit=%u, sck=%d, mosi=%d, miso=%d)",
+STATIC void machine_hw_spi_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
+    machine_hw_spi_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    mp_printf(print, "hw_spi(id=%u, baudrate=%u, polarity=%u, phase=%u, bits=%u, firstbit=%u, sck=%d, mosi=%d, miso=%d)",
     self->host, self->baudrate, self->polarity,
     self->phase, self->bits, self->firstbit,
     self->sck, self->mosi, self->miso );
 }
 
-STATIC void machine_hspi_init(mp_obj_base_t *self_in, size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
-    machine_hspi_obj_t *self = (machine_hspi_obj_t*)self_in;
+STATIC void machine_hw_spi_init(mp_obj_base_t *self_in, size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+    machine_hw_spi_obj_t *self = (machine_hw_spi_obj_t*)self_in;
     esp_err_t ret;
 
     enum { ARG_id, ARG_baudrate, ARG_polarity, ARG_phase, ARG_bits, ARG_firstbit, ARG_sck, ARG_mosi, ARG_miso };
@@ -114,7 +114,7 @@ STATIC void machine_hspi_init(mp_obj_base_t *self_in, size_t n_args, const mp_ob
 
     int host = args[ARG_id].u_int;
     if (host != HSPI_HOST && host != VSPI_HOST) {
-        mp_raise_ValueError("SPI ID must be either HSPI(1) or VSPI(2)");
+        mp_raise_ValueError("SPI ID must be either hw_spi(1) or VSPI(2)");
     }
 
     self->host = host;
@@ -152,8 +152,8 @@ STATIC void machine_hspi_init(mp_obj_base_t *self_in, size_t n_args, const mp_ob
     assert(ret == ESP_OK);
 }
 
-STATIC void machine_hspi_deinit(mp_obj_base_t *self_in) {
-    machine_hspi_obj_t *self = (machine_hspi_obj_t*)self_in;
+STATIC void machine_hw_spi_deinit(mp_obj_base_t *self_in) {
+    machine_hw_spi_obj_t *self = (machine_hw_spi_obj_t*)self_in;
     esp_err_t ret;
     if (!self->deinitialized) {
         self->deinitialized = true;
@@ -164,28 +164,28 @@ STATIC void machine_hspi_deinit(mp_obj_base_t *self_in) {
     }
 }
 
-mp_obj_t machine_hspi_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args) {
+mp_obj_t machine_hw_spi_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args) {
     // args[0] holds the id of the peripheral
-    machine_hspi_obj_t *self = m_new_obj(machine_hspi_obj_t);
-    self->base.type = &machine_hspi_type;
+    machine_hw_spi_obj_t *self = m_new_obj(machine_hw_spi_obj_t);
+    self->base.type = &machine_hw_spi_type;
     // set defaults
     mp_map_t kw_args;
     mp_map_init_fixed_table(&kw_args, n_kw, args + n_args);
-    machine_hspi_init((mp_obj_base_t*)self, n_args, args, &kw_args);
+    machine_hw_spi_init((mp_obj_base_t*)self, n_args, args, &kw_args);
     return MP_OBJ_FROM_PTR(self);
 }
 
-STATIC const mp_machine_spi_p_t machine_hspi_p = {
-    .init = machine_hspi_init,
-    .deinit = machine_hspi_deinit,
-    .transfer = machine_hspi_transfer,
+STATIC const mp_machine_spi_p_t machine_hw_spi_p = {
+    .init = machine_hw_spi_init,
+    .deinit = machine_hw_spi_deinit,
+    .transfer = machine_hw_spi_transfer,
 };
 
-const mp_obj_type_t machine_hspi_type = {
+const mp_obj_type_t machine_hw_spi_type = {
     { &mp_type_type },
-    .name = MP_QSTR_HSPI,
-    .print = machine_hspi_print,
-    .make_new = machine_hspi_make_new,
-    .protocol = &machine_hspi_p,
+    .name = MP_QSTR_hw_spi,
+    .print = machine_hw_spi_print,
+    .make_new = machine_hw_spi_make_new,
+    .protocol = &machine_hw_spi_p,
     .locals_dict = (mp_obj_dict_t*)&mp_machine_spi_locals_dict,
 };

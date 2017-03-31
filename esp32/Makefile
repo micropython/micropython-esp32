@@ -16,7 +16,7 @@ include ../py/py.mk
 
 PORT ?= /dev/ttyUSB0
 BAUD ?= 460800
-FLASH_MODE ?= qio
+FLASH_MODE ?= dio
 FLASH_FREQ ?= 40m
 FLASH_SIZE ?= 4MB
 CROSS_COMPILE ?= xtensa-esp32-elf-
@@ -122,6 +122,7 @@ SRC_C = \
 	machine_pin.c \
 	machine_touchpad.c \
 	machine_adc.c \
+	machine_hw_spi.c \
 	machine_dac.c \
 	modmachine.c \
 	modnetwork.c \
@@ -199,6 +200,7 @@ ESPIDF_DRIVER_O = $(addprefix $(ESPCOMP)/driver/,\
 	uart.o \
 	periph_ctrl.o \
 	ledc.o \
+	spi_master.o \
 	gpio.o \
 	timer.o \
 	rtc_module.o \

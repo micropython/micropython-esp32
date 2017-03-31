@@ -122,7 +122,7 @@
 #define MICROPY_PY_MACHINE_PULSE            (1)
 #define MICROPY_PY_MACHINE_I2C              (1)
 #define MICROPY_PY_MACHINE_SPI              (1)
-#define MICROPY_PY_MACHINE_SPI_MAKE_NEW machine_hspi_make_new
+#define MICROPY_PY_MACHINE_SPI_MAKE_NEW machine_hw_spi_make_new
 #define MICROPY_PY_MACHINE_SPI_MIN_DELAY    (0)
 #define MICROPY_PY_MACHINE_SPI_MAX_BAUDRATE (ets_get_cpu_frequency() * 1000000 / 200) // roughly
 #define MICROPY_PY_USSL                     (1)

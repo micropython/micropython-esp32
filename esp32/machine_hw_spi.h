@@ -24,12 +24,12 @@
 * THE SOFTWARE.
 */
 
-#ifndef MICROPY_INCLUDED_MACHINE_HSPI_H
-#define MICROPY_INCLUDED_MACHINE_HSPI_H
+#ifndef MICROPY_INCLUDED_MACHINE_HW_SPI_H
+#define MICROPY_INCLUDED_MACHINE_HW_SPI_H
 
 #include "driver/spi_master.h"
 
-typedef struct _machine_hspi_obj_t {
+typedef struct _machine_hw_spi_obj_t {
     mp_obj_base_t base;
     spi_host_device_t host;
     uint32_t baudrate;
@@ -42,8 +42,8 @@ typedef struct _machine_hspi_obj_t {
     int8_t miso;
     spi_device_handle_t spi;
     bool deinitialized;
-} machine_hspi_obj_t;
+} machine_hw_spi_obj_t;
 
-extern const mp_obj_type_t machine_hspi_type ;
+extern const mp_obj_type_t machine_hw_spi_type ;
 
-#endif // MICROPY_INCLUDED_MACHINE_HSPI_H
+#endif // MICROPY_INCLUDED_MACHINE_HW_SPI_H
