@@ -122,7 +122,6 @@ SRC_C = \
 	machine_pin.c \
 	machine_touchpad.c \
 	machine_adc.c \
-	machine_hw_spi.c \
 	machine_dac.c \
 	modmachine.c \
 	modnetwork.c \
@@ -201,7 +200,6 @@ ESPIDF_DRIVER_O = $(addprefix $(ESPCOMP)/driver/,\
 	uart.o \
 	periph_ctrl.o \
 	ledc.o \
-	spi_master.o \
 	gpio.o \
 	timer.o \
 	spi_master.o \
