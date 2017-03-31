@@ -31,7 +31,7 @@
 
 typedef struct _machine_hspi_obj_t {
     mp_obj_base_t base;
-    spi_host_device_t  host;
+    spi_host_device_t host;
     uint32_t baudrate;
     uint8_t polarity;
     uint8_t phase;

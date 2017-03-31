@@ -35,7 +35,7 @@
 #include "extmod/machine_spi.h"
 #include "machine_hspi.h"
 #include "modmachine.h"
-#include "hspi.h"
+
 
 // if a port didn't define MSB/LSB constants then provide them
 #ifndef MICROPY_PY_MACHINE_SPI_MSB
@@ -55,10 +55,11 @@ STATIC void machine_hspi_transfer(mp_obj_base_t *self_in, size_t len, const uint
     struct spi_transaction_t transaction = {
         .flags = 0,
         .length = bits_to_send,
-        .tx_buffer = src,
-        .rx_buffer = dest,
+        .tx_buffer = NULL,
+        .rx_buffer = NULL,
     };
     bool shortMsg = len <= 4;
+
 
     if(shortMsg) {
         if (src != NULL) {
@@ -68,6 +69,9 @@ STATIC void machine_hspi_transfer(mp_obj_base_t *self_in, size_t len, const uint
         if (dest != NULL) {
             transaction.flags |= SPI_TRANS_USE_RXDATA;
         }
+    } else {
+        transaction.tx_buffer = src;
+        transaction.rx_buffer = dest;
     }
 
     spi_device_transmit(self->spi, &transaction);
@@ -108,7 +112,12 @@ STATIC void machine_hspi_init(mp_obj_base_t *self_in, size_t n_args, const mp_ob
     mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args),
     allowed_args, args);
 
-    self->host = args[ARG_id].u_int;
+    int host = args[ARG_id].u_int;
+    if (host != HSPI_HOST && host != VSPI_HOST) {
+        mp_raise_ValueError("SPI ID must be either HSPI(1) or VSPI(2)");
+    }
+
+    self->host = host;
     self->baudrate = args[ARG_baudrate].u_int;
     self->polarity = args[ARG_polarity].u_int ? 1 : 0;
     self->phase = args[ARG_phase].u_int ? 1 : 0;
@@ -131,14 +140,15 @@ STATIC void machine_hspi_init(mp_obj_base_t *self_in, size_t n_args, const mp_ob
         .mode = self->phase | (self->polarity << 1),
         .spics_io_num = -1, // No CS pin
         .queue_size = 1,
+        .flags = self->firstbit == MICROPY_PY_MACHINE_SPI_LSB ? SPI_DEVICE_TXBIT_LSBFIRST | SPI_DEVICE_RXBIT_LSBFIRST : 0,
         .pre_cb = NULL
     };
 
     //Initialize the SPI bus
     // FIXME: Does the DMA matter? There are two
-    ret=spi_bus_initialize(self->host, &buscfg, 1);
+    ret = spi_bus_initialize(self->host, &buscfg, 1);
     assert(ret == ESP_OK);
-    ret=spi_bus_add_device(self->host, &devcfg, &self->spi);
+    ret = spi_bus_add_device(self->host, &devcfg, &self->spi);
     assert(ret == ESP_OK);
 }
 
@@ -156,11 +166,6 @@ STATIC void machine_hspi_deinit(mp_obj_base_t *self_in) {
 
 mp_obj_t machine_hspi_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args) {
     // args[0] holds the id of the peripheral
-    int host = mp_obj_get_int(args[0]);
-    if (host != HSPI_HOST && host != VSPI_HOST) {
-        mp_raise_ValueError("SPI ID must be either HSPI(1) or VSPI(2)");
-    }
-
     machine_hspi_obj_t *self = m_new_obj(machine_hspi_obj_t);
     self->base.type = &machine_hspi_type;
     // set defaults
