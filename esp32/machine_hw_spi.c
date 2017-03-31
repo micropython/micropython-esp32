@@ -1,28 +1,28 @@
 /*
-* This file is part of the MicroPython project, http://micropython.org/
-*
-* The MIT License (MIT)
-*
-* Copyright (c) 2016 Damien P. George
-*
-* Permission is hereby granted, free of charge, to any person obtaining a copy
-* of this software and associated documentation files (the "Software"), to deal
-* in the Software without restriction, including without limitation the rights
-* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the Software is
-* furnished to do so, subject to the following conditions:
-*
-* The above copyright notice and this permission notice shall be included in
-* all copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-* THE SOFTWARE.
-*/
+ * This file is part of the MicroPython project, http://micropython.org/
+ *
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2016 Damien P. George
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
 
 #include <stdio.h>
 #include <stdint.h>
@@ -43,12 +43,45 @@
 #define MICROPY_PY_MACHINE_SPI_LSB (1)
 #endif
 
+#define MACHINE_HW_SPI_DEBUG_PRINTF(args...) printf(args)
+
+STATIC void machine_hw_spi_deinit_internal(spi_host_device_t host, spi_device_handle_t* spi) {
+
+    switch(spi_bus_remove_device(*spi)) {
+        case ESP_ERR_INVALID_ARG:
+            mp_raise_msg(&mp_type_OSError, "Invalid configuration");
+            return;
+
+        case ESP_ERR_INVALID_STATE:
+            mp_raise_msg(&mp_type_OSError, "SPI device already freed");
+            return;
+    }
+
+    switch(spi_bus_free(host)) {
+        case ESP_ERR_INVALID_ARG:
+            mp_raise_msg(&mp_type_OSError, "Invalid configuration");
+            return;
+
+        case ESP_ERR_INVALID_STATE:
+            mp_raise_msg(&mp_type_OSError, "SPI bus already freed");
+            return;
+    }
+}
+
+STATIC void machine_hw_spi_deinit(mp_obj_base_t *self_in) {
+    machine_hw_spi_obj_t *self = (machine_hw_spi_obj_t*)self_in;
+    if (self->state == MACHINE_HW_SPI_STATE_INIT) {
+        self->state = MACHINE_HW_SPI_STATE_DEINIT;
+        machine_hw_spi_deinit_internal(self->host, &self->spi);
+    }
+}
 
 
 STATIC void machine_hw_spi_transfer(mp_obj_base_t *self_in, size_t len, const uint8_t *src, uint8_t *dest) {
     machine_hw_spi_obj_t *self = MP_OBJ_TO_PTR(self_in);
     int bits_to_send = len * self->bits;
-    if (self->deinitialized) {
+    if (self->state == MACHINE_HW_SPI_STATE_DEINIT) {
+        mp_raise_msg(&mp_type_OSError, "Transfer on deinitialized SPI");
         return;
     }
 
@@ -86,47 +119,92 @@ STATIC void machine_hw_spi_transfer(mp_obj_base_t *self_in, size_t len, const ui
 
 STATIC void machine_hw_spi_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
     machine_hw_spi_obj_t *self = MP_OBJ_TO_PTR(self_in);
-    mp_printf(print, "hw_spi(id=%u, baudrate=%u, polarity=%u, phase=%u, bits=%u, firstbit=%u, sck=%d, mosi=%d, miso=%d)",
-    self->host, self->baudrate, self->polarity,
-    self->phase, self->bits, self->firstbit,
-    self->sck, self->mosi, self->miso );
+    mp_printf(print, "SPI(id=%u, baudrate=%u, polarity=%u, phase=%u, bits=%u, firstbit=%u, sck=%d, mosi=%d, miso=%d)",
+            self->host, self->baudrate, self->polarity,
+            self->phase, self->bits, self->firstbit,
+            self->sck, self->mosi, self->miso );
 }
 
-STATIC void machine_hw_spi_init(mp_obj_base_t *self_in, size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
-    machine_hw_spi_obj_t *self = (machine_hw_spi_obj_t*)self_in;
+STATIC void machine_hw_spi_init_internal(
+        machine_hw_spi_obj_t    *self,
+        int8_t                  host,
+        int32_t                 baudrate,
+        int8_t                  polarity,
+        int8_t                  phase,
+        int8_t                  bits,
+        int8_t                  firstbit,
+        int8_t                  sck,
+        int8_t                  mosi,
+        int8_t                  miso) {
+    bool changed = false;
+    MACHINE_HW_SPI_DEBUG_PRINTF("machine_hw_spi_init_internal(self, host = %d, baudrate = %d, polarity = %d, phase = %d, bits = %d, firstbit = %d, sck = %d, mosi = %d, miso = %d)\n", host, baudrate, polarity, phase, bits, firstbit, sck, mosi, miso);
+
+
+    MACHINE_HW_SPI_DEBUG_PRINTF("machine_hw_spi_init_internal old values: host = %d, baudrate = %d, polarity = %d, phase = %d, bits = %d, firstbit = %d, sck = %d, mosi = %d, miso = %d)\n", self->host, self->baudrate, self->polarity, self->phase, self->bits, self->firstbit, self->sck, self->mosi, self->miso);
     esp_err_t ret;
+    spi_host_device_t old_host = self->host;
 
-    enum { ARG_id, ARG_baudrate, ARG_polarity, ARG_phase, ARG_bits, ARG_firstbit, ARG_sck, ARG_mosi, ARG_miso };
-    static const mp_arg_t allowed_args[] = {
-        { MP_QSTR_id,       MP_ARG_REQUIRED | MP_ARG_INT , {.u_int = 1} },
-        { MP_QSTR_baudrate, MP_ARG_INT, {.u_int = 500000} },
-        { MP_QSTR_polarity, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 0} },
-        { MP_QSTR_phase,    MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 0} },
-        { MP_QSTR_bits,     MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 8} },
-        { MP_QSTR_firstbit, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = MICROPY_PY_MACHINE_SPI_MSB} },
-        { MP_QSTR_sck,      MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
-        { MP_QSTR_mosi,     MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
-        { MP_QSTR_miso,     MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
-    };
-    mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
-    mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args),
-    allowed_args, args);
-
-    int host = args[ARG_id].u_int;
-    if (host != HSPI_HOST && host != VSPI_HOST) {
-        mp_raise_ValueError("SPI ID must be either hw_spi(1) or VSPI(2)");
+    if (host != -1 && host != self->host) {
+        self->host = host;
+        changed = true;
     }
 
-    self->host = host;
-    self->baudrate = args[ARG_baudrate].u_int;
-    self->polarity = args[ARG_polarity].u_int ? 1 : 0;
-    self->phase = args[ARG_phase].u_int ? 1 : 0;
-    self->bits = args[ARG_bits].u_int;
-    self->firstbit = args[ARG_firstbit].u_int;
-    self->sck = args[ARG_sck].u_obj == MP_OBJ_NULL ? -1 : machine_pin_get_id(args[ARG_sck].u_obj);
-    self->miso = args[ARG_miso].u_obj == MP_OBJ_NULL ? -1 : machine_pin_get_id(args[ARG_miso].u_obj);
-    self->mosi = args[ARG_mosi].u_obj == MP_OBJ_NULL ? -1 : machine_pin_get_id(args[ARG_mosi].u_obj);
-    self->deinitialized = false;
+    if (baudrate != -1 && baudrate != self->baudrate) {
+        self->baudrate = baudrate;
+        changed = true;
+    }
+
+    if (polarity != -1 && polarity != self->polarity) {
+        self->polarity = polarity;
+        changed = true;
+    }
+
+    if (phase != -1 && phase != self->phase) {
+        self->phase =  phase;
+        changed = true;
+    }
+
+    if (bits != -1 && bits != self->bits) {
+        self->bits = bits;
+        changed = true;
+    }
+
+    if (firstbit != -1 && firstbit != self->firstbit) {
+        self->firstbit = firstbit;
+        changed = true;
+    }
+
+    if (sck != -2 && sck != self->sck) {
+        self->sck = sck;
+        changed = true;
+    }
+
+    if (mosi != -2 && mosi != self->mosi) {
+        self->mosi = mosi;
+        changed = true;
+    }
+
+    if (miso != -2 && miso != self->miso) {
+        self->miso = miso;
+        changed = true;
+    }
+
+    if (self->host != HSPI_HOST && self->host != VSPI_HOST) {
+        mp_raise_ValueError("SPI ID must be either HSPI(1) or VSPI(2)");
+    }
+
+    if (changed) {
+        if (self->state == MACHINE_HW_SPI_STATE_INIT) {
+            MACHINE_HW_SPI_DEBUG_PRINTF("machine_hw_spi_init_internal calling deinit()\n");
+            self->state = MACHINE_HW_SPI_STATE_DEINIT;
+            machine_hw_spi_deinit_internal(old_host, &self->spi);
+        }
+    } else {
+        return; // no changes
+    }
+
+    MACHINE_HW_SPI_DEBUG_PRINTF("machine_hw_spi_init_internal new values: host = %d, baudrate = %d, polarity = %d, phase = %d, bits = %d, firstbit = %d, sck = %d, mosi = %d, miso = %d)\n", self->host, self->baudrate, self->polarity, self->phase, self->bits, self->firstbit, self->sck, self->mosi, self->miso);
+
 
     spi_bus_config_t buscfg = {
         .miso_io_num = self->miso,
@@ -135,6 +213,7 @@ STATIC void machine_hw_spi_init(mp_obj_base_t *self_in, size_t n_args, const mp_
         .quadwp_io_num = -1,
         .quadhd_io_num = -1
     };
+
     spi_device_interface_config_t devcfg = {
         .clock_speed_hz = self->baudrate,
         .mode = self->phase | (self->polarity << 1),
@@ -146,32 +225,123 @@ STATIC void machine_hw_spi_init(mp_obj_base_t *self_in, size_t n_args, const mp_
 
     //Initialize the SPI bus
     // FIXME: Does the DMA matter? There are two
+
     ret = spi_bus_initialize(self->host, &buscfg, 1);
-    assert(ret == ESP_OK);
-    ret = spi_bus_add_device(self->host, &devcfg, &self->spi);
-    assert(ret == ESP_OK);
-}
+    switch (ret) { 
+        case ESP_ERR_INVALID_ARG:
+            mp_raise_msg(&mp_type_OSError, "Invalid configuration");
+            return;
 
-STATIC void machine_hw_spi_deinit(mp_obj_base_t *self_in) {
-    machine_hw_spi_obj_t *self = (machine_hw_spi_obj_t*)self_in;
-    esp_err_t ret;
-    if (!self->deinitialized) {
-        self->deinitialized = true;
-        ret = spi_bus_remove_device(self->spi);
-        assert(ret == ESP_OK);
-        ret = spi_bus_free(self->host);
-        assert(ret == ESP_OK);
+        case ESP_ERR_INVALID_STATE:
+            mp_raise_msg(&mp_type_OSError, "SPI device already in use");
+            return;
     }
+
+    ret = spi_bus_add_device(self->host, &devcfg, &self->spi);
+    switch (ret) { 
+        case ESP_ERR_INVALID_ARG:
+            mp_raise_msg(&mp_type_OSError, "Invalid configuration");
+            spi_bus_free(self->host);
+            return;
+
+        case ESP_ERR_NO_MEM:
+            mp_raise_msg(&mp_type_OSError, "Out of memory");
+            spi_bus_free(self->host);
+            return;
+
+        case ESP_ERR_NOT_FOUND:
+            mp_raise_msg(&mp_type_OSError, "No free CS slots");
+            spi_bus_free(self->host);
+            return;
+    }
+    self->state = MACHINE_HW_SPI_STATE_INIT;
+    MACHINE_HW_SPI_DEBUG_PRINTF("machine_hw_spi_init_internal() returning\n");
 }
 
-mp_obj_t machine_hw_spi_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args) {
-    // args[0] holds the id of the peripheral
+STATIC void machine_hw_spi_init(mp_obj_base_t *self_in, size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+    machine_hw_spi_obj_t *self = (machine_hw_spi_obj_t*)self_in;
+
+    enum { ARG_id, ARG_baudrate, ARG_polarity, ARG_phase, ARG_bits, ARG_firstbit, ARG_sck, ARG_mosi, ARG_miso };
+    static const mp_arg_t allowed_args[] = {
+        { MP_QSTR_id,       MP_ARG_REQUIRED | MP_ARG_INT , {.u_int = -1} },
+        { MP_QSTR_baudrate, MP_ARG_INT, {.u_int = -1} },
+        { MP_QSTR_polarity, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = -1} },
+        { MP_QSTR_phase,    MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = -1} },
+        { MP_QSTR_bits,     MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = -1} },
+        { MP_QSTR_firstbit, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = -1} },
+        { MP_QSTR_sck,      MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
+        { MP_QSTR_mosi,     MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
+        { MP_QSTR_miso,     MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
+    };
+
+
+
+    mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
+    mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args),
+            allowed_args, args);
+    int8_t sck, mosi, miso;
+
+    if(args[ARG_sck].u_obj == MP_OBJ_NULL) {
+        sck = -2;
+    } else if (args[ARG_sck].u_obj == mp_const_none) {
+        sck = -1;
+    } else {
+        sck = machine_pin_get_id(args[ARG_sck].u_obj);
+    }
+
+    if(args[ARG_miso].u_obj == MP_OBJ_NULL) {
+        miso = -2;
+    } else if (args[ARG_miso].u_obj == mp_const_none) {
+        miso = -1;
+    } else {
+        miso = machine_pin_get_id(args[ARG_miso].u_obj);
+    }
+
+    if(args[ARG_mosi].u_obj == MP_OBJ_NULL) {
+        mosi = -2;
+    } else if (args[ARG_mosi].u_obj == mp_const_none) {
+        mosi = -1;
+    } else {
+        mosi = machine_pin_get_id(args[ARG_mosi].u_obj);
+    }
+
+    MACHINE_HW_SPI_DEBUG_PRINTF ("before calling internal\n");
+    machine_hw_spi_init_internal( self, args[ARG_id].u_int, args[ARG_baudrate].u_int,
+            args[ARG_polarity].u_int, args[ARG_phase].u_int, args[ARG_bits].u_int,
+            args[ARG_firstbit].u_int, sck, miso, mosi);
+}
+
+mp_obj_t machine_hw_spi_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
+    enum { ARG_id, ARG_baudrate, ARG_polarity, ARG_phase, ARG_bits, ARG_firstbit, ARG_sck, ARG_mosi, ARG_miso };
+    static const mp_arg_t allowed_args[] = {
+        { MP_QSTR_id,       MP_ARG_REQUIRED | MP_ARG_INT , {.u_int = -1} },
+        { MP_QSTR_baudrate, MP_ARG_INT, {.u_int = 500000} },
+        { MP_QSTR_polarity, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 0} },
+        { MP_QSTR_phase,    MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 0} },
+        { MP_QSTR_bits,     MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 8} },
+        { MP_QSTR_firstbit, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = MICROPY_PY_MACHINE_SPI_MSB} },
+        { MP_QSTR_sck,      MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
+        { MP_QSTR_mosi,     MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
+        { MP_QSTR_miso,     MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
+    };
+    mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
+    mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
+
     machine_hw_spi_obj_t *self = m_new_obj(machine_hw_spi_obj_t);
     self->base.type = &machine_hw_spi_type;
-    // set defaults
-    mp_map_t kw_args;
-    mp_map_init_fixed_table(&kw_args, n_kw, args + n_args);
-    machine_hw_spi_init((mp_obj_base_t*)self, n_args, args, &kw_args);
+
+    machine_hw_spi_init_internal(
+            self, 
+            args[ARG_id].u_int,
+            args[ARG_baudrate].u_int,
+            args[ARG_polarity].u_int,
+            args[ARG_phase].u_int,
+            args[ARG_bits].u_int,
+            args[ARG_firstbit].u_int,
+            args[ARG_sck].u_obj == MP_OBJ_NULL ? -1 : machine_pin_get_id(args[ARG_sck].u_obj),
+            args[ARG_miso].u_obj == MP_OBJ_NULL ? -1 : machine_pin_get_id(args[ARG_miso].u_obj),
+            args[ARG_mosi].u_obj == MP_OBJ_NULL ? -1 : machine_pin_get_id(args[ARG_mosi].u_obj));
+
     return MP_OBJ_FROM_PTR(self);
 }
 
@@ -183,7 +353,7 @@ STATIC const mp_machine_spi_p_t machine_hw_spi_p = {
 
 const mp_obj_type_t machine_hw_spi_type = {
     { &mp_type_type },
-    .name = MP_QSTR_hw_spi,
+    .name = MP_QSTR_SPI,
     .print = machine_hw_spi_print,
     .make_new = machine_hw_spi_make_new,
     .protocol = &machine_hw_spi_p,
