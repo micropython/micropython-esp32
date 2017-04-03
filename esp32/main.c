@@ -45,6 +45,7 @@
 #include "lib/mp-readline/readline.h"
 #include "lib/utils/pyexec.h"
 #include "uart.h"
+#include "modmachine.h"
 
 // MicroPython runs as a task under FreeRTOS
 #define MP_TASK_PRIORITY        (ESP_TASK_PRIO_MIN + 1)
@@ -70,6 +71,9 @@ soft_reset:
     mp_obj_list_init(mp_sys_argv, 0);
     readline_init0();
 
+    // initialise peripherals
+    machine_pins_init();
+
     // run boot-up scripts
     pyexec_frozen_module("_boot.py");
     pyexec_file("boot.py");
@@ -90,6 +94,10 @@ soft_reset:
     }
 
     mp_hal_stdout_tx_str("PYB: soft reboot\r\n");
+
+    // deinitialise peripherals
+    machine_pins_deinit();
+
     mp_deinit();
     fflush(stdout);
     goto soft_reset;

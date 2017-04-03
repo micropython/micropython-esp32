@@ -49,6 +49,8 @@
 #define MICROPY_CAN_OVERRIDE_BUILTINS       (1)
 #define MICROPY_USE_INTERNAL_ERRNO          (1)
 #define MICROPY_USE_INTERNAL_PRINTF         (0) // ESP32 SDK requires its own printf
+#define MICROPY_ENABLE_SCHEDULER            (1)
+#define MICROPY_SCHEDULER_DEPTH             (8)
 #define MICROPY_VFS                         (1)
 #define MICROPY_VFS_FAT                     (1)
 
@@ -189,6 +191,7 @@ extern const struct _mp_obj_module_t mp_module_network;
 #define MICROPY_PORT_ROOT_POINTERS \
     const char *readline_hist[8]; \
     mp_obj_t mp_kbd_exception; \
+    mp_obj_t machine_pin_irq_handler[40]; \
 
 // type definitions for the specific machine
 
@@ -196,7 +199,12 @@ extern const struct _mp_obj_module_t mp_module_network;
 #define MICROPY_MAKE_POINTER_CALLABLE(p) ((void*)((mp_uint_t)(p)))
 #define MP_PLAT_PRINT_STRN(str, len) mp_hal_stdout_tx_strn_cooked(str, len)
 #define MP_SSIZE_MAX (0x7fffffff)
-#define MICROPY_EVENT_POLL_HOOK asm("waiti 0");
+#define MICROPY_EVENT_POLL_HOOK \
+    do { \
+        extern void mp_handle_pending(void); \
+        mp_handle_pending(); \
+        asm("waiti 0"); \
+    } while (0);
 
 #define UINT_FMT "%u"
 #define INT_FMT "%d"
