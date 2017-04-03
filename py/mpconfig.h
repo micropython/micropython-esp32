@@ -556,6 +556,15 @@ typedef double mp_float_t;
 #define MICROPY_CPYTHON_COMPAT (1)
 #endif
 
+// Perform full checks as done by CPython. Disabling this
+// may produce incorrect results, if incorrect data is fed,
+// but should not lead to MicroPython crashes or similar
+// grave issues (in other words, only user app should be,
+// affected, not system).
+#ifndef MICROPY_FULL_CHECKS
+#define MICROPY_FULL_CHECKS (1)
+#endif
+
 // Whether POSIX-semantics non-blocking streams are supported
 #ifndef MICROPY_STREAMS_NON_BLOCK
 #define MICROPY_STREAMS_NON_BLOCK (0)
@@ -616,6 +625,16 @@ typedef double mp_float_t;
 #define MICROPY_USE_INTERNAL_PRINTF (1)
 #endif
 
+// Support for internal scheduler
+#ifndef MICROPY_ENABLE_SCHEDULER
+#define MICROPY_ENABLE_SCHEDULER (0)
+#endif
+
+// Maximum number of entries in the scheduler
+#ifndef MICROPY_SCHEDULER_DEPTH
+#define MICROPY_SCHEDULER_DEPTH (4)
+#endif
+
 // Support for generic VFS sub-system
 #ifndef MICROPY_VFS
 #define MICROPY_VFS (0)
@@ -633,6 +652,12 @@ typedef double mp_float_t;
 // This costs some code size and makes all load attrs and store attrs slow
 #ifndef MICROPY_PY_DESCRIPTORS
 #define MICROPY_PY_DESCRIPTORS (0)
+#endif
+
+// Whether to support class __delattr__ and __setattr__ methods
+// This costs some code size and makes all del attrs and store attrs slow
+#ifndef MICROPY_PY_DELATTR_SETATTR
+#define MICROPY_PY_DELATTR_SETATTR (0)
 #endif
 
 // Support for async/await/async for/async with
@@ -911,6 +936,11 @@ typedef double mp_float_t;
 #define MICROPY_PY_UERRNO (0)
 #endif
 
+// Whether to provide the uerrno.errorcode dict
+#ifndef MICROPY_PY_UERRNO_ERRORCODE
+#define MICROPY_PY_UERRNO_ERRORCODE (1)
+#endif
+
 // Whether to provide "uselect" module (baremetal implementation)
 #ifndef MICROPY_PY_USELECT
 #define MICROPY_PY_USELECT (0)
@@ -941,6 +971,12 @@ typedef double mp_float_t;
 // If not enabled then thread safety must be provided at the Python level
 #ifndef MICROPY_PY_THREAD_GIL
 #define MICROPY_PY_THREAD_GIL (MICROPY_PY_THREAD)
+#endif
+
+// Number of VM jump-loops to do before releasing the GIL.
+// Set this to 0 to disable the divisor.
+#ifndef MICROPY_PY_THREAD_GIL_VM_DIVISOR
+#define MICROPY_PY_THREAD_GIL_VM_DIVISOR (32)
 #endif
 
 // Extended modules
@@ -1076,6 +1112,11 @@ typedef double mp_float_t;
 // object code analysis tools which don't support static symbols.
 #ifndef STATIC
 #define STATIC static
+#endif
+
+// Number of bytes in a word
+#ifndef BYTES_PER_WORD
+#define BYTES_PER_WORD (sizeof(mp_uint_t))
 #endif
 
 #define BITS_PER_BYTE (8)

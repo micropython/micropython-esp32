@@ -44,14 +44,9 @@
 #include "lib/mp-readline/readline.h"
 
 void do_str(const char *src, mp_parse_input_kind_t input_kind) {
-    mp_lexer_t *lex = mp_lexer_new_from_str_len(MP_QSTR__lt_stdin_gt_, src, strlen(src), 0);
-    if (lex == NULL) {
-        printf("MemoryError: lexer could not allocate memory\n");
-        return;
-    }
-
     nlr_buf_t nlr;
     if (nlr_push(&nlr) == 0) {
+        mp_lexer_t *lex = mp_lexer_new_from_str_len(MP_QSTR__lt_stdin_gt_, src, strlen(src), 0);
         qstr source_name = lex->source_name;
         mp_parse_tree_t parse_tree = mp_parse(lex, input_kind);
         mp_obj_t module_fun = mp_compile(&parse_tree, source_name, MP_EMIT_OPT_NONE, true);
@@ -67,10 +62,15 @@ static char *stack_top;
 static char heap[MICROPY_HEAP_SIZE];
 
 void init_zephyr(void) {
+    // TODO: Make addresses configurable
     #ifdef CONFIG_NET_IPV4
-    // TODO: Make address configurable
-    static struct in_addr in4addr_my = { { { 192, 0, 2, 1 } } };
+    static struct in_addr in4addr_my = {{{192, 0, 2, 1}}};
     net_if_ipv4_addr_add(net_if_get_default(), &in4addr_my, NET_ADDR_MANUAL, 0);
+    #endif
+    #ifdef CONFIG_NET_IPV6
+    // 2001:db8::1
+    static struct in6_addr in6addr_my = {{{0x20, 0x01, 0x0d, 0xb8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}}};
+    net_if_ipv6_addr_add(net_if_get_default(), &in6addr_my, NET_ADDR_MANUAL, 0);
     #endif
 }
 
@@ -121,11 +121,11 @@ void gc_collect(void) {
     gc_collect_start();
     gc_collect_root(&dummy, ((mp_uint_t)stack_top - (mp_uint_t)&dummy) / sizeof(mp_uint_t));
     gc_collect_end();
-    gc_dump_info();
+    //gc_dump_info();
 }
 
 mp_lexer_t *mp_lexer_new_from_file(const char *filename) {
-    return NULL;
+    mp_raise_OSError(ENOENT);
 }
 
 mp_import_stat_t mp_import_stat(const char *path) {
@@ -137,10 +137,7 @@ mp_obj_t mp_builtin_open(size_t n_args, const mp_obj_t *args, mp_map_t *kwargs) 
 }
 MP_DEFINE_CONST_FUN_OBJ_KW(mp_builtin_open_obj, 1, mp_builtin_open);
 
-void nlr_jump_fail(void *val) {
-}
-
-void NORETURN __fatal_error(const char *msg) {
+NORETURN void nlr_jump_fail(void *val) {
     while (1);
 }
 

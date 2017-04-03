@@ -277,7 +277,7 @@ mp_obj_t mp_obj_int_binary_op(mp_uint_t op, mp_obj_t lhs_in, mp_obj_t rhs_in) {
             case MP_BINARY_OP_INPLACE_RSHIFT: {
                 mp_int_t irhs = mp_obj_int_get_checked(rhs_in);
                 if (irhs < 0) {
-                    mp_raise_msg(&mp_type_ValueError, "negative shift count");
+                    mp_raise_ValueError("negative shift count");
                 }
                 if (op == MP_BINARY_OP_LSHIFT || op == MP_BINARY_OP_INPLACE_LSHIFT) {
                     mpz_shl_inpl(&res->mpz, zlhs, irhs);
@@ -407,9 +407,9 @@ mp_obj_t mp_obj_new_int_from_float(mp_float_t val) {
 }
 #endif
 
-mp_obj_t mp_obj_new_int_from_str_len(const char **str, mp_uint_t len, bool neg, mp_uint_t base) {
+mp_obj_t mp_obj_new_int_from_str_len(const char **str, size_t len, bool neg, unsigned int base) {
     mp_obj_int_t *o = mp_obj_int_new_mpz();
-    mp_uint_t n = mpz_set_from_str(&o->mpz, *str, len, neg, base);
+    size_t n = mpz_set_from_str(&o->mpz, *str, len, neg, base);
     *str += n;
     return MP_OBJ_FROM_PTR(o);
 }

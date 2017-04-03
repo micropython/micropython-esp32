@@ -39,7 +39,7 @@
 #if MICROPY_CPYTHON_COMPAT
 STATIC void check_stringio_is_open(const mp_obj_stringio_t *o) {
     if (o->vstr == NULL) {
-        mp_raise_msg(&mp_type_ValueError, "I/O operation on closed file");
+        mp_raise_ValueError("I/O operation on closed file");
     }
 }
 #else
@@ -215,7 +215,7 @@ const mp_obj_type_t mp_type_stringio = {
     .name = MP_QSTR_StringIO,
     .print = stringio_print,
     .make_new = stringio_make_new,
-    .getiter = mp_identity,
+    .getiter = mp_identity_getiter,
     .iternext = mp_stream_unbuffered_iter,
     .protocol = &stringio_stream_p,
     .locals_dict = (mp_obj_dict_t*)&stringio_locals_dict,
@@ -227,7 +227,7 @@ const mp_obj_type_t mp_type_bytesio = {
     .name = MP_QSTR_BytesIO,
     .print = stringio_print,
     .make_new = stringio_make_new,
-    .getiter = mp_identity,
+    .getiter = mp_identity_getiter,
     .iternext = mp_stream_unbuffered_iter,
     .protocol = &bytesio_stream_p,
     .locals_dict = (mp_obj_dict_t*)&stringio_locals_dict,

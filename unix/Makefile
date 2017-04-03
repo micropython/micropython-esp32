@@ -17,13 +17,12 @@ include ../py/py.mk
 
 INC +=  -I.
 INC +=  -I..
-INC += -I../lib/timeutils
 INC += -I$(BUILD)
 
 # compiler settings
 CWARN = -Wall -Werror
 CWARN += -Wpointer-arith -Wuninitialized
-CFLAGS = $(INC) $(CWARN) -ansi -std=gnu99 -DUNIX $(CFLAGS_MOD) $(COPT) $(CFLAGS_EXTRA)
+CFLAGS = $(INC) $(CWARN) -std=gnu99 -DUNIX $(CFLAGS_MOD) $(COPT) $(CFLAGS_EXTRA)
 
 # Debugging/Optimization
 ifdef DEBUG
@@ -235,7 +234,10 @@ freedos:
 	PROG=micropython_freedos \
 	MICROPY_PY_SOCKET=0 \
 	MICROPY_PY_FFI=0 \
-	MICROPY_PY_JNI=0
+	MICROPY_PY_JNI=0 \
+	MICROPY_PY_BTREE=0 \
+	MICROPY_PY_THREAD=0 \
+	MICROPY_PY_USSL=0
 
 # build an interpreter for coverage testing and do the testing
 coverage:
