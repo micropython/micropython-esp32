@@ -128,6 +128,7 @@ SRC_C = \
 	modsocket.c \
 	modesp.c \
 	espneopixel.c \
+	network_bluetooth.c \
 	$(SRC_MOD)
 
 STM_SRC_C = $(addprefix stmhal/,\
