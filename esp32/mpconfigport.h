@@ -29,6 +29,7 @@
 #define MICROPY_ENABLE_FINALISER            (1)
 #define MICROPY_STACK_CHECK                 (1)
 #define MICROPY_ENABLE_EMERGENCY_EXCEPTION_BUF (1)
+#define MICROPY_KBD_EXCEPTION               (1)
 #define MICROPY_HELPER_REPL                 (1)
 #define MICROPY_REPL_EMACS_KEYS             (1)
 #define MICROPY_REPL_AUTO_INDENT            (1)
@@ -190,7 +191,6 @@ extern const struct _mp_obj_module_t mp_module_network;
 
 #define MICROPY_PORT_ROOT_POINTERS \
     const char *readline_hist[8]; \
-    mp_obj_t mp_kbd_exception; \
     mp_obj_t machine_pin_irq_handler[40]; \
 
 // type definitions for the specific machine
