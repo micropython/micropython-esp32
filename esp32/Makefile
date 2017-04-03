@@ -16,7 +16,7 @@ include ../py/py.mk
 
 PORT ?= /dev/ttyUSB0
 BAUD ?= 460800
-FLASH_MODE ?= qio
+FLASH_MODE ?= dio
 FLASH_FREQ ?= 40m
 FLASH_SIZE ?= 4MB
 CROSS_COMPILE ?= xtensa-esp32-elf-
@@ -79,6 +79,7 @@ INC += -I$(ESPCOMP)/wpa_supplicant/include
 INC += -I$(ESPCOMP)/wpa_supplicant/port/include
 INC += -I$(ESPCOMP)/ethernet/include
 INC += -I$(ESPCOMP)/tcpip_adapter/include
+INC += -I$(ESPCOMP)/bt/include
 
 CFLAGS = -std=gnu99 -Os -ffunction-sections -fdata-sections -fstrict-volatile-bitfields -mlongcalls -nostdlib -Wall -Werror -Wno-error=unused-function -Wno-error=unused-but-set-variable -Wno-error=unused-variable -Wno-error=deprecated-declarations -DMBEDTLS_CONFIG_FILE='"mbedtls/esp_config.h"' -DHAVE_CONFIG_H -DESP_PLATFORM  $(INC)
 CFLAGS += -DIDF_VER=\"$(IDF_VER)\"
@@ -237,6 +238,10 @@ ESPIDF_CXX_O = $(addprefix $(ESPCOMP)/cxx/,\
 ESPIDF_ETHERNET_O = $(addprefix $(ESPCOMP)/ethernet/,\
 	emac_dev.o \
 	emac_main.o \
+	)
+
+ESPIDF_BLUETOOTH_O = $(addprefix $(ESPCOMP)/bt/,\
+	bt.o \
 	)
 
 $(BUILD)/$(ESPCOMP)/expat/%.o: CFLAGS += -Wno-unused-function
@@ -518,6 +523,7 @@ ESPIDF_WPA_SUPPLICANT_O = $(addprefix $(ESPCOMP)/wpa_supplicant/,\
 	)
 
 OBJ_ESPIDF =
+OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_BLUETOOTH_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_NEWLIB_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_DRIVER_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_ESP32_O))
@@ -572,6 +578,7 @@ APP_LD_ARGS += -L$(dir $(LIBSTDCXX_FILE_NAME)) -lstdc++
 APP_LD_ARGS += $(ESPCOMP)/newlib/lib/libc.a
 APP_LD_ARGS += $(ESPCOMP)/newlib/lib/libm.a
 APP_LD_ARGS += $(ESPCOMP)/esp32/libhal.a
+APP_LD_ARGS += $(ESPCOMP)/bt/lib/libbtdm_app.a
 APP_LD_ARGS += -L$(ESPCOMP)/esp32/lib -lcore -lnet80211 -lphy -lrtc -lrtc_clk -lrtc_pm -lpp -lwpa -lsmartconfig -lcoexist
 APP_LD_ARGS += $(OBJ)
 APP_LD_ARGS += --end-group

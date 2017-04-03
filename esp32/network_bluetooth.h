@@ -29,8 +29,10 @@
 
 #include "py/obj.h"
 
-typdef struct {
-    mp_obj_type_t base;
+typedef struct {
+    mp_obj_base_t base;
 } network_bluetooth_obj_t;
+
+extern const mp_obj_type_t network_bluetooth_type;
 
 #endif // MICROPY_INCLUDED_ESP32_NETWORK_BLUETOOTH_H
