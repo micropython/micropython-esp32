@@ -32,8 +32,9 @@
 #include "py/stream.h"
 #include "py/mphal.h"
 #include "extmod/machine_spi.h"
-#include "machine_hw_spi.h"
 #include "modmachine.h"
+
+#include "driver/spi_master.h"
 
 // if a port didn't define MSB/LSB constants then provide them
 #ifndef MICROPY_PY_MACHINE_SPI_MSB
