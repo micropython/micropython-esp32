@@ -56,7 +56,7 @@ STATIC mp_obj_t mp_obj_int_make_new(const mp_obj_type_t *type_in, size_t n_args,
                 return args[0];
             } else if (MP_OBJ_IS_STR_OR_BYTES(args[0])) {
                 // a string, parse it
-                mp_uint_t l;
+                size_t l;
                 const char *s = mp_obj_str_get_data(args[0], &l);
                 return mp_parse_num_integer(s, l, 0, NULL);
 #if MICROPY_PY_BUILTINS_FLOAT
@@ -72,7 +72,7 @@ STATIC mp_obj_t mp_obj_int_make_new(const mp_obj_type_t *type_in, size_t n_args,
         default: {
             // should be a string, parse it
             // TODO proper error checking of argument types
-            mp_uint_t l;
+            size_t l;
             const char *s = mp_obj_str_get_data(args[0], &l);
             return mp_parse_num_integer(s, l, mp_obj_get_int(args[1]), NULL);
         }
@@ -103,7 +103,12 @@ mp_fp_as_int_class_t mp_classify_fp_as_int(mp_float_t val) {
 #if MICROPY_FLOAT_IMPL == MICROPY_FLOAT_IMPL_DOUBLE
         e |= u.i[MP_ENDIANNESS_BIG] != 0;
 #endif
-        e += ((1 << MP_FLOAT_EXP_BITS) - 1) << MP_FLOAT_EXP_SHIFT_I32;
+        if ((e & ~(1 << MP_FLOAT_SIGN_SHIFT_I32)) == 0) {
+            // handle case of -0 (when sign is set but rest of bits are zero)
+            e = 0;
+        } else {
+            e += ((1 << MP_FLOAT_EXP_BITS) - 1) << MP_FLOAT_EXP_SHIFT_I32;
+        }
     } else {
         e &= ~((1 << MP_FLOAT_EXP_SHIFT_I32) - 1);
     }
@@ -127,11 +132,17 @@ mp_fp_as_int_class_t mp_classify_fp_as_int(mp_float_t val) {
 #undef MP_FLOAT_EXP_SHIFT_I32
 #endif
 
+#if MICROPY_LONGINT_IMPL == MICROPY_LONGINT_IMPL_LONGLONG
+typedef mp_longint_impl_t fmt_int_t;
+#else
+typedef mp_int_t fmt_int_t;
+#endif
+
 void mp_obj_int_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
     (void)kind;
     // The size of this buffer is rather arbitrary. If it's not large
     // enough, a dynamic one will be allocated.
-    char stack_buf[sizeof(mp_int_t) * 4];
+    char stack_buf[sizeof(fmt_int_t) * 4];
     char *buf = stack_buf;
     size_t buf_size = sizeof(stack_buf);
     size_t fmt_size;
@@ -143,12 +154,6 @@ void mp_obj_int_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t
         m_del(char, buf, buf_size);
     }
 }
-
-#if MICROPY_LONGINT_IMPL == MICROPY_LONGINT_IMPL_LONGLONG
-typedef mp_longint_impl_t fmt_int_t;
-#else
-typedef mp_int_t fmt_int_t;
-#endif
 
 STATIC const uint8_t log_base2_floor[] = {
     0, 1, 1, 2,
@@ -291,7 +296,7 @@ mp_obj_t mp_obj_int_binary_op(mp_uint_t op, mp_obj_t lhs_in, mp_obj_t rhs_in) {
 }
 
 // This is called only with strings whose value doesn't fit in SMALL_INT
-mp_obj_t mp_obj_new_int_from_str_len(const char **str, mp_uint_t len, bool neg, mp_uint_t base) {
+mp_obj_t mp_obj_new_int_from_str_len(const char **str, size_t len, bool neg, unsigned int base) {
     mp_raise_msg(&mp_type_OverflowError, "long int not supported in this build");
     return mp_const_none;
 }

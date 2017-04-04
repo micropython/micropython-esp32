@@ -41,6 +41,7 @@
 #include "extmod/vfs_fat.h"
 #include "gccollect.h"
 #include "irq.h"
+#include "pybthread.h"
 #include "rng.h"
 #include "storage.h"
 #include "pin.h"
@@ -158,6 +159,10 @@ STATIC mp_obj_t machine_info(mp_uint_t n_args, const mp_obj_t *args) {
             }
         }
     }
+
+    #if MICROPY_PY_THREAD
+    pyb_thread_dump();
+    #endif
 
     if (n_args == 1) {
         // arg given means dump gc allocation table
@@ -319,7 +324,7 @@ STATIC mp_obj_t machine_freq(mp_uint_t n_args, const mp_obj_t *args) {
         //printf("%lu %lu %lu %lu %lu\n", sysclk_source, m, n, p, q);
 
         // let the USB CDC have a chance to process before we change the clock
-        HAL_Delay(5);
+        mp_hal_delay_ms(5);
 
         // desired system clock source is in sysclk_source
         RCC_ClkInitTypeDef RCC_ClkInitStruct;

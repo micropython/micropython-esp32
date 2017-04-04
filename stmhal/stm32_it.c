@@ -70,6 +70,7 @@
 #include "stm32_it.h"
 #include STM32_HAL_H
 
+#include "py/mpstate.h"
 #include "py/obj.h"
 #include "py/mphal.h"
 #include "pendsv.h"
@@ -297,7 +298,7 @@ void SysTick_Handler(void) {
     uwTick += 1;
 
     // Read the systick control regster. This has the side effect of clearing
-    // the COUNTFLAG bit, which makes the logic in sys_tick_get_microseconds
+    // the COUNTFLAG bit, which makes the logic in mp_hal_ticks_us
     // work properly.
     SysTick->CTRL;
 
@@ -315,9 +316,14 @@ void SysTick_Handler(void) {
     }
 
     #if MICROPY_PY_THREAD
-    // signal a thread switch at 4ms=250Hz
-    if (pyb_thread_enabled && (uwTick & 0x03) == 0x03) {
-        SCB->ICSR = SCB_ICSR_PENDSVSET_Msk;
+    if (pyb_thread_enabled) {
+        if (pyb_thread_cur->timeslice == 0) {
+            if (pyb_thread_cur->run_next != pyb_thread_cur) {
+                SCB->ICSR = SCB_ICSR_PENDSVSET_Msk;
+            }
+        } else {
+            --pyb_thread_cur->timeslice;
+        }
     }
     #endif
 }

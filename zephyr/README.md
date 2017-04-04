@@ -59,10 +59,12 @@ it's a sign that you didn't followed instructions above. If you would like
 to just run it quickly without extra setup, see "minimal" build below.
 
 For deploying/flashing a firmware on a real board, follow Zephyr
-documentation for a given board (mind again that networking is enabled
-for the build, so you should be aware of known issues for a particular
-board; for example, frdm_k64f requires Ethernet cable connected to both
-board and host or it will hang/crash on startup).
+documentation for a given board, including known issues for that board
+(if any). (Mind again that networking is enabled for the default build,
+so you should know if there're any special requirements in that regard,
+cf. for example QEMU networking requirements above; real hardware boards
+generally should not have any special requirements, unless there're known
+issues).
 
 
 Quick example
@@ -96,17 +98,17 @@ below 128KB, as long as Zephyr project is committed to maintain stable
 minimal size of their kernel (which they appear to be). Note that at such
 size, there is no support for any Zephyr features beyond REPL over UART,
 and only very minimal set of builtin Python modules. Thus, this build
-is more suitable for code size control and quick demonstrations even on
+is more suitable for code size control and quick demonstrations on
 smaller systems. It's also suitable for careful enabling of features one
-by one to achieve needed functionality and code size. This is in contrast
-to the "default" build, which may get more and more features enabled by
-default over time.
+by one to achieve needed functionality and code size. This is in a
+contrast to the "default" build, which may get more and more features
+enabled over time.
 
 To make a minimal build:
 
-    make BOARD=<board> minimal
+    ./make-minimal BOARD=<board>
 
 To run a minimal build in QEMU without requiring TAP networking setup
 run the following after you built image with the previous command:
 
-    make BOARD=<qemu_x86|qemu_cortex_m3> qemu-minimal
+    ./make-minimal BOARD=<qemu_x86|qemu_cortex_m3> qemu

@@ -54,7 +54,17 @@ const mp_obj_int_t mp_maxsize_obj = {{&mp_type_int}, MP_SSIZE_MAX};
 #endif
 
 mp_obj_t mp_obj_int_from_bytes_impl(bool big_endian, size_t len, const byte *buf) {
-    mp_not_implemented("");
+    int delta = 1;
+    if (!big_endian) {
+        buf += len - 1;
+        delta = -1;
+    }
+
+    mp_longint_impl_t value = 0;
+    for (; len--; buf += delta) {
+        value = (value << 8) | *buf;
+    }
+    return mp_obj_new_int_from_ll(value);
 }
 
 void mp_obj_int_to_bytes_impl(mp_obj_t self_in, bool big_endian, size_t len, byte *buf) {
@@ -273,7 +283,7 @@ mp_obj_t mp_obj_new_int_from_float(mp_float_t val) {
 }
 #endif
 
-mp_obj_t mp_obj_new_int_from_str_len(const char **str, mp_uint_t len, bool neg, mp_uint_t base) {
+mp_obj_t mp_obj_new_int_from_str_len(const char **str, size_t len, bool neg, unsigned int base) {
     // TODO this does not honor the given length of the string, but it all cases it should anyway be null terminated
     // TODO check overflow
     mp_obj_int_t *o = m_new_obj(mp_obj_int_t);

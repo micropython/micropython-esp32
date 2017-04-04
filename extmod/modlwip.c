@@ -1,10 +1,11 @@
 /*
- * This file is part of the Micro Python project, http://micropython.org/
+ * This file is part of the MicroPython project, http://micropython.org/
  *
  * The MIT License (MIT)
  *
  * Copyright (c) 2013, 2014 Damien P. George
  * Copyright (c) 2015 Galen Hazelwood
+ * Copyright (c) 2015-2016 Paul Sokolovsky
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -35,7 +36,7 @@
 #include "py/mperrno.h"
 #include "py/mphal.h"
 
-#include "netutils.h"
+#include "lib/netutils/netutils.h"
 
 #include "lwip/init.h"
 #include "lwip/timers.h"
@@ -1263,8 +1264,7 @@ STATIC void lwip_getaddrinfo_cb(const char *name, ip_addr_t *ipaddr, void *arg) 
 
 // lwip.getaddrinfo
 STATIC mp_obj_t lwip_getaddrinfo(mp_obj_t host_in, mp_obj_t port_in) {
-    mp_uint_t hlen;
-    const char *host = mp_obj_str_get_data(host_in, &hlen);
+    const char *host = mp_obj_str_get_str(host_in);
     mp_int_t port = mp_obj_get_int(port_in);
 
     getaddrinfo_state_t state;

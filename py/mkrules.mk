@@ -71,12 +71,7 @@ $(OBJ): | $(HEADER_BUILD)/qstrdefs.generated.h $(HEADER_BUILD)/mpversion.h
 
 $(HEADER_BUILD)/qstr.i.last: $(SRC_QSTR) | $(HEADER_BUILD)/mpversion.h
 	$(ECHO) "GEN $@"
-	$(Q)if [ "$?" = "" ]; then \
-	    echo "QSTR Looks like -B used, trying to emulate"; \
-	    $(CPP) $(QSTR_GEN_EXTRA_CFLAGS) $(CFLAGS) $^ >$(HEADER_BUILD)/qstr.i.last; \
-	else \
-	    $(CPP) $(QSTR_GEN_EXTRA_CFLAGS) $(CFLAGS) $? >$(HEADER_BUILD)/qstr.i.last; \
-	fi
+	$(Q)$(CPP) $(QSTR_GEN_EXTRA_CFLAGS) $(CFLAGS) $? >$(HEADER_BUILD)/qstr.i.last;
 
 $(HEADER_BUILD)/qstr.split: $(HEADER_BUILD)/qstr.i.last
 	$(ECHO) "GEN $@"
@@ -147,8 +142,15 @@ clean-prog:
 endif
 
 LIBMICROPYTHON = libmicropython.a
+
+# We can execute extra commands after library creation using
+# LIBMICROPYTHON_EXTRA_CMD. This may be needed e.g. to integrate
+# with 3rd-party projects which don't have proper dependency
+# tracking. Then LIBMICROPYTHON_EXTRA_CMD can e.g. touch some
+# other file to cause needed effect, e.g. relinking with new lib.
 lib $(LIBMICROPYTHON): $(OBJ)
 	$(AR) rcs $(LIBMICROPYTHON) $^
+	$(LIBMICROPYTHON_EXTRA_CMD)
 
 clean:
 	$(RM) -rf $(BUILD) $(CLEAN_EXTRA)

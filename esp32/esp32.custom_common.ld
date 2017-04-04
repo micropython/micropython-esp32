@@ -71,6 +71,10 @@ SECTIONS
     *(.init.literal)
     *(.init)
     _init_end = ABSOLUTE(.);
+
+    /* This goes here, not at top of linker script, so addr2line finds it last,
+       and uses it in preference to the first symbol in IRAM */
+    _iram_start = ABSOLUTE(0);
   } > iram0_0_seg
 
   .iram0.text :
@@ -81,9 +85,11 @@ SECTIONS
     *freertos/*(.literal .text .literal.* .text.*)
     *esp32/panic.o(.literal .text .literal.* .text.*)
     *esp32/core_dump.o(.literal .text .literal.* .text.*)
+    *esp32/heap_alloc_caps.o(.literal .text .literal.* .text.*)
     *libphy.a:(.literal .text .literal.* .text.*)
     *librtc.a:(.literal .text .literal.* .text.*)
     *librtc_clk.a:(.literal .text .literal.* .text.*)
+    *librtc_pm.a:(.literal .text .literal.* .text.*)
     *libpp.a:pp.o(.literal .text .literal.* .text.*)
     *libpp.a:lmac.o(.literal .text .literal.* .text.*)
     *libpp.a:wdev.o(.literal .text .literal.* .text.*)
@@ -91,6 +97,7 @@ SECTIONS
     *libnet80211.a:ieee80211_misc.o(.literal .text .literal.* .text.*)
     *libhal.a:(.literal .text .literal.* .text.*)
     *libcoexist.a:(.literal .text .literal.* .text.*)
+    *py/scheduler.o*(.literal .text .literal.* .text.*)
     _iram_text_end = ABSOLUTE(.);
   } > iram0_0_seg
 
@@ -193,5 +200,11 @@ SECTIONS
     *(.gnu.version)
     _text_end = ABSOLUTE(.);
     _etext = .;
+
+    /* Similar to _iram_start, this symbol goes here so it is
+       resolved by addr2line in preference to the first symbol in
+       the flash.text segment.
+    */
+    _flash_cache_start = ABSOLUTE(0);
   } >iram0_2_seg
 }

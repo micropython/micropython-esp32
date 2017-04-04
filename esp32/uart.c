@@ -51,7 +51,12 @@ STATIC void IRAM_ATTR uart_irq_handler(void *arg) {
         uint8_t c = uart->fifo.rw_byte;
         if (c == mp_interrupt_char) {
             // inline version of mp_keyboard_interrupt();
-            MP_STATE_VM(mp_pending_exception) = MP_STATE_PORT(mp_kbd_exception);
+            MP_STATE_VM(mp_pending_exception) = MP_OBJ_FROM_PTR(&MP_STATE_VM(mp_kbd_exception));
+            #if MICROPY_ENABLE_SCHEDULER
+            if (MP_STATE_VM(sched_state) == MP_SCHED_IDLE) {
+                MP_STATE_VM(sched_state) = MP_SCHED_PENDING;
+            }
+            #endif
         } else {
             // this is an inline function so will be in IRAM
             ringbuf_put(&stdin_ringbuf, c);
