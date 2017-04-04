@@ -41,6 +41,24 @@
 #define MICROPY_PY_MACHINE_SPI_LSB (1)
 #endif
 
+typedef struct _machine_hw_spi_obj_t {
+    mp_obj_base_t base;
+    spi_host_device_t host;
+    uint32_t baudrate;
+    uint8_t polarity;
+    uint8_t phase;
+    uint8_t bits;
+    uint8_t firstbit;
+    int8_t sck;
+    int8_t mosi;
+    int8_t miso;
+    spi_device_handle_t spi;
+    enum {
+        MACHINE_HW_SPI_STATE_NONE, 
+        MACHINE_HW_SPI_STATE_INIT, 
+        MACHINE_HW_SPI_STATE_DEINIT} state;
+} machine_hw_spi_obj_t;
+
 STATIC void machine_hw_spi_deinit_internal(machine_hw_spi_obj_t * self) {
     switch(spi_bus_remove_device(self->spi)) {
         case ESP_ERR_INVALID_ARG:
