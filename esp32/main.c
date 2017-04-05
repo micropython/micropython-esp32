@@ -51,7 +51,7 @@
 #define MP_TASK_PRIORITY        (ESP_TASK_PRIO_MIN + 1)
 #define MP_TASK_STACK_SIZE      (16 * 1024)
 #define MP_TASK_STACK_LEN       (MP_TASK_STACK_SIZE / sizeof(StackType_t))
-#define MP_TASK_HEAP_SIZE       (96 * 1024)
+#define MP_TASK_HEAP_SIZE       (64 * 1024)
 
 //STATIC StaticTask_t mp_task_tcb;
 //STATIC StackType_t mp_task_stack[MP_TASK_STACK_LEN] __attribute__((aligned (8)));

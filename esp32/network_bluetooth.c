@@ -112,8 +112,9 @@ STATIC mp_obj_t network_bluetooth_test(mp_obj_t self_in) {
     NETWORK_BLUETOOTH_DEBUG_PRINTF("Entering network_bluetooth_test\n");
 
     { // make_new code
+        printf("Before esp_bt_controller_init()\n");
         esp_bt_controller_init(); 
-#if 0
+        printf("After esp_bt_controller_init()\n");
         esp_err_t ret = esp_bt_controller_enable(ESP_BT_MODE_BTDM);
 
         switch(ret) {
@@ -123,7 +124,6 @@ STATIC mp_obj_t network_bluetooth_test(mp_obj_t self_in) {
             default:
                 NETWORK_BLUETOOTH_DEBUG_PRINTF("BT initialization failed, code: %d\n", ret);
         }
-#endif
     }
 
 
