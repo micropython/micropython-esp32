@@ -36,12 +36,6 @@
 
 #include "driver/spi_master.h"
 
-// if a port didn't define MSB/LSB constants then provide them
-#ifndef MICROPY_PY_MACHINE_SPI_MSB
-#define MICROPY_PY_MACHINE_SPI_MSB (0)
-#define MICROPY_PY_MACHINE_SPI_LSB (1)
-#endif
-
 typedef struct _machine_hw_spi_obj_t {
     mp_obj_base_t base;
     spi_host_device_t host;
