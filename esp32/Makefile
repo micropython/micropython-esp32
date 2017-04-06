@@ -64,7 +64,6 @@ INC += -I$(ESPCOMP)/log/include
 INC += -I$(ESPCOMP)/newlib/include
 INC += -I$(ESPCOMP)/nvs_flash/include
 INC += -I$(ESPCOMP)/freertos/include
-INC += -I$(ESPCOMP)/freertos/include/freertos
 INC += -I$(ESPCOMP)/tcpip_adapter/include
 INC += -I$(ESPCOMP)/lwip/include/lwip
 INC += -I$(ESPCOMP)/lwip/include/lwip/port
@@ -259,6 +258,7 @@ $(BUILD)/$(ESPCOMP)/freertos/portasm.o: CFLAGS = $(CFLAGS_ASM)
 $(BUILD)/$(ESPCOMP)/freertos/xtensa_context.o: CFLAGS = $(CFLAGS_ASM)
 $(BUILD)/$(ESPCOMP)/freertos/xtensa_intr_asm.o: CFLAGS = $(CFLAGS_ASM)
 $(BUILD)/$(ESPCOMP)/freertos/xtensa_vectors.o: CFLAGS = $(CFLAGS_ASM)
+$(BUILD)/$(ESPCOMP)/freertos/%.o: CFLAGS += -I$(ESPCOMP)/freertos/include/freertos
 ESPIDF_FREERTOS_O = $(addprefix $(ESPCOMP)/freertos/,\
 	croutine.o \
 	event_groups.o \
