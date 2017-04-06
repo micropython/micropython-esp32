@@ -48,7 +48,7 @@
 #include "lwip/dns.h"
 #include "tcpip_adapter.h"
 
-#include "network_bluetooth.h"
+extern const mp_obj_type_t network_bluetooth_type;
 
 #define MODNETWORK_INCLUDE_CONSTANTS (1)
 
