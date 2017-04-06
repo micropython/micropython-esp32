@@ -79,6 +79,7 @@ INC += -I$(ESPCOMP)/wpa_supplicant/port/include
 INC += -I$(ESPCOMP)/ethernet/include
 INC += -I$(ESPCOMP)/tcpip_adapter/include
 INC += -I$(ESPCOMP)/bt/include
+INC += -I$(ESPCOMP)/bt/bluedroid/api/include/
 
 CFLAGS = -std=gnu99 -Os -ffunction-sections -fdata-sections -fstrict-volatile-bitfields -mlongcalls -nostdlib -Wall -Werror -Wno-error=unused-function -Wno-error=unused-but-set-variable -Wno-error=unused-variable -Wno-error=deprecated-declarations -DMBEDTLS_CONFIG_FILE='"mbedtls/esp_config.h"' -DHAVE_CONFIG_H -DESP_PLATFORM  $(INC)
 CFLAGS += -DIDF_VER=\"$(IDF_VER)\"
