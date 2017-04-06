@@ -28,8 +28,7 @@
 
 #include <stdio.h>
 
-#include "esp_intr.h"
-#include "soc/uart_struct.h"
+#include "driver/uart.h"
 
 #include "py/mpstate.h"
 #include "py/mphal.h"
@@ -37,8 +36,9 @@
 STATIC void uart_irq_handler(void *arg);
 
 void uart_init(void) {
-    xt_set_interrupt_handler(ETS_UART0_INUM, uart_irq_handler, NULL);
-    ESP_INTR_ENABLE(ETS_UART0_INUM);
+    uart_isr_handle_t handle;
+    uart_isr_register(UART_NUM_0, uart_irq_handler, NULL, ESP_INTR_FLAG_LOWMED | ESP_INTR_FLAG_IRAM, &handle);
+    uart_enable_rx_intr(UART_NUM_0);
 }
 
 // all code executed in ISR must be in IRAM, and any const data must be in DRAM
