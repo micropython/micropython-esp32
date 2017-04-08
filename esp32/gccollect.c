@@ -6,6 +6,7 @@
  * The MIT License (MIT)
  *
  * Copyright (c) 2014 Damien P. George
+ * Copyright (c) 2017 Pycom Limited
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,29 +29,38 @@
 
 #include <stdio.h>
 
+#include "py/mpconfig.h"
+#include "py/mpstate.h"
 #include "py/gc.h"
+#include "py/mpthread.h"
 #include "gccollect.h"
+#include "soc/cpu.h"
+#include "xtensa/hal.h"
 
-// As we do not have control over the application entry point, there is no way
-// to figure out the real stack base on runtime, so it needs to be hardcoded
-#define STACK_END   0x40000000
 
-mp_uint_t gc_helper_get_regs_and_sp(mp_uint_t *regs) {
-    // TODO properly
-    return (mp_uint_t)regs;
+static void gc_collect_inner(int level) {
+    if (level < XCHAL_NUM_AREGS / 8) {
+        gc_collect_inner(level + 1);
+        if (level != 0) {
+            return;
+        }
+    }
+
+    if (level == XCHAL_NUM_AREGS / 8) {
+        // get the sp
+        volatile uint32_t sp = (uint32_t)get_sp();
+        gc_collect_root((void**)sp, ((mp_uint_t)MP_STATE_THREAD(stack_top) - sp) / sizeof(uint32_t));
+        return;
+    }
+
+    // trace root pointers from any threads
+    #if MICROPY_PY_THREAD
+    mp_thread_gc_others();
+    #endif
 }
 
 void gc_collect(void) {
-    // start the GC
     gc_collect_start();
-
-    // get the registers and the sp
-    mp_uint_t regs[8];
-    mp_uint_t sp = gc_helper_get_regs_and_sp(regs);
-
-    // trace the stack, including the registers (since they live on the stack in this function)
-    gc_collect_root((void**)sp, (STACK_END - sp) / sizeof(uint32_t));
-
-    // end the GC
+    gc_collect_inner(0);
     gc_collect_end();
 }
