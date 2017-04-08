@@ -44,12 +44,14 @@ ringbuf_t stdin_ringbuf = {stdin_ringbuf_array, sizeof(stdin_ringbuf_array)};
 
 int mp_hal_stdin_rx_chr(void) {
     for (;;) {
+        MP_THREAD_GIL_EXIT();
         int c = ringbuf_get(&stdin_ringbuf);
         if (c != -1) {
             return c;
         }
         MICROPY_EVENT_POLL_HOOK
         vTaskDelay(1);
+        MP_THREAD_GIL_ENTER();
     }
 }
 
@@ -59,24 +61,30 @@ void mp_hal_stdout_tx_char(char c) {
 }
 
 void mp_hal_stdout_tx_str(const char *str) {
+    MP_THREAD_GIL_EXIT();
     while (*str) {
         mp_hal_stdout_tx_char(*str++);
     }
+    MP_THREAD_GIL_ENTER();
 }
 
 void mp_hal_stdout_tx_strn(const char *str, uint32_t len) {
+    MP_THREAD_GIL_EXIT();
     while (len--) {
         mp_hal_stdout_tx_char(*str++);
     }
+    MP_THREAD_GIL_ENTER();
 }
 
 void mp_hal_stdout_tx_strn_cooked(const char *str, uint32_t len) {
+    MP_THREAD_GIL_EXIT();
     while (len--) {
         if (*str == '\n') {
             mp_hal_stdout_tx_char('\r');
         }
         mp_hal_stdout_tx_char(*str++);
     }
+    MP_THREAD_GIL_ENTER();
 }
 
 uint32_t mp_hal_ticks_ms(void) {
@@ -95,6 +103,7 @@ void mp_hal_delay_ms(uint32_t ms) {
     struct timeval tv_start;
     struct timeval tv_end;
     uint64_t dt;
+    MP_THREAD_GIL_EXIT();
     gettimeofday(&tv_start, NULL);
     for (;;) {
         gettimeofday(&tv_end, NULL);
@@ -110,10 +119,13 @@ void mp_hal_delay_ms(uint32_t ms) {
         // do the remaining delay accurately
         ets_delay_us((ms - dt) * 1000);
     }
+    MP_THREAD_GIL_ENTER();
 }
 
 void mp_hal_delay_us(uint32_t us) {
+    MP_THREAD_GIL_EXIT();
     ets_delay_us(us);
+    MP_THREAD_GIL_ENTER();
 }
 
 // this function could do with improvements (eg use ets_delay_us)
