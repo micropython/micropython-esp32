@@ -101,14 +101,14 @@ soft_reset:
         }
     }
 
+    #if MICROPY_PY_THREAD
+    mp_thread_deinit();
+    #endif
+
     mp_hal_stdout_tx_str("PYB: soft reboot\r\n");
 
     // deinitialise peripherals
     machine_pins_deinit();
-
-    #if MICROPY_PY_THREAD
-    mp_thread_deinit();
-    #endif
 
     mp_deinit();
     fflush(stdout);
