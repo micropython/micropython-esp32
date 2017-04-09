@@ -183,7 +183,7 @@ void vPortCleanUpTCB (void *tcb) {
                 // move the start pointer
                 thread = th->next;
             }
-            // explicitely release all its memory
+            // explicitly release all its memory
             m_del(StaticTask_t, th->tcb, 1);
             m_del(StackType_t, th->stack, th->stack_len);
             m_del(thread_t, th, 1);
