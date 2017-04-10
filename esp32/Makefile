@@ -79,7 +79,15 @@ INC += -I$(ESPCOMP)/wpa_supplicant/port/include
 INC += -I$(ESPCOMP)/ethernet/include
 INC += -I$(ESPCOMP)/tcpip_adapter/include
 INC += -I$(ESPCOMP)/bt/include
+INC += -I$(ESPCOMP)/bt/bluedroid/include/
 INC += -I$(ESPCOMP)/bt/bluedroid/api/include/
+INC += -I$(ESPCOMP)/bt/bluedroid/osi/include/
+INC += -I$(ESPCOMP)/bt/bluedroid/gki/include/
+INC += -I$(ESPCOMP)/bt/bluedroid/stack/include/
+INC += -I$(ESPCOMP)/bt/bluedroid/bta/include/
+INC += -I$(ESPCOMP)/bt/bluedroid/btc/include/
+INC += -I$(ESPCOMP)/bt/bluedroid/btc/profile/std/include
+INC += -I$(ESPCOMP)/bt/bluedroid/btc/profile/esp/include
 
 CFLAGS = -std=gnu99 -Os -ffunction-sections -fdata-sections -fstrict-volatile-bitfields -mlongcalls -nostdlib -Wall -Werror -Wno-error=unused-function -Wno-error=unused-but-set-variable -Wno-error=unused-variable -Wno-error=deprecated-declarations -DMBEDTLS_CONFIG_FILE='"mbedtls/esp_config.h"' -DHAVE_CONFIG_H -DESP_PLATFORM  $(INC)
 CFLAGS += -DIDF_VER=\"$(IDF_VER)\"
@@ -244,6 +252,10 @@ ESPIDF_ETHERNET_O = $(addprefix $(ESPCOMP)/ethernet/,\
 
 ESPIDF_BLUETOOTH_O = $(addprefix $(ESPCOMP)/bt/,\
 	bt.o \
+	bluedroid/api/esp_gap_ble_api.o \
+	bluedroid/api/esp_bt_main.o \
+	bluedroid/btc/core/btc_task.o \
+	bluedroid/gki/gki_buffer.o \
 	)
 
 $(BUILD)/$(ESPCOMP)/expat/%.o: CFLAGS += -Wno-unused-function
