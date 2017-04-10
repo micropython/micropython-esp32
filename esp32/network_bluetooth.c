@@ -48,6 +48,8 @@
 #define H4_TYPE_SCO     0x03
 #define H4_TYPE_EVENT   0x04
 
+#define NETWORK_BLUETOOTH_ADV_UUID_LEN 16
+
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY(x)
 
@@ -281,10 +283,10 @@ STATIC mp_obj_t network_bluetooth_ble_settings(size_t n_args, const mp_obj_t *po
         { MP_QSTR_channel_map,          MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = -1 }},
         { MP_QSTR_filter_policy,        MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = -1 }},
 
-        { MP_QSTR_adv_is_scan_rsp,      MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = -1 }},
+        { MP_QSTR_adv_is_scan_rsp,      MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_int = NULL}},
         { MP_QSTR_adv_dev_name,         MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = NULL }},
         { MP_QSTR_adv_man_name,         MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = NULL }},
-        { MP_QSTR_adv_inc_tx_power,     MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = -1 }},
+        { MP_QSTR_adv_inc_tx_power,     MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_int = NULL }},
         { MP_QSTR_adv_int_min,          MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = -1 }},
         { MP_QSTR_adv_int_max,          MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = -1 }},
         { MP_QSTR_adv_appearance,       MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = -1 }},
@@ -298,17 +300,18 @@ STATIC mp_obj_t network_bluetooth_ble_settings(size_t n_args, const mp_obj_t *po
     mp_buffer_info_t peer_addr_buf = { 0 };
     mp_buffer_info_t adv_man_name_buf = { 0 };
     mp_buffer_info_t adv_dev_name_buf = { 0 };
+    mp_buffer_info_t adv_uuid_buf = { 0 };
 
 
     // pre-check complex types
     if (args[ARG_peer_addr].u_obj != MP_OBJ_NULL) {
         if (mp_obj_get_type(args[ARG_peer_addr].u_obj) != &mp_type_bytearray) {
-            goto network_bluetooth_bad_byte_array;
+            goto network_bluetooth_bad_peer;
         }
 
         mp_get_buffer(args[ARG_peer_addr].u_obj, &peer_addr_buf, MP_BUFFER_READ);
         if (peer_addr_buf.len != ESP_BD_ADDR_LEN) {
-            goto network_bluetooth_bad_byte_array;
+            goto network_bluetooth_bad_peer;
         }
     }
 
@@ -333,6 +336,17 @@ STATIC mp_obj_t network_bluetooth_ble_settings(size_t n_args, const mp_obj_t *po
             mp_raise_ValueError("adv_dev_name must be type str or bytes");
         }
         mp_obj_str_get_buffer(args[ARG_peer_addr].u_obj, &adv_dev_name_buf, MP_BUFFER_READ);
+    }
+
+    if (args[ARG_adv_uuid].u_obj != MP_OBJ_NULL) {
+        if (mp_obj_get_type(args[ARG_adv_uuid].u_obj) != &mp_type_bytearray) {
+            goto NETWORK_BLUETOOTH_BAD_UUID;
+        }
+
+        mp_get_buffer(args[ARG_adv_uuid].u_obj, &adv_uuid_buf, MP_BUFFER_READ);
+        if (adv_uuid_buf.len != NETWORK_BLUETOOTH_ADV_UUID_LEN) {
+            goto NETWORK_BLUETOOTH_BAD_UUID;
+        }
     }
 
 
@@ -377,9 +391,9 @@ STATIC mp_obj_t network_bluetooth_ble_settings(size_t n_args, const mp_obj_t *po
     // update esp_ble_adv_data_t 
     //
     
-    if (args[ARG_adv_is_scan_rsp].u_int != -1) {
-        self->data.set_scan_rsp = mp
-
+    if (args[ARG_adv_is_scan_rsp].u_obj != NULL) {
+        self->data.set_scan_rsp = mp_obj_is_true(args[ARG_adv_is_scan_rsp].u_obj);
+        changed = true;
     }
 
     if (adv_dev_name_buf.buf != NULL) {
@@ -389,26 +403,57 @@ STATIC mp_obj_t network_bluetooth_ble_settings(size_t n_args, const mp_obj_t *po
     }
 
     if (adv_man_name_buf.buf != NULL) {
-
-        self->data.manufacturer_len = 0;
+        self->data.manufacturer_len = adv_man_name_buf.len;
         if (self->data.p_manufacturer_data != NULL) {
             m_free(self->data.p_manufacturer_data);
             self->data.p_manufacturer_data = NULL;
         }
 
-        if (buffer.len > 0) {
+        if (adv_man_name_buf.len > 0) {
             self->data.p_manufacturer_data = m_malloc(adv_man_name_buf.len);
-            memcpy(self->data.p_manufacturer_data, buffer.buf, buffer.len);
-            self->data.include_name = adv_man_name_buf.len > 0;
-            self->data.manufacturer_len = 0;
+            memcpy(self->data.p_manufacturer_data, adv_man_name_buf.buf, adv_man_name_buf.len);
         }
+
+        changed = true;
+    }
+
+    if (args[ARG_adv_inc_txpower].u_obj != NULL) {
+        self->data.include_txpower = mp_obj_is_true(args[ARG_adv_inc_txpower].u_obj);
+        changed = true;
+    }
+
+    if (args[ARG_adv_int_min].u_int != NULL) {
+        self->data.min_interval = args[ARG_adv_int_min].u_int;
+        changed = true;
+    }
+
+    if (args[ARG_adv_int_max].u_int != NULL) {
+        self->data.max_interval = args[ARG_adv_int_max].u_int;
+        changed = true;
+    }
+
+    if (args[ARG_adv_appearance].u_int != NULL) {
+        self->data.appearance = args[ARG_adv_appearance].u_int;
+        changed = true;
+    }
+
+    if (adv_dev_name_buf.buf != NULL) {
+        esp_ble_gap_set_device_name(adv_dev_name_buf.buf);
+        self->data.include_name = adv_dev_name_buf.len > 0;
+        changed = true;
+    }
+
+    if (args[ARG_adv_flags].u_int != NULL) {
+        self->data.flag = args[ARG_adv_flags].u_int;
         changed = true;
     }
 
     return mp_const_none;
 
-network_bluetooth_bad_byte_array:
+NETWORK_BLUETOOTH_BAD_PEER:
     mp_raise_ValueError("peer_addr must be bytearray(" TOSTRING(ESP_BD_ADDR_LEN) ")");
+NETWORK_BLUETOOTH_BAD_UUID:
+    mp_raise_ValueError("adv_uuid must be bytearray(" TOSTRING(NETWORK_BLUETOOTH_ADV_UUID_LEN ) ")");
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_KW(network_bluetooth_ble_settings_obj, 1, network_bluetooth_ble_settings);
 
