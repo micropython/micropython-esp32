@@ -437,9 +437,9 @@ STATIC mp_obj_t network_bluetooth_ble_settings(size_t n_args, const mp_obj_t *po
         changed = true;
     }
 
-    if (adv_dev_name_buf.buf != NULL) {
-        esp_ble_gap_set_device_name(adv_dev_name_buf.buf);
-        self->data.include_name = adv_dev_name_buf.len > 0;
+    if (adv_uuid_buf.buf != NULL) {
+        mango; // FIXME -- finish doing uuid like man name
+        self->data.include_name = adv_uuid_buf.len > 0;
         changed = true;
     }
 
