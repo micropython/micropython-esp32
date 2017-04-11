@@ -258,10 +258,6 @@ STATIC void gc_sweep(void) {
             case AT_HEAD:
 #if MICROPY_ENABLE_FINALISER
                 if (FTB_GET(block)) {
-                    #if MICROPY_PY_THREAD
-                    // TODO need to think about reentrancy with finaliser code
-                    assert(!"finaliser with threading not implemented");
-                    #endif
                     mp_obj_base_t *obj = (mp_obj_base_t*)PTR_FROM_BLOCK(block);
                     if (obj->type != NULL) {
                         // if the object has a type then see if it has a __del__ method

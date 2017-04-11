@@ -108,6 +108,9 @@
 #define MICROPY_PY_UERRNO                   (1)
 #define MICROPY_PY_USELECT                  (1)
 #define MICROPY_PY_UTIME_MP_HAL             (1)
+#define MICROPY_PY_THREAD                   (1)
+#define MICROPY_PY_THREAD_GIL               (1)
+#define MICROPY_PY_THREAD_GIL_VM_DIVISOR    (32)
 
 // extended modules
 #define MICROPY_PY_UCTYPES                  (1)
@@ -202,12 +205,23 @@ extern const struct _mp_obj_module_t mp_module_network;
 #define MICROPY_MAKE_POINTER_CALLABLE(p) ((void*)((mp_uint_t)(p)))
 #define MP_PLAT_PRINT_STRN(str, len) mp_hal_stdout_tx_strn_cooked(str, len)
 #define MP_SSIZE_MAX (0x7fffffff)
+
+#if MICROPY_PY_THREAD
+#define MICROPY_EVENT_POLL_HOOK \
+    do { \
+        extern void mp_handle_pending(void); \
+        mp_handle_pending(); \
+        MP_THREAD_GIL_EXIT(); \
+        MP_THREAD_GIL_ENTER(); \
+    } while (0);
+#else
 #define MICROPY_EVENT_POLL_HOOK \
     do { \
         extern void mp_handle_pending(void); \
         mp_handle_pending(); \
         asm("waiti 0"); \
     } while (0);
+#endif
 
 #define UINT_FMT "%u"
 #define INT_FMT "%d"

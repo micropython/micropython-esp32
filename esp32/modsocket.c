@@ -112,7 +112,11 @@ static int _socket_getaddrinfo2(const mp_obj_t host, const mp_obj_t portx, struc
     const char *host_str = mp_obj_str_get_data(host, &host_len);
     const char *port_str = mp_obj_str_get_data(port, &port_len);
 
-    return lwip_getaddrinfo(host_str, port_str, &hints, resp);
+    MP_THREAD_GIL_EXIT();
+    int res = lwip_getaddrinfo(host_str, port_str, &hints, resp);
+    MP_THREAD_GIL_ENTER();
+
+    return res;
 }
 
 int _socket_getaddrinfo(const mp_obj_t addrtuple, struct addrinfo **resp) {
@@ -151,7 +155,9 @@ STATIC mp_obj_t socket_accept(const mp_obj_t arg0) {
 
     int new_fd = -1;
     for (int i=0; i<=self->retries; i++) {
+        MP_THREAD_GIL_EXIT();
         new_fd = lwip_accept_r(self->fd, &addr, &addr_len);
+        MP_THREAD_GIL_ENTER();
         if (new_fd >= 0) break;
         if (errno != EAGAIN) exception_from_errno(errno);
         check_for_exceptions();
@@ -182,7 +188,9 @@ STATIC mp_obj_t socket_connect(const mp_obj_t arg0, const mp_obj_t arg1) {
     socket_obj_t *self = MP_OBJ_TO_PTR(arg0);
     struct addrinfo *res;
     _socket_getaddrinfo(arg1, &res);
+    MP_THREAD_GIL_EXIT();
     int r = lwip_connect_r(self->fd, res->ai_addr, res->ai_addrlen);
+    MP_THREAD_GIL_ENTER();
     lwip_freeaddrinfo(res);
     if (r != 0) {
         exception_from_errno(errno);
@@ -255,7 +263,9 @@ mp_obj_t _socket_recvfrom(mp_obj_t self_in, mp_obj_t len_in,
 
     // XXX Would be nicer to use RTC to handle timeouts
     for (int i=0; i<=sock->retries; i++) {
+        MP_THREAD_GIL_EXIT();
         int r = lwip_recvfrom_r(sock->fd, vstr.buf, len, 0, from, from_len);
+        MP_THREAD_GIL_ENTER();
         if (r >= 0) { vstr.len = r; return mp_obj_new_str_from_vstr(&mp_type_bytes, &vstr); }
         if (errno != EWOULDBLOCK) exception_from_errno(errno);
         check_for_exceptions();
@@ -286,7 +296,9 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_2(socket_recvfrom_obj, socket_recvfrom);
 int _socket_send(socket_obj_t *sock, const char *data, size_t datalen) {
     int sentlen = 0;
     for (int i=0; i<sock->retries && sentlen < datalen; i++) {
+        MP_THREAD_GIL_EXIT();
         int r = lwip_write_r(sock->fd, data+sentlen, datalen-sentlen);
+        MP_THREAD_GIL_ENTER();
         if (r < 0 && errno != EWOULDBLOCK) exception_from_errno(errno);
         if (r > 0) sentlen += r;
         check_for_exceptions();
@@ -331,7 +343,9 @@ STATIC mp_obj_t socket_sendto(mp_obj_t self_in, mp_obj_t data_in, mp_obj_t addr_
 
     // send the data
     for (int i=0; i<self->retries; i++) {
+        MP_THREAD_GIL_EXIT();
         int ret = lwip_sendto_r(self->fd, bufinfo.buf, bufinfo.len, 0, (struct sockaddr*)&to, sizeof(to));
+        MP_THREAD_GIL_ENTER();
         if (ret > 0) return mp_obj_new_int_from_uint(ret);
         if (ret == -1 && errno != EWOULDBLOCK) {
             exception_from_errno(errno);
@@ -364,7 +378,9 @@ STATIC mp_uint_t socket_stream_read(mp_obj_t self_in, void *buf, mp_uint_t size,
 
     // XXX Would be nicer to use RTC to handle timeouts
     for (int i=0; i<=sock->retries; i++) {
+        MP_THREAD_GIL_EXIT();
         int x = lwip_recvfrom_r(sock->fd, buf, size, 0, NULL, NULL);
+        MP_THREAD_GIL_ENTER();
         if (x >= 0) return x;
         if (x < 0 && errno != EWOULDBLOCK) { *errcode = errno; return MP_STREAM_ERROR; }
         check_for_exceptions();
@@ -375,7 +391,9 @@ STATIC mp_uint_t socket_stream_read(mp_obj_t self_in, void *buf, mp_uint_t size,
 STATIC mp_uint_t socket_stream_write(mp_obj_t self_in, const void *buf, mp_uint_t size, int *errcode) {
     socket_obj_t *sock = self_in;
     for (int i=0; i<sock->retries; i++) {
+        MP_THREAD_GIL_EXIT();
         int r = lwip_write_r(sock->fd, buf, size);
+        MP_THREAD_GIL_ENTER();
         if (r > 0) return r;
         if (r < 0 && errno != EWOULDBLOCK) { *errcode = errno; return MP_STREAM_ERROR; }
         check_for_exceptions();

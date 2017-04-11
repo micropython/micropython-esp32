@@ -15,7 +15,8 @@ while thread_num < 500:
         _thread.start_new_thread(thread_entry, (thread_num,))
         thread_num += 1
     except MemoryError:
-        pass
+        # let other threads run
+        time.sleep(0.05)
 
 # wait for the last threads to terminate
 time.sleep(1)

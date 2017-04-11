@@ -1,11 +1,9 @@
 /*
  * This file is part of the MicroPython project, http://micropython.org/
  *
- * Development of the code in this file was sponsored by Microbric Pty Ltd
- *
  * The MIT License (MIT)
  *
- * Copyright (c) 2014 Damien P. George
+ * Copyright (c) 2016 Damien P. George on behalf of Pycom Ltd
  * Copyright (c) 2017 Pycom Limited
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -27,40 +25,21 @@
  * THE SOFTWARE.
  */
 
-#include <stdio.h>
+#ifndef __MICROPY_INCLUDED_ESP32_MPTHREADPORT_H__
+#define __MICROPY_INCLUDED_ESP32_MPTHREADPORT_H__
 
-#include "py/mpconfig.h"
-#include "py/mpstate.h"
-#include "py/gc.h"
-#include "py/mpthread.h"
-#include "gccollect.h"
-#include "soc/cpu.h"
-#include "xtensa/hal.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/semphr.h"
+#include "freertos/queue.h"
 
+typedef struct _mp_thread_mutex_t {
+    SemaphoreHandle_t handle;
+    StaticSemaphore_t buffer;
+} mp_thread_mutex_t;
 
-static void gc_collect_inner(int level) {
-    if (level < XCHAL_NUM_AREGS / 8) {
-        gc_collect_inner(level + 1);
-        if (level != 0) {
-            return;
-        }
-    }
+void mp_thread_init(void *stack, uint32_t stack_len);
+void mp_thread_gc_others(void);
+void mp_thread_deinit(void);
 
-    if (level == XCHAL_NUM_AREGS / 8) {
-        // get the sp
-        volatile uint32_t sp = (uint32_t)get_sp();
-        gc_collect_root((void**)sp, ((mp_uint_t)MP_STATE_THREAD(stack_top) - sp) / sizeof(uint32_t));
-        return;
-    }
-
-    // trace root pointers from any threads
-    #if MICROPY_PY_THREAD
-    mp_thread_gc_others();
-    #endif
-}
-
-void gc_collect(void) {
-    gc_collect_start();
-    gc_collect_inner(0);
-    gc_collect_end();
-}
+#endif // __MICROPY_INCLUDED_ESP32_MPTHREADPORT_H__
