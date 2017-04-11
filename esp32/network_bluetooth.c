@@ -39,6 +39,7 @@
 
 #include "bt.h"
 #include "esp_gap_ble_api.h"
+#include "esp_bt_main.h"
 
 #define HCI_GRP_HOST_CONT_BASEBAND_CMDS    0x03
 #define HCI_GRP_BLE_CMDS                   0x08
@@ -64,6 +65,8 @@ typedef uint8_t bd_addr_t[BD_ADDR_LEN];         /* Device address */
 #define BDADDR_TO_STREAM(p, a)   {int ijk; for (ijk = 0; ijk < BD_ADDR_LEN;  ijk++) *(p)++ = (uint8_t) a[BD_ADDR_LEN - 1 - ijk];}
 #define ARRAY_TO_STREAM(p, a, len) {int ijk; for (ijk = 0; ijk < len;        ijk++) *(p)++ = (uint8_t) a[ijk];}
 
+#define CUTOUT
+#warning FIXME -- REMOVE THIS CUTOUT BUSINESS
 const mp_obj_type_t network_bluetooth_type;
 
 typedef struct {
@@ -72,6 +75,7 @@ typedef struct {
         NETWORK_BLUETOOTH_STATE_DEINIT,
         NETWORK_BLUETOOTH_STATE_INIT
     } state;
+    bool advertising;
     esp_ble_adv_params_t params;
     esp_ble_adv_data_t   data;
 
@@ -79,6 +83,8 @@ typedef struct {
 
 STATIC network_bluetooth_obj_t network_bluetooth_singleton = { 
     .base = { &network_bluetooth_type },
+    .state = NETWORK_BLUETOOTH_STATE_DEINIT,
+    .advertising = false,
     .params = {
         .adv_int_min = 1280 * 1.6,
         .adv_int_max = 1280 * 1.6,
@@ -154,7 +160,6 @@ enum {
 STATIC void dumpBuf(const uint8_t *buf, size_t len) {
     while(len--) 
         printf("%02X ", *buf++);
-    printf("\n");
 }
 
 STATIC void network_bluetooth_send_data(uint8_t *buf, size_t buf_size) {
@@ -170,16 +175,46 @@ STATIC void network_bluetooth_send_data(uint8_t *buf, size_t buf_size) {
     //FIXME
     printf("Sending: ");
     dumpBuf(buf, buf_size);
+    printf("\n");
 
     esp_vhci_host_send_packet(buf, buf_size);
 }
 
-static void network_bluetooth_send_hci_reset() {
-    CREATE_HCI_HOST_COMMAND(HCI_CMD_RESET);
-    (void)param;
-    network_bluetooth_send_data(buf, buf_size);
+static void network_bluetooth_gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
+{
+                NETWORK_BLUETOOTH_DEBUG_PRINTF("entering network_bluetooth_gap_event_handler()\n");
+    network_bluetooth_obj_t* self = &network_bluetooth_singleton;
+
+#ifndef CUTOUT
+    switch (event) {
+        case ESP_GAP_BLE_ADV_DATA_SET_COMPLETE_EVT:
+            esp_ble_gap_start_advertising(&self->params);
+            break;
+        case ESP_GAP_BLE_ADV_START_COMPLETE_EVT:
+            //advertising start complete event to indicate advertising start successfully or failed
+            if (param->adv_start_cmpl.status != ESP_BT_STATUS_SUCCESS) {
+                NETWORK_BLUETOOTH_DEBUG_PRINTF( "Advertising start failed\n");
+            } else {
+                NETWORK_BLUETOOTH_DEBUG_PRINTF("Advertising start successful\n");
+            }
+
+            break;
+        default:
+            break;
+    }
+#endif
 }
 
+
+STATIC void network_bluetooth_advertising_start_or_restart() {
+    network_bluetooth_obj_t* self = &network_bluetooth_singleton;
+#ifndef CUTOUT
+    if (self->advertising) {
+        esp_ble_gap_stop_advertising();
+    }
+    esp_ble_gap_config_adv_data(&self->data);
+#endif
+}
 
 /******************************************************************************/
 // MicroPython bindings for network_bluetooth
@@ -188,18 +223,18 @@ static void network_bluetooth_send_hci_reset() {
 STATIC void network_bluetooth_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
     network_bluetooth_obj_t *self = MP_OBJ_TO_PTR(self_in);
     mp_printf(print, "Bluetooth(params=())", self);
+#define NETWORK_BLUETOOTH_LF "\n"
     NETWORK_BLUETOOTH_DEBUG_PRINTF(
             "Bluetooth(params = ("
-            "adv_int_min = %u, "
-            "adv_int_max = %u, "
-            "adv_type = %u, "
-            "own_addr_type = %u, "
-            "peer_addr = %02X:%02X:%02X:%02X:%02X:%02X, "
-            "peer_addr_type = %u, "
-            "channel_map = %u, "
-            "adv_filter_policy = %u"
+            "adv_int_min = %u, " NETWORK_BLUETOOTH_LF 
+            "adv_int_max = %u, " NETWORK_BLUETOOTH_LF
+            "adv_type = %u, " NETWORK_BLUETOOTH_LF
+            "own_addr_type = %u, " NETWORK_BLUETOOTH_LF
+            "peer_addr = %02X:%02X:%02X:%02X:%02X:%02X, " NETWORK_BLUETOOTH_LF
+            "peer_addr_type = %u, " NETWORK_BLUETOOTH_LF
+            "channel_map = %u, " NETWORK_BLUETOOTH_LF
+            "adv_filter_policy = %u" NETWORK_BLUETOOTH_LF
             ")"
-            ")\n"
             ,
             (unsigned int)(self->params.adv_int_min / 1.6),
             (unsigned int)(self->params.adv_int_max / 1.6),
@@ -215,6 +250,38 @@ STATIC void network_bluetooth_print(const mp_print_t *print, mp_obj_t self_in, m
             self->params.channel_map,
             self->params.adv_filter_policy
                 );
+            NETWORK_BLUETOOTH_DEBUG_PRINTF(
+                    ", data = ("
+                    "set_scan_rsp = %s, " NETWORK_BLUETOOTH_LF
+                    "include_name = %s, " NETWORK_BLUETOOTH_LF
+                    "include_txpower = %s, " NETWORK_BLUETOOTH_LF
+                    "min_interval = %d, " NETWORK_BLUETOOTH_LF
+                    "max_interval = %d, " NETWORK_BLUETOOTH_LF
+                    "appearance = %d, " NETWORK_BLUETOOTH_LF
+                    "manufacturer_len = %d, " NETWORK_BLUETOOTH_LF
+                    "p_manufacturer_data = %s, " NETWORK_BLUETOOTH_LF
+                    "service_data_len = %d, " NETWORK_BLUETOOTH_LF
+                    "p_service_data = ",
+                    self->data.set_scan_rsp ? "true" : "false",
+                    self->data.include_name ? "true" : "false",
+                    self->data.include_txpower ? "true" : "false",
+                    self->data.min_interval,
+                    self->data.max_interval,
+                    self->data.appearance,
+                    self->data.manufacturer_len,
+                    self->data.p_manufacturer_data ? (const char *)self->data.p_manufacturer_data : "nil",
+                    self->data.service_data_len);
+            if (self->data.p_service_data != NULL) {
+                dumpBuf(self->data.p_service_data, self->data.service_data_len);
+            } else {
+                NETWORK_BLUETOOTH_DEBUG_PRINTF("nil");
+            }
+
+            NETWORK_BLUETOOTH_DEBUG_PRINTF(", " NETWORK_BLUETOOTH_LF "flag = %d" NETWORK_BLUETOOTH_LF , self->data.flag);
+
+
+            NETWORK_BLUETOOTH_DEBUG_PRINTF(")\n");
+
 }
 
 
@@ -223,21 +290,41 @@ STATIC mp_obj_t network_bluetooth_init(mp_obj_t self_in) {
     if (self->state == NETWORK_BLUETOOTH_STATE_DEINIT) {
         NETWORK_BLUETOOTH_DEBUG_PRINTF("BT is deinit, initializing\n");
 
+#ifndef CUTOUT
         esp_bt_controller_init(); 
-        esp_err_t ret = esp_bt_controller_enable(ESP_BT_MODE_BTDM);
 
-        switch(ret) {
+        switch(esp_bt_controller_enable(ESP_BT_MODE_BTDM)) {
             case ESP_OK:
-                NETWORK_BLUETOOTH_DEBUG_PRINTF("BT initialization ok\n");
+                NETWORK_BLUETOOTH_DEBUG_PRINTF("esp_bt_controller_enable() OK\n");
                 break;
             default:
-                mp_raise_msg(&mp_type_OSError, "BT initialization failed");
+                mp_raise_msg(&mp_type_OSError, "esp_bt_controller_enable() failed");
+                break;
+        }
+
+        switch(esp_bluedroid_init()) {
+            case ESP_OK:
+                NETWORK_BLUETOOTH_DEBUG_PRINTF("esp_bluedroid_init() OK\nn");
+                break;
+            default:
+                mp_raise_msg(&mp_type_OSError, "esp_bluedroid_init() failed");
+                break;
 
         }
-        network_bluetooth_send_hci_reset();
+        switch(esp_bluedroid_enable()) {
+            case ESP_OK:
+                NETWORK_BLUETOOTH_DEBUG_PRINTF("esp_bluedroid_enable() OK\nn");
+                break;
+            default:
+                mp_raise_msg(&mp_type_OSError, "esp_bluedroid_enable() failed");
+                break;
+        }
+
+        esp_ble_gap_register_callback(network_bluetooth_gap_event_handler);
 
         self->state = NETWORK_BLUETOOTH_STATE_INIT;
 
+#endif
     } else {
         NETWORK_BLUETOOTH_DEBUG_PRINTF("BT already initialized\n");
     }
@@ -304,41 +391,45 @@ STATIC mp_obj_t network_bluetooth_ble_settings(size_t n_args, const mp_obj_t *po
 
 
     // pre-check complex types
-    if (args[ARG_peer_addr].u_obj != MP_OBJ_NULL) {
+    if (args[ARG_peer_addr].u_obj != NULL) {
         if (mp_obj_get_type(args[ARG_peer_addr].u_obj) != &mp_type_bytearray) {
-            goto network_bluetooth_bad_peer;
+            goto NETWORK_BLUETOOTH_BAD_PEER;
         }
 
         mp_get_buffer(args[ARG_peer_addr].u_obj, &peer_addr_buf, MP_BUFFER_READ);
         if (peer_addr_buf.len != ESP_BD_ADDR_LEN) {
-            goto network_bluetooth_bad_peer;
+            goto NETWORK_BLUETOOTH_BAD_PEER;
         }
     }
 
-    if (args[ARG_adv_man_name].u_obj != MP_OBJ_NULL) {
+    if (args[ARG_adv_man_name].u_obj != NULL) {
         if (mp_obj_get_type(args[ARG_adv_man_name].u_obj) == mp_const_none) {
             self->data.manufacturer_len = 0;
             if (self->data.p_manufacturer_data != NULL) {
+                NETWORK_BLUETOOTH_DEBUG_PRINTF("About to free p_manufacturer_data\n");
                 m_free(self->data.p_manufacturer_data);
                 self->data.p_manufacturer_data = NULL;
             }
         } else if (!MP_OBJ_IS_STR_OR_BYTES(args[ARG_adv_man_name].u_obj)) {
             mp_raise_ValueError("adv_man_name must be type str or bytes");
         } 
-        mp_obj_str_get_buffer(args[ARG_peer_addr].u_obj, &adv_man_name_buf, MP_BUFFER_READ);
+        NETWORK_BLUETOOTH_DEBUG_PRINTF("About to get adv_man_name_buf\n");
+        mp_obj_str_get_buffer(args[ARG_adv_man_name].u_obj, &adv_man_name_buf, MP_BUFFER_READ);
     }
 
-    if (args[ARG_adv_dev_name].u_obj != MP_OBJ_NULL) {
+    if (args[ARG_adv_dev_name].u_obj != NULL) {
         if (mp_obj_get_type(args[ARG_adv_dev_name].u_obj) == mp_const_none) {
+#ifndef CUTOUT
             esp_ble_gap_set_device_name("");
+#endif
             self->data.include_name = false;
         } else if (!MP_OBJ_IS_STR_OR_BYTES(args[ARG_adv_dev_name].u_obj)) {
             mp_raise_ValueError("adv_dev_name must be type str or bytes");
         }
-        mp_obj_str_get_buffer(args[ARG_peer_addr].u_obj, &adv_dev_name_buf, MP_BUFFER_READ);
+        mp_obj_str_get_buffer(args[ARG_adv_dev_name].u_obj, &adv_dev_name_buf, MP_BUFFER_READ);
     }
 
-    if (args[ARG_adv_uuid].u_obj != MP_OBJ_NULL) {
+    if (args[ARG_adv_uuid].u_obj != NULL) {
         if (mp_obj_get_type(args[ARG_adv_uuid].u_obj) != &mp_type_bytearray) {
             goto NETWORK_BLUETOOTH_BAD_UUID;
         }
@@ -349,9 +440,8 @@ STATIC mp_obj_t network_bluetooth_ble_settings(size_t n_args, const mp_obj_t *po
         }
     }
 
-
     // update esp_ble_adv_params_t 
-    
+
     if (args[ARG_int_min].u_int != -1) {
         self->params.adv_int_min = args[ARG_int_min].u_int * 1.6; // 0.625 msec per count
         changed = true;
@@ -387,17 +477,18 @@ STATIC mp_obj_t network_bluetooth_ble_settings(size_t n_args, const mp_obj_t *po
         changed = true;
     }
 
-
     // update esp_ble_adv_data_t 
     //
-    
+
     if (args[ARG_adv_is_scan_rsp].u_obj != NULL) {
         self->data.set_scan_rsp = mp_obj_is_true(args[ARG_adv_is_scan_rsp].u_obj);
         changed = true;
     }
 
     if (adv_dev_name_buf.buf != NULL) {
+#ifndef CUTOUT
         esp_ble_gap_set_device_name(adv_dev_name_buf.buf);
+#endif
         self->data.include_name = adv_dev_name_buf.len > 0;
         changed = true;
     }
@@ -405,11 +496,13 @@ STATIC mp_obj_t network_bluetooth_ble_settings(size_t n_args, const mp_obj_t *po
     if (adv_man_name_buf.buf != NULL) {
         self->data.manufacturer_len = adv_man_name_buf.len;
         if (self->data.p_manufacturer_data != NULL) {
+            NETWORK_BLUETOOTH_DEBUG_PRINTF("About to free p_manufacturer_data (2)\n");
             m_free(self->data.p_manufacturer_data);
             self->data.p_manufacturer_data = NULL;
         }
 
         if (adv_man_name_buf.len > 0) {
+            NETWORK_BLUETOOTH_DEBUG_PRINTF("About to call malloc for p_manufacturer_data\n");
             self->data.p_manufacturer_data = m_malloc(adv_man_name_buf.len);
             memcpy(self->data.p_manufacturer_data, adv_man_name_buf.buf, adv_man_name_buf.len);
         }
@@ -422,30 +515,43 @@ STATIC mp_obj_t network_bluetooth_ble_settings(size_t n_args, const mp_obj_t *po
         changed = true;
     }
 
-    if (args[ARG_adv_int_min].u_int != NULL) {
+    if (args[ARG_adv_int_min].u_int != -1) {
         self->data.min_interval = args[ARG_adv_int_min].u_int;
         changed = true;
     }
 
-    if (args[ARG_adv_int_max].u_int != NULL) {
+    if (args[ARG_adv_int_max].u_int != -1) {
         self->data.max_interval = args[ARG_adv_int_max].u_int;
         changed = true;
     }
 
-    if (args[ARG_adv_appearance].u_int != NULL) {
+    if (args[ARG_adv_appearance].u_int != -1) {
         self->data.appearance = args[ARG_adv_appearance].u_int;
         changed = true;
     }
 
     if (adv_uuid_buf.buf != NULL) {
-        mango; // FIXME -- finish doing uuid like man name
-        self->data.include_name = adv_uuid_buf.len > 0;
+        self->data.service_uuid_len = adv_uuid_buf.len;
+        if (self->data.p_service_uuid != NULL) {
+            m_free(self->data.p_service_uuid );
+            self->data.p_service_uuid = NULL;
+        }
+
+        if (adv_uuid_buf.len > 0) {
+            self->data.p_service_uuid = m_malloc(adv_uuid_buf.len);
+            memcpy(self->data.p_service_uuid, adv_uuid_buf.buf, adv_uuid_buf.len);
+        }
+
         changed = true;
     }
 
-    if (args[ARG_adv_flags].u_int != NULL) {
+    if (args[ARG_adv_flags].u_int != -1) {
         self->data.flag = args[ARG_adv_flags].u_int;
         changed = true;
+    }
+
+    if (changed) {
+        network_bluetooth_advertising_start_or_restart();
     }
 
     return mp_const_none;
