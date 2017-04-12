@@ -29,17 +29,10 @@
 #ifndef INCLUDED_MPHALPORT_H
 #define INCLUDED_MPHALPORT_H
 
-#include "freertos/FreeRTOS.h"
 #include "py/ringbuf.h"
 #include "lib/utils/interrupt_char.h"
 
 extern ringbuf_t stdin_ringbuf;
-
-// Note: these "critical nested" macros do not ensure cross-CPU exclusion,
-// the only disable interrupts on the current CPU.  To full manage exclusion
-// one should use portENTER_CRITICAL/portEXIT_CRITICAL instead.
-#define disable_irq() portENTER_CRITICAL_NESTED()
-#define enable_irq(irq_state) portEXIT_CRITICAL_NESTED(irq_state)
 
 uint32_t mp_hal_ticks_us(void);
 __attribute__((always_inline)) static inline uint32_t mp_hal_ticks_cpu(void) {
@@ -53,8 +46,8 @@ void mp_hal_delay_us_fast(uint32_t);
 void mp_hal_set_interrupt_char(int c);
 uint32_t mp_hal_get_cpu_freq(void);
 
-#define mp_hal_quiet_timing_enter() disable_irq()
-#define mp_hal_quiet_timing_exit(irq_state) enable_irq(irq_state)
+#define mp_hal_quiet_timing_enter() MICROPY_BEGIN_ATOMIC_SECTION()
+#define mp_hal_quiet_timing_exit(irq_state) MICROPY_END_ATOMIC_SECTION(irq_state)
 
 // C-level pin HAL
 #include "py/obj.h"

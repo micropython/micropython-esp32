@@ -80,7 +80,14 @@ STATIC mp_obj_t mp_obj_int_make_new(const mp_obj_type_t *type_in, size_t n_args,
 }
 
 #if MICROPY_PY_BUILTINS_FLOAT
-mp_fp_as_int_class_t mp_classify_fp_as_int(mp_float_t val) {
+
+typedef enum {
+    MP_FP_CLASS_FIT_SMALLINT,
+    MP_FP_CLASS_FIT_LONGINT,
+    MP_FP_CLASS_OVERFLOW
+} mp_fp_as_int_class_t;
+
+STATIC mp_fp_as_int_class_t mp_classify_fp_as_int(mp_float_t val) {
     union {
         mp_float_t f;
 #if MICROPY_FLOAT_IMPL == MICROPY_FLOAT_IMPL_FLOAT
@@ -130,12 +137,43 @@ mp_fp_as_int_class_t mp_classify_fp_as_int(mp_float_t val) {
 }
 #undef MP_FLOAT_SIGN_SHIFT_I32
 #undef MP_FLOAT_EXP_SHIFT_I32
+
+mp_obj_t mp_obj_new_int_from_float(mp_float_t val) {
+    int cl = fpclassify(val);
+    if (cl == FP_INFINITE) {
+        nlr_raise(mp_obj_new_exception_msg(&mp_type_OverflowError, "can't convert inf to int"));
+    } else if (cl == FP_NAN) {
+        mp_raise_ValueError("can't convert NaN to int");
+    } else {
+        mp_fp_as_int_class_t icl = mp_classify_fp_as_int(val);
+        if (icl == MP_FP_CLASS_FIT_SMALLINT) {
+            return MP_OBJ_NEW_SMALL_INT((mp_int_t)val);
+        #if MICROPY_LONGINT_IMPL == MICROPY_LONGINT_IMPL_MPZ
+        } else {
+            mp_obj_int_t *o = mp_obj_int_new_mpz();
+            mpz_set_from_float(&o->mpz, val);
+            return MP_OBJ_FROM_PTR(o);
+        }
+        #else
+        #if MICROPY_LONGINT_IMPL == MICROPY_LONGINT_IMPL_LONGLONG
+        } else if (icl == MP_FP_CLASS_FIT_LONGINT) {
+            return mp_obj_new_int_from_ll((long long)val);
+        #endif
+        } else {
+            mp_raise_ValueError("float too big");
+        }
+        #endif
+    }
+}
+
 #endif
 
 #if MICROPY_LONGINT_IMPL == MICROPY_LONGINT_IMPL_LONGLONG
 typedef mp_longint_impl_t fmt_int_t;
+typedef unsigned long long fmt_uint_t;
 #else
 typedef mp_int_t fmt_int_t;
+typedef mp_uint_t fmt_uint_t;
 #endif
 
 void mp_obj_int_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
@@ -188,7 +226,7 @@ char *mp_obj_int_formatted(char **buf, size_t *buf_size, size_t *fmt_size, mp_co
     fmt_int_t num;
     if (MP_OBJ_IS_SMALL_INT(self_in)) {
         // A small int; get the integer value to format.
-        num = mp_obj_get_int(self_in);
+        num = MP_OBJ_SMALL_INT_VALUE(self_in);
 #if MICROPY_LONGINT_IMPL != MICROPY_LONGINT_IMPL_NONE
     } else if (MP_OBJ_IS_TYPE(self_in, &mp_type_int)) {
         // Not a small int.
@@ -229,8 +267,9 @@ char *mp_obj_int_formatted(char **buf, size_t *buf_size, size_t *fmt_size, mp_co
         *(--b) = '0';
     } else {
         do {
-            int c = num % base;
-            num /= base;
+            // The cast to fmt_uint_t is because num is positive and we want unsigned arithmetic
+            int c = (fmt_uint_t)num % base;
+            num = (fmt_uint_t)num / base;
             if (c >= 10) {
                 c += base_char - 10;
             } else {
@@ -322,24 +361,6 @@ mp_obj_t mp_obj_new_int_from_uint(mp_uint_t value) {
     mp_raise_msg(&mp_type_OverflowError, "small int overflow");
     return mp_const_none;
 }
-
-#if MICROPY_PY_BUILTINS_FLOAT
-mp_obj_t mp_obj_new_int_from_float(mp_float_t val) {
-    int cl = fpclassify(val);
-    if (cl == FP_INFINITE) {
-        nlr_raise(mp_obj_new_exception_msg_varg(&mp_type_OverflowError, "can't convert inf to int"));
-    } else if (cl == FP_NAN) {
-        nlr_raise(mp_obj_new_exception_msg_varg(&mp_type_ValueError, "can't convert NaN to int"));
-    } else {
-        mp_fp_as_int_class_t icl = mp_classify_fp_as_int(val);
-        if (icl == MP_FP_CLASS_FIT_SMALLINT) {
-            return MP_OBJ_NEW_SMALL_INT((mp_int_t)val);
-        } else {
-            nlr_raise(mp_obj_new_exception_msg_varg(&mp_type_ValueError, "float too big"));
-        }
-    }
-}
-#endif
 
 mp_obj_t mp_obj_new_int(mp_int_t value) {
     if (MP_SMALL_INT_FITS(value)) {

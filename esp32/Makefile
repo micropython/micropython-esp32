@@ -30,7 +30,7 @@ ESPCOMP = $(ESPIDF)/components
 ESPTOOL ?= $(ESPCOMP)/esptool_py/esptool/esptool.py
 
 # verify the ESP IDF version
-ESPIDF_SUPHASH := 47b8f78cb0e15fa43647788a808dac353167a485
+ESPIDF_SUPHASH := 375b28650bd1c90d6ac706f63cde9a64d9a7e3e5
 ESPIDF_CURHASH := $(shell git -C $(ESPIDF) show -s --pretty=format:'%H')
 ifneq ($(ESPIDF_CURHASH),$(ESPIDF_SUPHASH))
 $(info ** WARNING **)
@@ -162,6 +162,7 @@ SRC_C = \
 	espneopixel.c \
 	network_bluetooth.c \
 	machine_hw_spi.c \
+	mpthreadport.c \
 	$(SRC_MOD)
 
 STM_SRC_C = $(addprefix stmhal/,\

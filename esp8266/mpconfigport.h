@@ -73,6 +73,7 @@
 #define MICROPY_PY_UZLIB            (1)
 #define MICROPY_PY_LWIP             (1)
 #define MICROPY_PY_MACHINE          (1)
+#define MICROPY_PY_MACHINE_PIN_MAKE_NEW mp_pin_make_new
 #define MICROPY_PY_MACHINE_PULSE    (1)
 #define MICROPY_PY_MACHINE_I2C      (1)
 #define MICROPY_PY_MACHINE_SPI      (1)
@@ -180,7 +181,6 @@ extern const struct _mp_obj_module_t onewire_module;
 
 #define MICROPY_PORT_ROOT_POINTERS \
     const char *readline_hist[8]; \
-    vstr_t *repl_line; \
     mp_obj_t pin_irq_handler[16]; \
 
 // We need to provide a declaration/definition of alloca()

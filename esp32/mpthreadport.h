@@ -3,7 +3,8 @@
  *
  * The MIT License (MIT)
  *
- * Copyright (c) 2016 Paul Sokolovsky
+ * Copyright (c) 2016 Damien P. George on behalf of Pycom Ltd
+ * Copyright (c) 2017 Pycom Limited
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,20 +25,21 @@
  * THE SOFTWARE.
  */
 
-#include "py/obj.h"
+#ifndef MICROPY_INCLUDED_ESP32_MPTHREADPORT_H
+#define MICROPY_INCLUDED_ESP32_MPTHREADPORT_H
 
-#define MP_PIN_READ   (1)
-#define MP_PIN_WRITE  (2)
-#define MP_PIN_INPUT  (3)
-#define MP_PIN_OUTPUT (4)
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/semphr.h"
+#include "freertos/queue.h"
 
-// Pin protocol
-typedef struct _mp_pin_p_t {
-    mp_uint_t (*ioctl)(mp_obj_t obj, mp_uint_t request, uintptr_t arg, int *errcode);
-} mp_pin_p_t;
+typedef struct _mp_thread_mutex_t {
+    SemaphoreHandle_t handle;
+    StaticSemaphore_t buffer;
+} mp_thread_mutex_t;
 
-int mp_virtual_pin_read(mp_obj_t pin);
-void mp_virtual_pin_write(mp_obj_t pin, int value);
+void mp_thread_init(void *stack, uint32_t stack_len);
+void mp_thread_gc_others(void);
+void mp_thread_deinit(void);
 
-// If a port exposes a Pin object, it's constructor should be like this
-mp_obj_t mp_pin_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args);
+#endif // MICROPY_INCLUDED_ESP32_MPTHREADPORT_H

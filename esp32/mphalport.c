@@ -59,24 +59,30 @@ void mp_hal_stdout_tx_char(char c) {
 }
 
 void mp_hal_stdout_tx_str(const char *str) {
+    MP_THREAD_GIL_EXIT();
     while (*str) {
         mp_hal_stdout_tx_char(*str++);
     }
+    MP_THREAD_GIL_ENTER();
 }
 
 void mp_hal_stdout_tx_strn(const char *str, uint32_t len) {
+    MP_THREAD_GIL_EXIT();
     while (len--) {
         mp_hal_stdout_tx_char(*str++);
     }
+    MP_THREAD_GIL_ENTER();
 }
 
 void mp_hal_stdout_tx_strn_cooked(const char *str, uint32_t len) {
+    MP_THREAD_GIL_EXIT();
     while (len--) {
         if (*str == '\n') {
             mp_hal_stdout_tx_char('\r');
         }
         mp_hal_stdout_tx_char(*str++);
     }
+    MP_THREAD_GIL_ENTER();
 }
 
 uint32_t mp_hal_ticks_ms(void) {

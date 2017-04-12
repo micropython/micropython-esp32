@@ -55,54 +55,44 @@ Functions
    which expresses a time as per localtime. It returns an integer which is
    the number of seconds since Jan 1, 2000.
 
-.. only:: port_unix or port_pyboard or port_esp8266
+.. function:: sleep(seconds)
 
-    .. function:: sleep(seconds)
+   Sleep for the given number of seconds. Some boards may accept `seconds` as a
+   floating-point number to sleep for a fractional number of seconds. Note that
+   other boards may not accept a floating-point argument, for compatibility with
+   them use ``sleep_ms()`` and ``sleep_us()`` functions.
 
-       Sleep for the given number of seconds.  Seconds can be a floating-point number to
-       sleep for a fractional number of seconds. Note that other MicroPython ports may
-       not accept floating-point argument, for compatibility with them use ``sleep_ms()``
-       and ``sleep_us()`` functions.
+.. function:: sleep_ms(ms)
 
-.. only:: port_wipy
+   Delay for given number of milliseconds, should be positive or 0.
 
-    .. function:: sleep(seconds)
+.. function:: sleep_us(us)
 
-       Sleep for the given number of seconds.
+   Delay for given number of microseconds, should be positive or 0.
 
-.. only:: port_unix or port_pyboard or port_wipy or port_esp8266
+.. function:: ticks_ms()
 
-    .. function:: sleep_ms(ms)
+    Returns an increasing millisecond counter with an arbitrary reference point, that
+    wraps around after some value. This value is not explicitly exposed, but we will
+    refer to it as ``TICKS_MAX`` to simplify discussion. Period of the values is
+    ``TICKS_PERIOD = TICKS_MAX + 1``. ``TICKS_PERIOD`` is guaranteed to be a power of
+    two, but otherwise may differ from port to port. The same period value is used
+    for all of ``ticks_ms()``, ``ticks_us()``, ``ticks_cpu()`` functions (for
+    simplicity). Thus, these functions will return a value in range [``0`` ..
+    ``TICKS_MAX``], inclusive, total ``TICKS_PERIOD`` values. Note that only
+    non-negative values are used. For the most part, you should treat values returned
+    by these functions as opaque. The only operations available for them are
+    ``ticks_diff()`` and ``ticks_add()`` functions described below.
 
-       Delay for given number of milliseconds, should be positive or 0.
+    Note: Performing standard mathematical operations (+, -) or relational
+    operators (<, <=, >, >=) directly on these value will lead to invalid
+    result. Performing mathematical operations and then passing their results
+    as arguments to ``ticks_diff()`` or ``ticks_add()`` will also lead to
+    invalid results from the latter functions.
 
-    .. function:: sleep_us(us)
+.. function:: ticks_us()
 
-       Delay for given number of microseconds, should be positive or 0.
-
-    .. function:: ticks_ms()
-
-        Returns an increasing millisecond counter with an arbitrary reference point, that
-        wraps around after some value. This value is not explicitly exposed, but we will
-        refer to it as ``TICKS_MAX`` to simplify discussion. Period of the values is
-        ``TICKS_PERIOD = TICKS_MAX + 1``. ``TICKS_PERIOD`` is guaranteed to be a power of
-        two, but otherwise may differ from port to port. The same period value is used
-        for all of ``ticks_ms()``, ``ticks_us()``, ``ticks_cpu()`` functions (for
-        simplicity). Thus, these functions will return a value in range [``0`` ..
-        ``TICKS_MAX``], inclusive, total ``TICKS_PERIOD`` values. Note that only
-        non-negative values are used. For the most part, you should treat values returned
-        by these functions as opaque. The only operations available for them are
-        ``ticks_diff()`` and ``ticks_add()`` functions described below.
-
-        Note: Performing standard mathematical operations (+, -) or relational
-        operators (<, <=, >, >=) directly on these value will lead to invalid
-        result. Performing mathematical operations and then passing their results
-        as arguments to ``ticks_diff()`` or ``ticks_add()`` will also lead to
-        invalid results from the latter functions.
-
-    .. function:: ticks_us()
-
-       Just like ``ticks_ms()`` above, but in microseconds.
+   Just like ``ticks_ms()`` above, but in microseconds.
 
 .. function:: ticks_cpu()
 
