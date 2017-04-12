@@ -206,6 +206,13 @@ extern const struct _mp_obj_module_t mp_module_network;
 #define MP_PLAT_PRINT_STRN(str, len) mp_hal_stdout_tx_strn_cooked(str, len)
 #define MP_SSIZE_MAX (0x7fffffff)
 
+// Note: these "critical nested" macros do not ensure cross-CPU exclusion,
+// the only disable interrupts on the current CPU.  To full manage exclusion
+// one should use portENTER_CRITICAL/portEXIT_CRITICAL instead.
+#include "freertos/FreeRTOS.h"
+#define MICROPY_BEGIN_ATOMIC_SECTION() portENTER_CRITICAL_NESTED()
+#define MICROPY_END_ATOMIC_SECTION(state) portEXIT_CRITICAL_NESTED(state)
+
 #if MICROPY_PY_THREAD
 #define MICROPY_EVENT_POLL_HOOK \
     do { \
