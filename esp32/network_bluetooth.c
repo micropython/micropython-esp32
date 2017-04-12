@@ -66,7 +66,7 @@ typedef uint8_t bd_addr_t[BD_ADDR_LEN];         /* Device address */
 #define ARRAY_TO_STREAM(p, a, len) {int ijk; for (ijk = 0; ijk < len;        ijk++) *(p)++ = (uint8_t) a[ijk];}
 
 
-#define CUTOUT
+//#define CUTOUT
 
 const mp_obj_type_t network_bluetooth_type;
 
@@ -171,6 +171,8 @@ static void network_bluetooth_gap_event_handler(esp_gap_ble_cb_event_t event, es
 
     switch (event) {
         case ESP_GAP_BLE_ADV_DATA_SET_COMPLETE_EVT:
+            NETWORK_BLUETOOTH_DEBUG_PRINTF( "adv data setting complete\n");
+            mango; // FIXME -- why are we starting here?
             esp_ble_gap_start_advertising(&self->params);
             break;
         case ESP_GAP_BLE_ADV_START_COMPLETE_EVT:
@@ -277,7 +279,11 @@ STATIC mp_obj_t network_bluetooth_init(mp_obj_t self_in) {
         NETWORK_BLUETOOTH_DEBUG_PRINTF("BT is deinit, initializing\n");
 
 #ifndef CUTOUT
-        esp_bt_controller_init(); 
+        esp_bt_controller_config_t config = {
+            .hci_uart_no = 1,
+            .hci_uart_baudrate = 115200,
+        };
+        esp_bt_controller_init(&config); 
 
         switch(esp_bt_controller_enable(ESP_BT_MODE_BTDM)) {
             case ESP_OK:
@@ -561,6 +567,14 @@ NETWORK_BLUETOOTH_BAD_UUID:
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_KW(network_bluetooth_ble_settings_obj, 1, network_bluetooth_ble_settings);
 
+STATIC mp_obj_t network_bluetooth_ble_adv_enable(mp_obj_t self_in, mp_obj_t enable) {
+    network_bluetooth_obj_t * self = MP_OBJ_TO_PTR(self_in);
+    self->advertising = mp_obj_is_true(enable);
+    network_bluetooth_adv_updated();
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_2(network_bluetooth_ble_adv_enable_obj, network_bluetooth_ble_adv_enable);
+
 STATIC mp_obj_t network_bluetooth_make_new(const mp_obj_type_t *type_in, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
 
     network_bluetooth_obj_t *self = &network_bluetooth_singleton;
@@ -584,6 +598,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(network_bluetooth_deinit_obj, network_bluetooth
 STATIC const mp_rom_map_elem_t network_bluetooth_locals_dict_table[] = {
     // instance methods
     { MP_ROM_QSTR(MP_QSTR_ble_settings), MP_ROM_PTR(&network_bluetooth_ble_settings_obj) },
+    { MP_ROM_QSTR(MP_QSTR_ble_adv_enable), MP_ROM_PTR(&network_bluetooth_ble_adv_enable_obj) },
     { MP_ROM_QSTR(MP_QSTR_init), MP_ROM_PTR(&network_bluetooth_init_obj) },
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&network_bluetooth_deinit_obj) },
 
