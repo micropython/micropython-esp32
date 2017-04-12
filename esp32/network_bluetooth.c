@@ -163,8 +163,6 @@ STATIC void dumpBuf(const uint8_t *buf, size_t len) {
         printf("%02X ", *buf++);
 }
 
-/*
-
 static void network_bluetooth_gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
 {
     NETWORK_BLUETOOTH_DEBUG_PRINTF("entering network_bluetooth_gap_event_handler()\n");
