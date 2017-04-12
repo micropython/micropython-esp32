@@ -31,10 +31,13 @@
 
 #include <stdio.h>
 #include <zephyr.h>
+// Zephyr's generated version header
+#include <version.h>
 #include <net/net_context.h>
 #include <net/nbuf.h>
 
-#if 0 // print debugging info
+#define DEBUG 0
+#if DEBUG // print debugging info
 #define DEBUG_printf printf
 #else // don't print debugging info
 #define DEBUG_printf(...) (void)0
@@ -43,7 +46,10 @@
 typedef struct _socket_obj_t {
     mp_obj_base_t base;
     struct net_context *ctx;
-    struct k_fifo recv_q;
+    union {
+        struct k_fifo recv_q;
+        struct k_fifo accept_q;
+    };
     struct net_buf *cur_buf;
 
     #define STATE_NEW 0
@@ -54,6 +60,36 @@ typedef struct _socket_obj_t {
 } socket_obj_t;
 
 STATIC const mp_obj_type_t socket_type;
+
+// k_fifo extended API
+
+static inline void *_k_fifo_peek_head(struct k_fifo *fifo)
+{
+#if KERNEL_VERSION_NUMBER < 0x010763 /* 1.7.99 */
+    return sys_slist_peek_head(&fifo->data_q);
+#else
+    return sys_slist_peek_head(&fifo->_queue.data_q);
+#endif
+}
+
+static inline void *_k_fifo_peek_tail(struct k_fifo *fifo)
+{
+#if KERNEL_VERSION_NUMBER < 0x010763 /* 1.7.99 */
+    return sys_slist_peek_tail(&fifo->data_q);
+#else
+    return sys_slist_peek_tail(&fifo->_queue.data_q);
+#endif
+}
+
+static inline void _k_fifo_wait_non_empty(struct k_fifo *fifo, int32_t timeout)
+{
+    struct k_poll_event events[] = {
+        K_POLL_EVENT_INITIALIZER(K_POLL_TYPE_FIFO_DATA_AVAILABLE, K_POLL_MODE_NOTIFY_ONLY, fifo),
+    };
+
+    k_poll(events, MP_ARRAY_SIZE(events), timeout);
+    DEBUG_printf("poll res: %d\n", events[0].state);
+}
 
 // Helper functions
 
@@ -109,14 +145,21 @@ static void sock_received_cb(struct net_context *context, struct net_buf *net_bu
         DEBUG_printf(" (sz=%d, l=%d), token: %p", net_buf->size, net_buf->len, net_nbuf_token(net_buf));
     }
     DEBUG_printf("\n");
+    #if DEBUG > 1
+    net_nbuf_print_frags(net_buf);
+    #endif
 
     // if net_buf == NULL, EOF
     if (net_buf == NULL) {
-        // TODO: k_fifo accessor for this?
-        struct net_buf *last_buf = (struct net_buf*)sys_slist_peek_tail(&socket->recv_q.data_q);
-        // We abuse "buf_sent" flag to store EOF flag
-        net_nbuf_set_buf_sent(last_buf, true);
-        DEBUG_printf("Set EOF flag on %p\n", last_buf);
+        struct net_buf *last_buf = _k_fifo_peek_tail(&socket->recv_q);
+        if (last_buf == NULL) {
+            socket->state = STATE_PEER_CLOSED;
+            DEBUG_printf("Marked socket %p as peer-closed\n", socket);
+        } else {
+            // We abuse "buf_sent" flag to store EOF flag
+            net_nbuf_set_buf_sent(last_buf, true);
+            DEBUG_printf("Set EOF flag on %p\n", last_buf);
+        }
         return;
     }
 
@@ -126,6 +169,24 @@ static void sock_received_cb(struct net_context *context, struct net_buf *net_bu
     // net_buf->frags will be overwritten by fifo, so save it
     net_nbuf_set_token(net_buf, net_buf->frags);
     k_fifo_put(&socket->recv_q, net_buf);
+}
+
+// Callback for incoming connections.
+static void sock_accepted_cb(struct net_context *new_ctx, struct sockaddr *addr, socklen_t addrlen, int status, void *user_data) {
+    socket_obj_t *socket = (socket_obj_t*)user_data;
+    DEBUG_printf("accept cb: context: %p, status: %d, new ctx: %p\n", socket->ctx, status, new_ctx);
+    DEBUG_printf("new_ctx ref_cnt: %d\n", new_ctx->refcount);
+
+    k_fifo_put(&socket->accept_q, new_ctx);
+}
+
+socket_obj_t *socket_new(void) {
+    socket_obj_t *socket = m_new_obj_with_finaliser(socket_obj_t);
+    socket->base.type = (mp_obj_t)&socket_type;
+    k_fifo_init(&socket->recv_q);
+    socket->cur_buf = NULL;
+    socket->state = STATE_NEW;
+    return socket;
 }
 
 // Methods
@@ -143,11 +204,7 @@ STATIC void socket_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kin
 STATIC mp_obj_t socket_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args) {
     mp_arg_check_num(n_args, n_kw, 0, 4, false);
 
-    socket_obj_t *socket = m_new_obj_with_finaliser(socket_obj_t);
-    socket->base.type = type;
-    k_fifo_init(&socket->recv_q);
-    socket->cur_buf = NULL;
-    socket->state = STATE_NEW;
+    socket_obj_t *socket = socket_new();
 
     int family = AF_INET;
     int socktype = SOCK_STREAM;
@@ -172,7 +229,7 @@ STATIC mp_obj_t socket_make_new(const mp_obj_type_t *type, size_t n_args, size_t
 
     RAISE_ERRNO(net_context_get(family, socktype, proto, &socket->ctx));
 
-    return socket;
+    return MP_OBJ_FROM_PTR(socket);
 }
 
 STATIC mp_obj_t socket_bind(mp_obj_t self_in, mp_obj_t addr_in) {
@@ -183,8 +240,13 @@ STATIC mp_obj_t socket_bind(mp_obj_t self_in, mp_obj_t addr_in) {
     parse_inet_addr(socket, addr_in, &sockaddr);
 
     RAISE_ERRNO(net_context_bind(socket->ctx, &sockaddr, sizeof(sockaddr)));
-    DEBUG_printf("Setting recv cb after bind\n");
-    RAISE_ERRNO(net_context_recv(socket->ctx, sock_received_cb, K_NO_WAIT, socket));
+    // For DGRAM socket, we expect to receive packets after call to bind(),
+    // but for STREAM socket, next expected operation is listen(), which
+    // doesn't work if recv callback is set.
+    if (net_context_get_type(socket->ctx) == SOCK_DGRAM) {
+        DEBUG_printf("Setting recv cb after bind\n");
+        RAISE_ERRNO(net_context_recv(socket->ctx, sock_received_cb, K_NO_WAIT, socket));
+    }
     return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(socket_bind_obj, socket_bind);
@@ -202,6 +264,39 @@ STATIC mp_obj_t socket_connect(mp_obj_t self_in, mp_obj_t addr_in) {
     return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(socket_connect_obj, socket_connect);
+
+STATIC mp_obj_t socket_listen(mp_obj_t self_in, mp_obj_t backlog_in) {
+    socket_obj_t *socket = self_in;
+    socket_check_closed(socket);
+
+    mp_int_t backlog = mp_obj_get_int(backlog_in);
+    RAISE_ERRNO(net_context_listen(socket->ctx, backlog));
+    RAISE_ERRNO(net_context_accept(socket->ctx, sock_accepted_cb, K_NO_WAIT, socket));
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_2(socket_listen_obj, socket_listen);
+
+STATIC mp_obj_t socket_accept(mp_obj_t self_in) {
+    socket_obj_t *socket = self_in;
+    socket_check_closed(socket);
+
+    struct net_context *ctx = k_fifo_get(&socket->accept_q, K_FOREVER);
+    // Was overwritten by fifo
+    ctx->refcount = 1;
+
+    socket_obj_t *socket2 = socket_new();
+    socket2->ctx = ctx;
+    DEBUG_printf("Setting recv cb after accept()\n");
+    RAISE_ERRNO(net_context_recv(ctx, sock_received_cb, K_NO_WAIT, socket2));
+
+    mp_obj_tuple_t *client = mp_obj_new_tuple(2, NULL);
+    client->items[0] = MP_OBJ_FROM_PTR(socket2);
+    // TODO
+    client->items[1] = mp_const_none;
+
+    return MP_OBJ_FROM_PTR(client);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(socket_accept_obj, socket_accept);
 
 STATIC mp_obj_t socket_send(mp_obj_t self_in, mp_obj_t buf_in) {
     socket_obj_t *socket = self_in;
@@ -327,6 +422,8 @@ STATIC const mp_map_elem_t socket_locals_dict_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR_close), (mp_obj_t)&socket_close_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_bind), (mp_obj_t)&socket_bind_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_connect), (mp_obj_t)&socket_connect_obj },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_listen), (mp_obj_t)&socket_listen_obj },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_accept), (mp_obj_t)&socket_accept_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_send), (mp_obj_t)&socket_send_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_recv), (mp_obj_t)&socket_recv_obj },
 };
