@@ -16,7 +16,7 @@ include ../py/py.mk
 
 PORT ?= /dev/ttyUSB0
 BAUD ?= 460800
-FLASH_MODE ?= qio
+FLASH_MODE ?= dio
 FLASH_FREQ ?= 40m
 FLASH_SIZE ?= 4MB
 CROSS_COMPILE ?= xtensa-esp32-elf-
