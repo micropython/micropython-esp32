@@ -122,8 +122,7 @@ void app_main(void) {
 
 void nlr_jump_fail(void *val) {
     printf("NLR jump failed, val=%p\n", val);
-    for (;;) {
-    }
+    esp_restart();
 }
 
 // modussl_mbedtls uses this function but it's not enabled in ESP IDF
