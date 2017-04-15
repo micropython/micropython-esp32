@@ -138,6 +138,7 @@ endif
 ################################################################################
 # List of MicroPython source and object files
 
+$(BUILD)/modbt.o: CFLAGS += $(INC_BT) -I$(ESPCOMP)/bt/bluedroid/device/include
 SRC_C = \
 	main.c \
 	uart.c \
@@ -159,6 +160,7 @@ SRC_C = \
 	espneopixel.c \
 	machine_hw_spi.c \
 	mpthreadport.c \
+	modbt.c \
 	$(SRC_MOD)
 
 STM_SRC_C = $(addprefix stmhal/,\
@@ -222,6 +224,8 @@ OBJ_MP += $(addprefix $(BUILD)/, $(DRIVERS_SRC_C:.c=.o))
 SRC_QSTR += $(SRC_C) $(STM_SRC_C) $(ESP8266_SRC_C) $(EXTMOD_SRC_C) $(DRIVERS_SRC_C)
 # Append any auto-generated sources that are needed by sources listed in SRC_QSTR
 SRC_QSTR_AUTO_DEPS +=
+# Append extra cflags for the QSTR generation process
+QSTR_GEN_EXTRA_CFLAGS += $(INC_BT) -I$(ESPCOMP)/bt/bluedroid/device/include
 
 ################################################################################
 # List of object files from the ESP32 IDF components
@@ -570,6 +574,13 @@ ESPIDF_BT_O = $(addprefix $(ESPCOMP)/bt/,\
 	bluedroid/api/esp_gap_ble_api.o \
 	bluedroid/api/esp_gattc_api.o \
 	bluedroid/api/esp_gatts_api.o \
+	bluedroid/bta/dm/bta_dm_act.o \
+	bluedroid/bta/dm/bta_dm_api.o \
+	bluedroid/bta/dm/bta_dm_cfg.o \
+	bluedroid/bta/dm/bta_dm_ci.o \
+	bluedroid/bta/dm/bta_dm_main.o \
+	bluedroid/bta/dm/bta_dm_pm.o \
+	bluedroid/bta/dm/bta_dm_sco.o \
 	bluedroid/bta/gatt/bta_gattc_act.o \
 	bluedroid/bta/gatt/bta_gattc_api.o \
 	bluedroid/bta/gatt/bta_gattc_cache.o \

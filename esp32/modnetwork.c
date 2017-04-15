@@ -47,6 +47,7 @@
 #include "esp_log.h"
 #include "lwip/dns.h"
 #include "tcpip_adapter.h"
+#include "modbt.h"
 
 #define MODNETWORK_INCLUDE_CONSTANTS (1)
 
@@ -522,6 +523,7 @@ STATIC const mp_map_elem_t mp_module_network_globals_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR___name__), MP_OBJ_NEW_QSTR(MP_QSTR_network) },
     { MP_OBJ_NEW_QSTR(MP_QSTR___init__), (mp_obj_t)&esp_initialize_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_WLAN), (mp_obj_t)&get_wlan_obj },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_Bluetooth), (mp_obj_t)&network_bt_type },
     { MP_OBJ_NEW_QSTR(MP_QSTR_phy_mode), (mp_obj_t)&esp_phy_mode_obj },
 
 #if MODNETWORK_INCLUDE_CONSTANTS
