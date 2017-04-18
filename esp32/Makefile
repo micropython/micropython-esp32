@@ -281,6 +281,7 @@ $(BUILD)/$(ESPCOMP)/bt/bluedroid/stack/btu/btu_task.o: CFLAGS += -Wno-error=stri
 ESPIDF_BLUETOOTH_O = $(addprefix $(ESPCOMP)/bt/,\
 	bluedroid/api/esp_bt_main.o \
 	bluedroid/api/esp_gap_ble_api.o \
+	bluedroid/api/esp_gatts_api.o \
 	bluedroid/bta/dm/bta_dm_act.o \
 	bluedroid/bta/dm/bta_dm_api.o \
 	bluedroid/bta/dm/bta_dm_cfg.o \
