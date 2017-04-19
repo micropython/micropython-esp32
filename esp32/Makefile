@@ -853,7 +853,7 @@ $(BUILD)/bootloader.elf: $(BOOTLOADER_OBJ)
 # Declarations to build the partitions
 
 PYTHON2 ?= python2
-PART_SRC = $(ESPCOMP)/partition_table/partitions_singleapp.csv
+PART_SRC = partitions_singleapp.csv
 
 $(BUILD)/partitions.bin: $(PART_SRC)
 	$(ECHO) "Create $@"
