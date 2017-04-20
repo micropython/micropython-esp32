@@ -78,9 +78,11 @@ const mp_obj_type_t network_bluetooth_characteristic_type;
 typedef struct {
     mp_obj_base_t base;
 
+    bool started;
     esp_gatt_srvc_id_t service_id;
-    mp_obj_t _chars;  // list
+    mp_obj_t chars;  // list
 } network_bluetooth_service_obj_t;
+
 
 
 // CHARACTERISTIC
@@ -98,14 +100,15 @@ typedef struct {
 
 // Declaration
 typedef struct {
-    mp_obj_base_t base;
+    mp_obj_base_t           base;
     enum {
         NETWORK_BLUETOOTH_STATE_DEINIT,
         NETWORK_BLUETOOTH_STATE_INIT
-    } state;
-    bool advertising;
-    esp_ble_adv_params_t params;
-    esp_ble_adv_data_t   data;
+    }                       state;
+    bool                    advertising;
+    esp_gatt_if_t           interface;
+    esp_ble_adv_params_t    params;
+    esp_ble_adv_data_t      data;
 
 } network_bluetooth_obj_t;
 
@@ -114,6 +117,7 @@ STATIC network_bluetooth_obj_t network_bluetooth_singleton = {
     .base = { &network_bluetooth_type },
     .state = NETWORK_BLUETOOTH_STATE_DEINIT,
     .advertising = false,
+    .interface = ESP_GATT_IF_NONE,
     .params = {
         .adv_int_min = 1280 * 1.6,
         .adv_int_max = 1280 * 1.6,
@@ -150,6 +154,10 @@ STATIC network_bluetooth_obj_t network_bluetooth_singleton = {
     memset(buf, 0, buf_size);\
     buf[0] = H4_TYPE_COMMAND;\
     memcpy(buf + 1, &hci_commands[(cmd)], sizeof(hci_cmd_def_t)); 
+
+STATIC network_bluetooth_obj_t* network_bluetooth_get_singleton() {
+    return &network_bluetooth_singleton;
+}
 
 STATIC void dumpBuf(const uint8_t *buf, size_t len) {
     while(len--) 
@@ -223,7 +231,7 @@ STATIC void gatts_event_dump(
     } status_name_t;
 
     const status_name_t status_names[] = {
-        {0x0, "OK | ENCRYPED_MITM"},
+        {0x00, "OK"},
         {0x01, "INVALID_HANDLE"},
         {0x02, "READ_NOT_PERMIT"},
         {0x03, "WRITE_NOT_PERMIT"},
@@ -414,7 +422,7 @@ STATIC void gatts_event_dump(
                 NETWORK_BLUETOOTH_DEBUG_PRINTF("uuid = ");
                 dumpBuf((uint8_t*)&param->create.service_id.id.uuid.uuid, param->create.service_id.id.uuid.len);
                 NETWORK_BLUETOOTH_DEBUG_PRINTF(", inst_id = %02X)", param->create.service_id.id.inst_id);
-                NETWORK_BLUETOOTH_DEBUG_PRINTF("is_primary = %s", param->create.service_id.is_primary ? "true" : "false"); 
+                NETWORK_BLUETOOTH_DEBUG_PRINTF(", is_primary = %s", param->create.service_id.is_primary ? "true" : "false"); 
                 NETWORK_BLUETOOTH_DEBUG_PRINTF(")");
 
             }
@@ -584,18 +592,22 @@ STATIC void network_bluetooth_gatts_event_handler(
         esp_gatt_if_t gatts_if, 
         esp_ble_gatts_cb_param_t *param) {
 
+    network_bluetooth_obj_t* self = &network_bluetooth_singleton;
+
     gatts_event_dump(event, gatts_if, param);
 
     switch (event) {
         case ESP_GATTS_REG_EVT:
-            /*          esp_ble_gatts_create_service(
-                        gatts_if, 
-                        &gl_profile_tab[PROFILE_B_APP_ID].service_id, 
-                        GATTS_NUM_HANDLE_TEST_B);
-                        */
-
+            self->interface = gatts_if;
             break;
+
         case ESP_GATTS_CREATE_EVT:
+            
+
+            NETWORK_BLUETOOTH_DEBUG_PRINTF("ESP_GATTS_CREATE_EVT: FIXME, what to do with service_handle?\n");
+
+            esp_ble_gatts_start_service(param->create.service_handle);
+
             /*
                gl_profile_tab[PROFILE_B_APP_ID].service_handle = param->create.service_handle;
                gl_profile_tab[PROFILE_B_APP_ID].char_uuid.len = ESP_UUID_LEN_16;
@@ -651,7 +663,7 @@ STATIC void network_bluetooth_gap_event_handler(
 
 
 STATIC void network_bluetooth_adv_updated() {
-    network_bluetooth_obj_t* self = &network_bluetooth_singleton;
+    network_bluetooth_obj_t* self = network_bluetooth_get_singleton();
 #ifndef CUTOUT
     esp_ble_gap_stop_advertising();
     esp_ble_gap_config_adv_data(&self->data);
@@ -821,7 +833,7 @@ STATIC mp_obj_t network_bluetooth_init(mp_obj_t self_in) {
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(network_bluetooth_init_obj, network_bluetooth_init);
 
 STATIC mp_obj_t network_bluetooth_ble_settings(size_t n_args, const mp_obj_t *pos_args, mp_map_t * kw_args) {
-    network_bluetooth_obj_t *self = &network_bluetooth_singleton;
+    network_bluetooth_obj_t *self = network_bluetooth_get_singleton();
     NETWORK_BLUETOOTH_DEBUG_PRINTF("Entering network_bluetooth_ble_settings(self = %p) n_args = %d\n", self, n_args);
 
     bool changed = false;
@@ -1072,7 +1084,8 @@ STATIC mp_obj_t network_bluetooth_ble_adv_enable(mp_obj_t self_in, mp_obj_t enab
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(network_bluetooth_ble_adv_enable_obj, network_bluetooth_ble_adv_enable);
 
-STATIC mp_obj_t network_bluetooth_make_new(const mp_obj_type_t *type_in, size_t n_args, size_t n_kw, const mp_obj_t *all_args) { network_bluetooth_obj_t *self = &network_bluetooth_singleton;
+STATIC mp_obj_t network_bluetooth_make_new(const mp_obj_type_t *type_in, size_t n_args, size_t n_kw, const mp_obj_t *all_args) { 
+    network_bluetooth_obj_t *self = network_bluetooth_get_singleton();
     NETWORK_BLUETOOTH_DEBUG_PRINTF("Entering network_bluetooth_make_new, self = %p, n_args = %d, n_kw = %d\n", self, n_args, n_kw );
     if (n_args != 0 || n_kw != 0) {
         mp_raise_TypeError("Constructor takes no arguments");
@@ -1096,7 +1109,8 @@ mp_obj_t network_bluetooth_service_make_new(const mp_obj_type_t *type, size_t n_
 
     parse_uuid(args[ARG_uuid].u_obj, &self->service_id.id.uuid);
     self->service_id.is_primary = mp_obj_is_true(args[ARG_isPrimary].u_obj);
-    self->_chars = mp_obj_new_list(0, NULL);
+    self->chars = mp_obj_new_list(0, NULL);
+    self->started = false;
 
     return MP_OBJ_FROM_PTR(self);
 }
@@ -1127,29 +1141,70 @@ mp_obj_t network_bluetooth_characteristic_make_new(const mp_obj_type_t *type, si
     return MP_OBJ_FROM_PTR(self);
 }
 
-STATIC mp_obj_t network_bluetooth_service_add_characteristic(mp_obj_t self_in) {
-    NETWORK_BLUETOOTH_DEBUG_PRINTF("network_bluetooth_service_stop() FIXME unimplemented\n");
-    //FIXME
-    return mp_const_none;
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(network_bluetooth_service_add_characteristic_obj, network_bluetooth_service_add_characteristic);
 
 STATIC mp_obj_t network_bluetooth_service_start(mp_obj_t self_in) {
-    NETWORK_BLUETOOTH_DEBUG_PRINTF("network_bluetooth_service_start() FIXME unimplemented\n");
+    network_bluetooth_obj_t* bluetooth = network_bluetooth_get_singleton();
+    network_bluetooth_service_obj_t* self = (network_bluetooth_service_obj_t*) self_in;
+    if (self->started) {
+        return mp_const_none;
+    }
 
-    //FIXME
+    mp_obj_t item;
+    mp_obj_t iterable = mp_getiter(self->chars, NULL);
+    while ((item = mp_iternext(iterable)) != MP_OBJ_STOP_ITERATION) {
+     if (!MP_OBJ_IS_TYPE(item, &network_bluetooth_characteristic_type)){
+         mp_raise_ValueError("chars must contain only Char objects");
+     }
+    }
+    
+    esp_ble_gatts_create_service(bluetooth->interface, &self->service_id, mp_obj_get_int(mp_obj_len(self->chars)) + 1);
     return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(network_bluetooth_service_start_obj, network_bluetooth_service_start);
 
 STATIC mp_obj_t network_bluetooth_service_stop(mp_obj_t self_in) {
     NETWORK_BLUETOOTH_DEBUG_PRINTF("network_bluetooth_service_stop() FIXME unimplemented\n");
+    network_bluetooth_obj_t* bluetooth = network_bluetooth_get_singleton();
+    network_bluetooth_service_obj_t* self = (network_bluetooth_service_obj_t*) self_in;
+
+    if (!self->started) {
+        return mp_const_none;
+    }
+
     //FIXME
     return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(network_bluetooth_service_stop_obj, network_bluetooth_service_stop);
 
 
+// service attribute handler
+STATIC void network_bluetooth_service__attr(mp_obj_t self_in, qstr attr, mp_obj_t *dest) {
+    network_bluetooth_service_obj_t* self = (network_bluetooth_service_obj_t*) self_in;
+    switch(attr) {
+        case MP_QSTR_chars:
+            if (dest[0] == MP_OBJ_NULL) {  // load
+                dest[0] = self->chars;
+            } else if (dest[1] != MP_OBJ_NULL) { // store
+                if (MP_OBJ_IS_TYPE(dest[1], &mp_type_list) || MP_OBJ_IS_TYPE(dest[1], &mp_type_tuple)) {
+                    self->chars = dest[1];
+                    dest[0] = MP_OBJ_NULL;
+                } else {
+                    mp_raise_ValueError("value must be list or tuple");
+                }
+            } 
+            break;
+        case MP_QSTR_start:
+            if (dest[0] == MP_OBJ_NULL) {
+                dest[0] = mp_obj_new_bound_meth(MP_OBJ_FROM_PTR(&network_bluetooth_service_start_obj), self);
+            }
+            break;
+        case MP_QSTR_stop:
+            if (dest[0] == MP_OBJ_NULL) {
+                dest[0] = mp_obj_new_bound_meth(MP_OBJ_FROM_PTR(&network_bluetooth_service_stop_obj), self);
+            }
+            break;
+    }
+}
 
 
 
@@ -1241,7 +1296,6 @@ const mp_obj_type_t network_bluetooth_type = {
 STATIC const mp_rom_map_elem_t network_bluetooth_service_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_start), MP_ROM_PTR(&network_bluetooth_service_start_obj) },
     { MP_ROM_QSTR(MP_QSTR_stop), MP_ROM_PTR(&network_bluetooth_service_stop_obj) },
-    { MP_ROM_QSTR(MP_QSTR_add_characteristic), MP_ROM_PTR(&network_bluetooth_service_add_characteristic_obj) },
 };
 
 STATIC MP_DEFINE_CONST_DICT(network_bluetooth_service_locals_dict, network_bluetooth_service_locals_dict_table);
@@ -1252,6 +1306,7 @@ const mp_obj_type_t network_bluetooth_service_type = {
     .print = network_bluetooth_service_print,
     .make_new = network_bluetooth_service_make_new,
     .locals_dict = (mp_obj_dict_t*)&network_bluetooth_service_locals_dict,
+    .attr = network_bluetooth_service__attr,
 };
 
 // CHARACTERISTIC OBJECTS
