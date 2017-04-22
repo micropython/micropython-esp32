@@ -138,7 +138,6 @@ endif
 ################################################################################
 # List of MicroPython source and object files
 
-$(BUILD)/modbt.o: CFLAGS += $(INC_BT) -I$(ESPCOMP)/bt/bluedroid/device/include
 SRC_C = \
 	main.c \
 	uart.c \
@@ -160,7 +159,6 @@ SRC_C = \
 	espneopixel.c \
 	machine_hw_spi.c \
 	mpthreadport.c \
-	modbt.c \
 	$(SRC_MOD)
 
 STM_SRC_C = $(addprefix stmhal/,\
@@ -224,8 +222,6 @@ OBJ_MP += $(addprefix $(BUILD)/, $(DRIVERS_SRC_C:.c=.o))
 SRC_QSTR += $(SRC_C) $(STM_SRC_C) $(ESP8266_SRC_C) $(EXTMOD_SRC_C) $(DRIVERS_SRC_C)
 # Append any auto-generated sources that are needed by sources listed in SRC_QSTR
 SRC_QSTR_AUTO_DEPS +=
-# Append extra cflags for the QSTR generation process
-QSTR_GEN_EXTRA_CFLAGS += $(INC_BT) -I$(ESPCOMP)/bt/bluedroid/device/include
 
 ################################################################################
 # List of object files from the ESP32 IDF components
@@ -563,9 +559,9 @@ ESPIDF_WPA_SUPPLICANT_O = $(addprefix $(ESPCOMP)/wpa_supplicant/,\
 	port/os_xtensa.o \
 	)
 
-$(BUILD)/$(ESPCOMP)/bt/%.o: CFLAGS := $(INC_BT) $(CFLAGS)
 $(BUILD)/$(ESPCOMP)/bt/bluedroid/btc/profile/esp/blufi/%.o: CFLAGS += -Wno-strict-aliasing
 $(BUILD)/$(ESPCOMP)/bt/bluedroid/stack/btu/%.o: CFLAGS += -Wno-strict-aliasing
+$(BUILD)/$(ESPCOMP)/bt/%.o: CFLAGS += $(INC_BT)
 ESPIDF_BT_O = $(addprefix $(ESPCOMP)/bt/,\
 	bt.o \
 	bluedroid/api/esp_blufi_api.o \
@@ -574,13 +570,6 @@ ESPIDF_BT_O = $(addprefix $(ESPCOMP)/bt/,\
 	bluedroid/api/esp_gap_ble_api.o \
 	bluedroid/api/esp_gattc_api.o \
 	bluedroid/api/esp_gatts_api.o \
-	bluedroid/bta/dm/bta_dm_act.o \
-	bluedroid/bta/dm/bta_dm_api.o \
-	bluedroid/bta/dm/bta_dm_cfg.o \
-	bluedroid/bta/dm/bta_dm_ci.o \
-	bluedroid/bta/dm/bta_dm_main.o \
-	bluedroid/bta/dm/bta_dm_pm.o \
-	bluedroid/bta/dm/bta_dm_sco.o \
 	bluedroid/bta/gatt/bta_gattc_act.o \
 	bluedroid/bta/gatt/bta_gattc_api.o \
 	bluedroid/bta/gatt/bta_gattc_cache.o \
@@ -604,18 +593,10 @@ ESPIDF_BT_O = $(addprefix $(ESPCOMP)/bt/,\
 	bluedroid/bta/sys/bta_sys_conn.o \
 	bluedroid/bta/sys/bta_sys_main.o \
 	bluedroid/bta/sys/utl.o \
-	bluedroid/btc/core/btc_alarm.o \
-	bluedroid/btc/core/btc_ble_storage.o \
-	bluedroid/btc/core/btc_config.o \
-	bluedroid/btc/core/btc_dev.o \
-	bluedroid/btc/core/btc_dm.o \
 	bluedroid/btc/core/btc_main.o \
 	bluedroid/btc/core/btc_manage.o \
 	bluedroid/btc/core/btc_sec.o \
-	bluedroid/btc/core/btc_sm.o \
-	bluedroid/btc/core/btc_storage.o \
 	bluedroid/btc/core/btc_task.o \
-	bluedroid/btc/core/btc_util.o \
 	bluedroid/btc/profile/esp/blufi/blufi_prf.o \
 	bluedroid/btc/profile/esp/blufi/blufi_protocol.o \
 	bluedroid/btc/profile/std/gap/btc_gap_ble.o \
@@ -641,7 +622,6 @@ ESPIDF_BT_O = $(addprefix $(ESPCOMP)/bt/,\
 	bluedroid/osi/alarm.o \
 	bluedroid/osi/allocator.o \
 	bluedroid/osi/buffer.o \
-	bluedroid/osi/config.o \
 	bluedroid/osi/fixed_queue.o \
 	bluedroid/osi/future.o \
 	bluedroid/osi/hash_functions.o \
@@ -769,8 +749,12 @@ APP_LD_ARGS += -L$(dir $(LIBSTDCXX_FILE_NAME)) -lstdc++
 APP_LD_ARGS += $(ESPCOMP)/newlib/lib/libc.a
 APP_LD_ARGS += $(ESPCOMP)/newlib/lib/libm.a
 APP_LD_ARGS += $(ESPCOMP)/esp32/libhal.a
+<<<<<<< HEAD
 APP_LD_ARGS += -L$(ESPCOMP)/esp32/lib -lcore -lnet80211 -lphy -lrtc -lpp -lwpa -lsmartconfig -lcoexist
+=======
+APP_LD_ARGS += -L$(ESPCOMP)/esp32/lib -lcore -lnet80211 -lphy -lrtc -lrtc_clk -lrtc_pm -lpp -lwpa -lsmartconfig -lcoexist
 APP_LD_ARGS += $(ESPCOMP)/bt/lib/libbtdm_app.a
+>>>>>>> 8c866b73... esp32: Get the IDF Bluetooth stack compilink and linking.
 APP_LD_ARGS += $(OBJ)
 APP_LD_ARGS += --end-group
 
@@ -862,7 +846,7 @@ $(BUILD)/bootloader.elf: $(BOOTLOADER_OBJ)
 # Declarations to build the partitions
 
 PYTHON2 ?= python2
-PART_SRC = partitions_singleapp.csv
+PART_SRC = $(ESPCOMP)/partition_table/partitions_singleapp.csv
 
 $(BUILD)/partitions.bin: $(PART_SRC)
 	$(ECHO) "Create $@"

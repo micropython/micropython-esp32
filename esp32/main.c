@@ -48,16 +48,17 @@
 #include "uart.h"
 #include "modmachine.h"
 #include "mpthreadport.h"
+#include "modbt.h"
 
 // MicroPython runs as a task under FreeRTOS
 #define MP_TASK_PRIORITY        (ESP_TASK_PRIO_MIN + 1)
 #define MP_TASK_STACK_SIZE      (16 * 1024)
 #define MP_TASK_STACK_LEN       (MP_TASK_STACK_SIZE / sizeof(StackType_t))
-#define MP_TASK_HEAP_SIZE       (96 * 1024)
+#define MP_TASK_HEAP_SIZE       (64 * 1024)
 
 STATIC StaticTask_t mp_task_tcb;
 STATIC StackType_t mp_task_stack[MP_TASK_STACK_LEN] __attribute__((aligned (8)));
-STATIC uint8_t mp_task_heap[MP_TASK_HEAP_SIZE];
+STATIC uint8_t *mp_task_heap;
 
 void mp_task(void *pvParameter) {
     volatile uint32_t sp = (uint32_t)get_sp();
@@ -66,11 +67,14 @@ void mp_task(void *pvParameter) {
     #endif
     uart_init();
 
+    mp_task_heap = pvPortMalloc(MP_TASK_HEAP_SIZE);
+    assert(mp_task_heap != NULL);
+
 soft_reset:
     // initialise the stack pointer for the main thread
     mp_stack_set_top((void *)sp);
     mp_stack_set_limit(MP_TASK_STACK_SIZE - 1024);
-    gc_init(mp_task_heap, mp_task_heap + sizeof(mp_task_heap));
+    gc_init(mp_task_heap, mp_task_heap + MP_TASK_HEAP_SIZE);
     mp_init();
     mp_obj_list_init(mp_sys_path, 0);
     mp_obj_list_append(mp_sys_path, MP_OBJ_NEW_QSTR(MP_QSTR_));
@@ -80,6 +84,7 @@ soft_reset:
 
     // initialise peripherals
     machine_pins_init();
+    modbt_init0();
 
     // run boot-up scripts
     pyexec_frozen_module("_boot.py");
