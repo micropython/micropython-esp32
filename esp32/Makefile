@@ -48,6 +48,7 @@ IDF_VER := $(shell git -C $(ESPIDF) describe)
 # Include dirs for both BT and MAIN
 INC_COMMON =  -I.
 INC_COMMON += -I..
+INC_COMMON += -I$(BUILD)
 INC_COMMON += -I$(ESPCOMP)/log/include
 INC_COMMON += -I$(ESPCOMP)/esp32/include
 INC_COMMON += -I$(ESPCOMP)/soc/esp32/include
@@ -58,13 +59,12 @@ INC_COMMON += -I$(ESPCOMP)/lwip/include/lwip/port
 INC_COMMON += -I$(ESPCOMP)/driver/include/driver
 INC_COMMON += -I$(ESPCOMP)/driver/include
 INC_COMMON += -I$(ESPCOMP)/nvs_flash/include
-INC_COMMON += -I$(ESPCOMP)/spi_flash/include
-INC_COMMON += -I$(BUILD)
 
 # Include dirs for main code base, excluding BT
 INC_MAIN += -I../lib/mp-readline
 INC_MAIN += -I../lib/netutils
 INC_MAIN += -I../lib/timeutils
+INC_MAIN += -I$(ESPCOMP)/spi_flash/include
 INC_MAIN += -I$(ESPCOMP)/bootloader_support/include
 INC_MAIN += -I$(ESPCOMP)/nghttp/port/include
 INC_MAIN += -I$(ESPCOMP)/nghttp/include
