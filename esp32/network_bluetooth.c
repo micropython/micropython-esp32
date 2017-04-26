@@ -250,7 +250,7 @@ STATIC mp_obj_t network_bluetooth_find_item(mp_obj_t list, esp_bt_uuid_t* uuid, 
             case NETWORK_BLUETOOTH_FIND_SERVICE: 
                 {
                     network_bluetooth_service_obj_t* service = (network_bluetooth_service_obj_t*) items[i];
-                    if ((uuid != NULL && uuid_eq(&service->service_id.id.uuid, uuid)) || service->handle == handle) {
+                    if ((uuid != NULL && uuid_eq(&service->service_id.id.uuid, uuid)) || (uuid == NULL && service->handle == handle)) {
                         ret = service;
                         goto NETWORK_BLUETOOTH_FIND_ITEM_END;
                     }
@@ -260,7 +260,7 @@ STATIC mp_obj_t network_bluetooth_find_item(mp_obj_t list, esp_bt_uuid_t* uuid, 
             case NETWORK_BLUETOOTH_FIND_CHAR:
                 {
                     network_bluetooth_char_obj_t* chr = (network_bluetooth_char_obj_t*) items[i];
-                    if ((uuid != NULL && uuid_eq(&chr->uuid, uuid)) ||  chr->handle == handle) {
+                    if ((uuid != NULL && uuid_eq(&chr->uuid, uuid)) || (uuid == NULL && chr->handle == handle)) {
                         ret = chr;
                         goto NETWORK_BLUETOOTH_FIND_ITEM_END;
                     }                     
@@ -940,7 +940,7 @@ STATIC void network_bluetooth_characteristic_print(const mp_print_t *print, mp_o
     network_bluetooth_char_obj_t *self = MP_OBJ_TO_PTR(self_in);
     mp_printf(print, "BTChar(uuid = ");
     network_bluetooth_uuid_print(print, &self->uuid);
-    mp_printf(print, ", perm = %02X, prop = %02X)", self->perm, self->prop);
+    mp_printf(print, ", perm = %02X, prop = %02X, handle = %04X)", self->perm, self->prop, self->handle);
 }
 
 STATIC void network_bluetooth_service_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
@@ -948,7 +948,7 @@ STATIC void network_bluetooth_service_print(const mp_print_t *print, mp_obj_t se
     // FIXME
     mp_printf(print, "Service(uuid = ");
     network_bluetooth_uuid_print(print, &self->service_id.id.uuid);
-    mp_printf(print, ")");
+    mp_printf(print, ", handle = %04X)", self->handle);
 }
 
 STATIC void network_bluetooth_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
