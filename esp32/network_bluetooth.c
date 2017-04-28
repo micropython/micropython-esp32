@@ -1526,8 +1526,10 @@ STATIC void network_bluetooth_gatts_event_handler(
                     cbdata.read.trans_id    = param->read.trans_id;
                     cbdata.read.need_rsp    = event == ESP_GATTS_READ_EVT || (event == ESP_GATTS_WRITE_EVT && param->write.need_rsp);
                     cbdata.write.value_len  = param->write.len;  
-                    // FIXME -- is m_malloc gonna work here?
+
+                    MP_THREAD_GIL_ENTER();
                     cbdata.write.value      = m_malloc(param->write.len); // Returns NULL when len == 0
+                    MP_THREAD_GIL_EXIT();
 
 
 
@@ -1615,7 +1617,9 @@ STATIC void network_bluetooth_gap_event_handler(
                             adv_name = esp_ble_resolve_adv_data(param->scan_rst.ble_adv, ESP_BLE_AD_TYPE_NAME_CMPL, &adv_name_len);
 
                             memcpy(cbdata.scan_data.bda, param->scan_rst.bda, ESP_BD_ADDR_LEN);
+                            MP_THREAD_GIL_ENTER();
                             cbdata.scan_data.adv_data = m_malloc(adv_name_len);
+                            MP_THREAD_GIL_EXIT();
                             cbdata.scan_data.adv_data_len = adv_name_len;
                             cbdata.event = NETWORK_BLUETOOTH_SCAN_DATA;
                             if (adv_name_len > 0) {
@@ -1645,6 +1649,7 @@ STATIC void network_bluetooth_gap_event_handler(
                     assert(cbq_push(&cbdata) == true);
                     CALLBACK_QUEUE_END();
                     NETWORK_BLUETOOTH_DEBUG_PRINTF("<< gap append\n");
+                    mp_sched_schedule(MP_OBJ_FROM_PTR(&network_bluetooth_callback_queue_handler_obj), MP_OBJ_NULL);
                 }
             }
             break;
@@ -2109,7 +2114,10 @@ STATIC mp_obj_t network_bluetooth_callback_helper(mp_obj_t* callback, mp_obj_t* 
 
 
 STATIC mp_obj_t network_bluetooth_scan_start(mp_obj_t self_in, mp_obj_t timeout_arg) {
-    (void)self_in;
+    network_bluetooth_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    if (self->scanning) {
+        mp_raise_msg(&mp_type_OSError, "already scanning");
+    }
     mp_int_t timeout = mp_obj_get_int(timeout_arg);
 
     static esp_ble_scan_params_t params = {
@@ -2312,9 +2320,10 @@ STATIC void network_bluetooth_service_attr(mp_obj_t self_in, qstr attr, mp_obj_t
         if (dest[0] == MP_OBJ_NULL) {
             switch(attr) {
                 case MP_QSTR_Char:
-                    dest[0] = mp_obj_new_bound_meth(MP_OBJ_FROM_PTR(&network_bluetooth_characteristic_make_new_obj), self);
-
+                    dest[0] = MP_OBJ_FROM_PTR(&network_bluetooth_characteristic_make_new_obj);
+                    dest[1] = self;
                     break;
+
                 case MP_QSTR_chars:
                     dest[0] = self->chars;
                     break;
@@ -2329,10 +2338,19 @@ STATIC void network_bluetooth_attr(mp_obj_t self_in, qstr attr, mp_obj_t *dest) 
 
     if (!check_locals_dict(self, attr, dest)) {
         switch(attr) {
+            case MP_QSTR_is_scanning:
+                if (dest[0] == MP_OBJ_NULL) {
+                    dest[0] = self->scanning ? mp_const_true : mp_const_false;
+                } else {
+                    dest[0] = MP_OBJ_NULL;
+                }
+                break;
             case MP_QSTR_services:
                 if (dest[0] == MP_OBJ_NULL) {  // load
                     dest[0] = self->services;
-                } 
+                } else {
+                    dest[0] = MP_OBJ_NULL;
+                }
                 break;
         }
     }
