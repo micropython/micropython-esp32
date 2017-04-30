@@ -62,6 +62,7 @@ SemaphoreHandle_t callback_queue_mut;
 SemaphoreHandle_t find_item_mut;
 
 
+#define MP_OBJ_IS_BT_DATATYPE(O) (MP_OBJ_IS_STR_OR_BYTES(O) || MP_OBJ_IS_TYPE(O, &mp_type_bytearray) || (O == mp_const_none))
 
 #define NETWORK_BLUETOOTH_DEBUG_PRINTF(args...) printf(args)
 
@@ -1391,7 +1392,7 @@ NETWORK_BLUETOOTH_CALLBACK_QUEUE_HANDLER_CHAR_FOUND:
                         mp_buffer_info_t buf;
                         memset(&buf, 0, sizeof(mp_buffer_info_t));
 
-                        if(MP_OBJ_IS_STR_OR_BYTES(value)) {
+                        if(MP_OBJ_IS_BT_DATATYPE(value)) {
                             mp_get_buffer(value, &buf, MP_BUFFER_READ);
                         } 
 
@@ -2201,20 +2202,20 @@ mp_obj_t network_bluetooth_service_make_new(const mp_obj_type_t *type, size_t n_
     return MP_OBJ_FROM_PTR(self);
 }
 
-mp_obj_t network_bluetooth_characteristic_make_new(size_t n_args, const mp_obj_t *pos_args, mp_map_t * kw_args) {
+STATIC mp_obj_t network_bluetooth_characteristic_make_new(size_t n_args, const mp_obj_t *pos_args, mp_map_t * kw_args) {
     NETWORK_BLUETOOTH_DEBUG_PRINTF("network_bluetooth_characteristic_make_new()\n");
 
-    enum {ARG_service, ARG_uuid, ARG_value, ARG_perm, ARG_prop};
+    enum {ARG_uuid, ARG_value, ARG_perm, ARG_prop};
     static const mp_arg_t allowed_args[] = {
-        { MP_QSTR_service,  MP_ARG_REQUIRED | MP_ARG_OBJ },
         { MP_QSTR_uuid,     MP_ARG_REQUIRED | MP_ARG_OBJ },
         { MP_QSTR_value,    MP_ARG_OBJ, {.u_obj = mp_const_none }},
         { MP_QSTR_perm,     MP_ARG_INT, {.u_int = ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE } },
         { MP_QSTR_prop,     MP_ARG_INT, {.u_int = ESP_GATT_CHAR_PROP_BIT_READ | ESP_GATT_CHAR_PROP_BIT_WRITE | ESP_GATT_CHAR_PROP_BIT_NOTIFY} },
     };
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
-    mp_arg_parse_all(2, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
-    network_bluetooth_service_obj_t* service = (network_bluetooth_service_obj_t*)args[ARG_service].u_obj;
+    network_bluetooth_service_obj_t* service = MP_OBJ_TO_PTR(pos_args[0]);
+
+    mp_arg_parse_all(n_args - 1, pos_args + 1, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
     esp_bt_uuid_t uuid;
     parse_uuid(args[ARG_uuid].u_obj, &uuid);
@@ -2229,8 +2230,8 @@ mp_obj_t network_bluetooth_characteristic_make_new(size_t n_args, const mp_obj_t
     self->base.type = &network_bluetooth_characteristic_type;
 
     NETWORK_BLUETOOTH_DEBUG_PRINTF("Making a new char object %p\n", self);
-    if (args[ARG_value].u_obj != mp_const_none && !MP_OBJ_IS_STR_OR_BYTES(args[ARG_value].u_obj)) {
-        mp_raise_ValueError("value must be string, bytearray or None");
+    if (!MP_OBJ_IS_BT_DATATYPE(args[ARG_value].u_obj)) {
+        mp_raise_ValueError("value must be str, bytes, bytearray, or None");
     }
 
     self->callback = mp_const_none;
@@ -2245,7 +2246,7 @@ mp_obj_t network_bluetooth_characteristic_make_new(size_t n_args, const mp_obj_t
     return MP_OBJ_FROM_PTR(self);
 }
 
-STATIC MP_DEFINE_CONST_FUN_OBJ_KW(network_bluetooth_characteristic_make_new_obj, 2, network_bluetooth_characteristic_make_new);
+STATIC MP_DEFINE_CONST_FUN_OBJ_KW(network_bluetooth_characteristic_make_new_obj, 1, network_bluetooth_characteristic_make_new);
 
 
 STATIC mp_obj_t network_bluetooth_service_start(mp_obj_t self_in) {
@@ -2301,8 +2302,8 @@ STATIC void network_bluetooth_char_attr(mp_obj_t self_in, qstr attr, mp_obj_t *d
                 if (dest[0] == MP_OBJ_NULL) {  // load
                     dest[0] = self->value;
                 }  else if (dest[1] != MP_OBJ_NULL) { // store
-                    if (!MP_OBJ_IS_STR_OR_BYTES(dest[1])) {
-                        mp_raise_ValueError("value must be bytearray or string");
+                    if (!MP_OBJ_IS_BT_DATATYPE(dest[1])) {
+                        mp_raise_ValueError("value must be string, bytes, bytearray, or None");
                     }
                     self->value = dest[1];
                     dest[0] = MP_OBJ_NULL;
