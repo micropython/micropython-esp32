@@ -59,7 +59,7 @@ const mp_obj_type_t network_bluetooth_service_type;
 const mp_obj_type_t network_bluetooth_characteristic_type;
 
 SemaphoreHandle_t callback_queue_mut;
-SemaphoreHandle_t find_item_mut;
+SemaphoreHandle_t item_mut;
 
 
 #define MP_OBJ_IS_BT_DATATYPE(O) (MP_OBJ_IS_STR_OR_BYTES(O) || MP_OBJ_IS_TYPE(O, &mp_type_bytearray) || (O == mp_const_none))
@@ -76,8 +76,8 @@ SemaphoreHandle_t find_item_mut;
     xSemaphoreGive(callback_queue_mut); \
     NETWORK_BLUETOOTH_DEBUG_PRINTF(">> cbQ Give\n");
 
-#define FIND_ITEM_BEGIN() assert(xSemaphoreTake(find_item_mut, portMAX_DELAY) == pdTRUE)
-#define FIND_ITEM_END() xSemaphoreGive(find_item_mut)
+#define ITEM_BEGIN() assert(xSemaphoreTake(item_mut, portMAX_DELAY) == pdTRUE)
+#define ITEM_END() xSemaphoreGive(item_mut)
 
 // CONSTANTS
 
@@ -185,7 +185,6 @@ typedef struct {
 
     mp_obj_t chars;  // list
     bool started;
-    bool closed;
 
 } network_bluetooth_service_obj_t; 
 
@@ -339,12 +338,13 @@ STATIC void network_bluetooth_uuid_print(const mp_print_t *print, esp_bt_uuid_t*
 typedef enum {
     NETWORK_BLUETOOTH_FIND_SERVICE,
     NETWORK_BLUETOOTH_FIND_CHAR,
-} item_type_t;
+    NETWORK_BLUETOOTH_DEL_SERVICE,
+} item_op_t;
 
 
-STATIC mp_obj_t network_bluetooth_find_item(mp_obj_t list, esp_bt_uuid_t* uuid, uint16_t handle, item_type_t kind) {
+STATIC mp_obj_t network_bluetooth_item_op(mp_obj_t list, esp_bt_uuid_t* uuid, uint16_t handle, item_op_t kind) {
 
-    FIND_ITEM_BEGIN();
+    ITEM_BEGIN();
     mp_obj_t ret = MP_OBJ_NULL;
     size_t len;
     mp_obj_t *items;
@@ -352,11 +352,17 @@ STATIC mp_obj_t network_bluetooth_find_item(mp_obj_t list, esp_bt_uuid_t* uuid, 
     for(int i = 0; i < len; i++) {
         switch(kind) {
             case NETWORK_BLUETOOTH_FIND_SERVICE: 
+            case NETWORK_BLUETOOTH_DEL_SERVICE:
                 {
                     network_bluetooth_service_obj_t* service = (network_bluetooth_service_obj_t*) items[i];
                     if ((uuid != NULL && uuid_eq(&service->service_id.id.uuid, uuid)) || (uuid == NULL && service->handle == handle)) {
                         ret = service;
-                        goto NETWORK_BLUETOOTH_FIND_ITEM_END;
+                        if (kind == NETWORK_BLUETOOTH_DEL_SERVICE) {
+                            // a bit ineffecient, but
+                            // list_pop() is static
+                            mp_obj_list_remove(list, ret);
+                        }
+                        goto NETWORK_BLUETOOTH_ITEM_END;
                     }
                 }
                 break;
@@ -366,14 +372,14 @@ STATIC mp_obj_t network_bluetooth_find_item(mp_obj_t list, esp_bt_uuid_t* uuid, 
                     network_bluetooth_char_obj_t* chr = (network_bluetooth_char_obj_t*) items[i];
                     if ((uuid != NULL && uuid_eq(&chr->uuid, uuid)) || (uuid == NULL && chr->handle == handle)) {
                         ret = chr;
-                        goto NETWORK_BLUETOOTH_FIND_ITEM_END;
+                        goto NETWORK_BLUETOOTH_ITEM_END;
                     }                     
                 }
                 break;
         }
     }
-NETWORK_BLUETOOTH_FIND_ITEM_END:
-    FIND_ITEM_END();
+NETWORK_BLUETOOTH_ITEM_END:
+    ITEM_END();
     return ret;
 }
 
@@ -1367,7 +1373,7 @@ STATIC mp_obj_t network_bluetooth_callback_queue_handler (mp_obj_t arg) {
                 mp_obj_get_array(bluetooth->services, &service_len, &service_items);
                 for(int j = 0; j < service_len; j++) {
                     network_bluetooth_service_obj_t* service = (network_bluetooth_service_obj_t*) service_items[j];
-                    self = network_bluetooth_find_item(service->chars, NULL, cbdata.read.handle, NETWORK_BLUETOOTH_FIND_CHAR);
+                    self = network_bluetooth_item_op(service->chars, NULL, cbdata.read.handle, NETWORK_BLUETOOTH_FIND_CHAR);
                     if (self != MP_OBJ_NULL) {
                         goto NETWORK_BLUETOOTH_CALLBACK_QUEUE_HANDLER_CHAR_FOUND;
                     }
@@ -1468,7 +1474,7 @@ STATIC void network_bluetooth_gatts_event_handler(
 
         case ESP_GATTS_CREATE_EVT:
             {
-                network_bluetooth_service_obj_t* service = network_bluetooth_find_item(bluetooth->services, &param->create.service_id.id.uuid, 0, NETWORK_BLUETOOTH_FIND_SERVICE);
+                network_bluetooth_service_obj_t* service = network_bluetooth_item_op(bluetooth->services, &param->create.service_id.id.uuid, 0, NETWORK_BLUETOOTH_FIND_SERVICE);
 
                 if (service != MP_OBJ_NULL) {
                     service->handle = param->create.service_handle;
@@ -1481,28 +1487,43 @@ STATIC void network_bluetooth_gatts_event_handler(
 
 
         case ESP_GATTS_START_EVT:
+        case ESP_GATTS_STOP_EVT:
             {
-                network_bluetooth_service_obj_t* service = network_bluetooth_find_item(bluetooth->services, NULL, param->start.service_handle, NETWORK_BLUETOOTH_FIND_SERVICE);
-
-                if (service != MP_OBJ_NULL) {
-                    size_t len;
-                    mp_obj_t *items;
-                    mp_obj_get_array(service->chars, &len, &items);
-
-                    for (int i = 0; i < len; i++) {
-                        network_bluetooth_char_obj_t* chr = (network_bluetooth_char_obj_t*) items[i];
-                        esp_ble_gatts_add_char(service->handle, &chr->uuid, chr->perm, chr->prop, NULL, NULL);
-                    }
+                network_bluetooth_service_obj_t* service = network_bluetooth_item_op(bluetooth->services, NULL, param->start.service_handle, NETWORK_BLUETOOTH_FIND_SERVICE);
+                if (service == MP_OBJ_NULL) {
+                    break;
                 }
-            }
 
+                switch(event) {
+                    case ESP_GATTS_START_EVT:
+                        service->started = true;
+
+                        size_t len;
+                        mp_obj_t *items;
+                        mp_obj_get_array(service->chars, &len, &items);
+
+                        for (int i = 0; i < len; i++) {
+                            network_bluetooth_char_obj_t* chr = (network_bluetooth_char_obj_t*) items[i];
+                            esp_ble_gatts_add_char(service->handle, &chr->uuid, chr->perm, chr->prop, NULL, NULL);
+                        }
+                        break;
+                    case ESP_GATTS_STOP_EVT:
+                        service->started = false;
+                        esp_ble_gatts_delete_service(service->handle);
+                        break;
+                    default:
+                        // Nothing, intentionally
+                        break;
+                }
+
+            }
             break;
 
         case ESP_GATTS_ADD_CHAR_EVT:
             {
-                network_bluetooth_service_obj_t* service = network_bluetooth_find_item(bluetooth->services, NULL, param->add_char.service_handle, NETWORK_BLUETOOTH_FIND_SERVICE);
+                network_bluetooth_service_obj_t* service = network_bluetooth_item_op(bluetooth->services, NULL, param->add_char.service_handle, NETWORK_BLUETOOTH_FIND_SERVICE);
                 if (service != MP_OBJ_NULL) {
-                    network_bluetooth_char_obj_t* chr = network_bluetooth_find_item(service->chars, &param->add_char.char_uuid, 0, NETWORK_BLUETOOTH_FIND_CHAR);
+                    network_bluetooth_char_obj_t* chr = network_bluetooth_item_op(service->chars, &param->add_char.char_uuid, 0, NETWORK_BLUETOOTH_FIND_CHAR);
                     chr->handle = param->add_char.attr_handle;
                     NETWORK_BLUETOOTH_DEBUG_PRINTF("Setting char handle to %04X, from service handle %04X\n", param->add_char.attr_handle, param->add_char.service_handle);
                 } else { 
@@ -1755,12 +1776,12 @@ STATIC void network_bluetooth_init(mp_obj_t self_in) {
 
     if (callback_queue_mut == NULL) {
         //callback_queue_mut = xSemaphoreCreateBinary();
-        //find_item_mut = xSemaphoreCreateBinary();
+        //item_mut = xSemaphoreCreateBinary();
         callback_queue_mut = xSemaphoreCreateMutex();
-        find_item_mut = xSemaphoreCreateMutex();
+        item_mut = xSemaphoreCreateMutex();
 
         xSemaphoreGive(callback_queue_mut);
-        xSemaphoreGive(find_item_mut);
+        xSemaphoreGive(item_mut);
     }
 
     NETWORK_BLUETOOTH_DEBUG_PRINTF("bluetooth services pointer: %p", self->services);
@@ -2162,7 +2183,7 @@ mp_obj_t network_bluetooth_service_make_new(const mp_obj_type_t *type, size_t n_
 
     esp_bt_uuid_t uuid;
     parse_uuid(args[ARG_uuid].u_obj, &uuid);
-    network_bluetooth_service_obj_t *self = network_bluetooth_find_item(bluetooth->services, &uuid, 0,  NETWORK_BLUETOOTH_FIND_SERVICE);
+    network_bluetooth_service_obj_t *self = network_bluetooth_item_op(bluetooth->services, &uuid, 0,  NETWORK_BLUETOOTH_FIND_SERVICE);
 
     NETWORK_BLUETOOTH_DEBUG_PRINTF("find_service returned %p\n", self);
     if (self != MP_OBJ_NULL) {
@@ -2178,9 +2199,9 @@ mp_obj_t network_bluetooth_service_make_new(const mp_obj_type_t *type, size_t n_
     self->service_id.is_primary = mp_obj_is_true(args[ARG_primary].u_obj);
     self->chars = mp_obj_new_list(0, NULL);
 
-    FIND_ITEM_BEGIN();
+    ITEM_BEGIN();
     mp_obj_list_append(bluetooth->services, MP_OBJ_FROM_PTR(self));
-    FIND_ITEM_END();
+    ITEM_END();
 
     return MP_OBJ_FROM_PTR(self);
 }
@@ -2202,7 +2223,7 @@ STATIC mp_obj_t network_bluetooth_characteristic_make_new(size_t n_args, const m
 
     esp_bt_uuid_t uuid;
     parse_uuid(args[ARG_uuid].u_obj, &uuid);
-    network_bluetooth_char_obj_t *self = network_bluetooth_find_item(service->chars, &uuid, 0, NETWORK_BLUETOOTH_FIND_CHAR);
+    network_bluetooth_char_obj_t *self = network_bluetooth_item_op(service->chars, &uuid, 0, NETWORK_BLUETOOTH_FIND_CHAR);
 
     if (self != MP_OBJ_NULL) {
         NETWORK_BLUETOOTH_DEBUG_PRINTF("Returning extant char for that UUID\n");
@@ -2236,6 +2257,11 @@ STATIC mp_obj_t network_bluetooth_service_start(mp_obj_t self_in) {
     NETWORK_BLUETOOTH_DEBUG_PRINTF("network_bluetooth_service_start()\n");
     network_bluetooth_obj_t* bluetooth = network_bluetooth_get_singleton();
     network_bluetooth_service_obj_t* self = (network_bluetooth_service_obj_t*) self_in;
+
+    if (self->started) {
+        return mp_const_none;
+    }
+
     mp_int_t numChars = mp_obj_get_int(mp_obj_len(self->chars));
     uint32_t then = mp_hal_ticks_ms();
 
@@ -2263,14 +2289,23 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(network_bluetooth_service_start_obj, network_bl
 
 STATIC mp_obj_t network_bluetooth_service_stop(mp_obj_t self_in) {
     NETWORK_BLUETOOTH_DEBUG_PRINTF("network_bluetooth_service_stop()\n");
-    // FIXME
+    network_bluetooth_service_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    if (!self->started || self->handle == 0) {
+        return mp_const_none;
+    }
+    esp_ble_gatts_stop_service(self->handle);
     return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(network_bluetooth_service_stop_obj, network_bluetooth_service_stop);
 
 STATIC mp_obj_t network_bluetooth_service_close(mp_obj_t self_in) {
     NETWORK_BLUETOOTH_DEBUG_PRINTF("network_bluetooth_service_close()\n");
-    // FIXME
+    network_bluetooth_service_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    network_bluetooth_obj_t* bluetooth = network_bluetooth_get_singleton();
+    network_bluetooth_item_op(bluetooth->services, &self->service_id.id.uuid, 0, NETWORK_BLUETOOTH_DEL_SERVICE);
+    if (self->handle != 0) {
+        esp_ble_gatts_delete_service(self->handle);
+    }
     return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(network_bluetooth_service_close_obj, network_bluetooth_service_close);

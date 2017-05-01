@@ -1,0 +1,151 @@
+
+
+### Start the BT stack
+```python
+import network
+b = network.Bluetooth()
+```
+
+### Services & Characteristics
+
+
+###### Service constructor
+```python
+service = b.Service(uuid, primary = True)
+```
+
+Services with the same UUID are the same object.  Constructing a second
+service with the same UUID will return the same service object. The exception
+are services that have been closed (via the `.close()` method) -- this
+deallocates the service from the BLE stack.
+
+###### Characteristic constructor
+```python
+char service.Char(uuid, value = None, permissions = b.PERM_READ | b.PERM_WRITE, properties = b.PROP_READ | b.PROP_WRITE | b.PROP_NOTIFY)
+```
+
+Characteristics are associated with services.
+
+###### Start or stop service
+```python
+service.start()
+
+# stuff
+service.stop()
+
+# services can be restarted:
+service.start()
+
+```
+
+###### Closing a service
+```python
+service.close() # Will call stop()
+
+service.start() # Runtime error; service is no longer usable
+```
+
+Closed service objects are completely "forgotten" by the BLE stack, you
+needn't keep reference. You will no longer receive callbacks characteristics attached to the service.
+
+###### Get a list of current services
+```python
+currentServices = b.services()
+```
+
+###### Get a list of service characteristics
+```python
+chars = service.chars()
+```
+
+
+### Callbacks
+
+##### Bluetooth Callback
+
+```python
+def bt_callback(btObj, event, data, userdata):
+    print ("Bluetooth object", btObj)
+    if event == btObj.CONNECTED:
+        print ("connected")
+    if event == btObj.DISCONNECTED:
+        print ("disconnected")
+
+
+Bluetooth.callback(bt_callback, "hello")
+```
+
+`Bluetooth.callback` takes two parameters: The callback function itself, and an optional userdata value to be passed in on callbacks. It returns the current callback function and usedata as tuple.
+
+`cb_function` can be None, which disables callbacks. `cb_function` is called with four parameters; the bluetooth object, event, event data, and the userdata.
+
+Event values:
+* `Bluetooth.CONNECT` Data param is remote addr
+* `Bluetooth.DISCONNECT`
+* `Bluetooth.SCAN_RES` Scan data
+* `Bluetooth.SCAN_CMPL` Scan complete
+
+##### Characteristic Callbacks
+
+```python
+def char_callback(charObj, event, value, userdata):
+    print ("Char object", charObj)
+    if event == btObj.CONNECT:
+        print ("connected")
+    if event == btObj.DISCONNECT:
+        print ("disconnected")
+
+Char.callback(cb_function, userdata)
+```
+
+`Char.callback` takes two parameters: The callback function itself, and an optional userdata value to be passed in on callbacks. It returns the current callback function and userdata as tuple.
+
+`cb_function` can be None, which disables callbacks. `cb_function` is called with four parameters; the characteristic object, the event type, the event value (the sent value for `WRITE` or the current characteristic value for `READ`), and userdata.
+
+The event type will be one of `Bluetooth.READ` or `Bluetooth.WRITE`.
+
+Characteristics have an internal value, which is _not_ used and _not_ updated when there is a callback, though the callback is free to update or use the value as it sees fit.  For `READ` operations (or `WRITE` operations that require a return value) the return value of the callback is sent, which must be a `bytearray`, `str`, or `None`.
+
+###### Value behavior without a callback
+
+If there is no callback defined for a characteristic, it's internal value will be used for `READ` or `WRITE` events, and `WRITE` events that expect a response will simply return the just-written value.
+
+
+
+
+### Advertising
+##### BLE settings
+
+```python
+b.ble_settings(
+    int_min = 1280,
+    int_max = 1280,
+    type b.ADV_TYPE_IND,
+    own_addr_type = b.BLE_ADDR_TYPE_PUBLIC,
+    peer_addr = bytearray([0 for x in range(6)]),
+    peer_addr_type = b.BLE_ADDR_TYPE_PUBLIC,
+    channel_map = b.ADV_CHNL_ALL,
+    filter_policy = b.ADV_FILTER_ALLOW_SCAN_ANY_CON_ANY,
+    adv_is_scan_rsp = False,
+    adv_dev_name = None,
+    adv_man_name = None,
+    adv_inc_txpower = False,
+    adv_int_min = 1280,
+    adv_int_max = 1280,
+    adv_appearance = 0,
+    adv_uuid = None,
+    adv_flags = 0)
+
+b.adv_enable(True)
+```
+
+### Scanning
+
+###### Scan start:
+
+Advertising and scanning cannot be run at the same time
+
+`Bluetooth.scan_start(timeout)`
+
+###### Scan stop:
+`Bluetooth.scan_stop()`
