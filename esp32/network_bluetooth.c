@@ -2157,6 +2157,36 @@ STATIC mp_obj_t network_bluetooth_char_callback(size_t n_args, const mp_obj_t *a
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(network_bluetooth_char_callback_obj, 1, 3, network_bluetooth_char_callback);
 
+STATIC mp_obj_t network_bluetooth_char_indicate(size_t n_args, const mp_obj_t *pos_args, mp_map_t * kw_args) {
+    NETWORK_BLUETOOTH_DEBUG_PRINTF("network_bluetooth_char_indicate()\n");
+    network_bluetooth_obj_t *bluetooth = network_bluetooth_get_singleton();
+    network_bluetooth_char_obj_t* self = MP_OBJ_TO_PTR(pos_args[0]);
+
+    enum {ARG_value, ARG_need_confirm};
+    static const mp_arg_t allowed_args[] = {
+        { MP_QSTR_value,        MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL }},
+        { MP_QSTR_need_confirm, MP_ARG_BOOL, { .u_bool = false } },
+    };
+    mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
+
+    mp_arg_parse_all(n_args - 1, pos_args + 1, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
+
+    if (args[ARG_value].u_obj != MP_OBJ_NULL) {
+        if (!MP_OBJ_IS_BT_DATATYPE(args[ARG_value].u_obj)) {
+            mp_raise_ValueError("value must be string, bytes, bytearray, or None");
+        } 
+    } else {
+        args[ARG_value].u_obj = self->value;
+    }
+
+    NETWORK_BLUETOOTH_DEBUG_PRINTF("need confirmations: %s\n", args[ARG_need_confirm].u_bool ? "True" : "False");
+    mp_buffer_info_t buf;
+    mp_get_buffer(args[ARG_value].u_obj, &buf, MP_BUFFER_READ);
+    esp_ble_gatts_send_indicate(bluetooth->interface, bluetooth->conn_id, self->handle, buf.len, buf.buf, args[ARG_need_confirm].u_bool);
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_KW(network_bluetooth_char_indicate_obj, 1, network_bluetooth_char_indicate);
+
 STATIC mp_obj_t network_bluetooth_make_new(const mp_obj_type_t *type_in, size_t n_args, size_t n_kw, const mp_obj_t *all_args) { 
     network_bluetooth_obj_t *self = network_bluetooth_get_singleton();
     NETWORK_BLUETOOTH_DEBUG_PRINTF("Entering network_bluetooth_make_new, self = %p, n_args = %d, n_kw = %d\n", self, n_args, n_kw );
@@ -2309,7 +2339,6 @@ STATIC mp_obj_t network_bluetooth_service_close(mp_obj_t self_in) {
     return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(network_bluetooth_service_close_obj, network_bluetooth_service_close);
-
 // char attribute handler
 STATIC void network_bluetooth_char_attr(mp_obj_t self_in, qstr attr, mp_obj_t *dest) {
     network_bluetooth_char_obj_t* self = (network_bluetooth_char_obj_t*) self_in;
@@ -2497,6 +2526,7 @@ const mp_obj_type_t network_bluetooth_service_type = {
 
 STATIC const mp_rom_map_elem_t network_bluetooth_characteristic_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_callback), MP_ROM_PTR(&network_bluetooth_char_callback_obj) },
+    { MP_ROM_QSTR(MP_QSTR_indicate), MP_ROM_PTR(&network_bluetooth_char_indicate_obj) },
     { MP_ROM_QSTR(MP_QSTR_value), NULL }, // handled by attr handler
 };
 
