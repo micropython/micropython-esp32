@@ -1526,41 +1526,24 @@ STATIC void network_bluetooth_gatts_event_handler(
                     cbdata.read.conn_id     = param->read.conn_id;
                     cbdata.read.trans_id    = param->read.trans_id;
                     cbdata.read.need_rsp    = event == ESP_GATTS_READ_EVT || (event == ESP_GATTS_WRITE_EVT && param->write.need_rsp);
-                    cbdata.write.value_len  = param->write.len;  
-
-                    MP_THREAD_GIL_ENTER();
-                    cbdata.write.value      = m_malloc(param->write.len); // Returns NULL when len == 0
-                    MP_THREAD_GIL_EXIT();
-
-
-
-                    /*
-                       mp_obj_t rw_args[] = {
-                       MP_OBJ_NEW_SMALL_INT(event == ESP_GATTS_READ_EVT ? NETWORK_BLUETOOTH_READ : NETWORK_BLUETOOTH_WRITE ), 
-                       MP_OBJ_NEW_SMALL_INT(param->read.handle), 
-                       event == ESP_GATTS_WRITE_EVT ? mp_obj_new_bytearray(param->write.len, param->write.value) : MP_OBJ_NULL,
-                       mp_obj_new_int(param->read.conn_id),
-                       mp_obj_new_int(param->read.trans_id),
-                       event == ESP_GATTS_READ_EVT || (event == ESP_GATTS_WRITE_EVT && param->write.need_rsp) ? mp_const_true : mp_const_false};
-                       args = mp_obj_new_list(MP_ARRAY_SIZE(rw_args), rw_args);
-                       */
-
+                    if (event == ESP_GATTS_WRITE_EVT) {
+                        NETWORK_BLUETOOTH_DEBUG_PRINTF("Write param len: %d, data: '%*s'\n", param->write.len, param->write.len, param->write.value );
+                        MP_THREAD_GIL_ENTER();
+                        cbdata.write.value = m_malloc(param->write.len); // Returns NULL when len == 0
+                        MP_THREAD_GIL_EXIT();
+                        if (cbdata.write.value != NULL) {
+                            cbdata.write.value_len  = param->write.len;  
+                            memcpy(cbdata.write.value, param->write.value, param->write.len);
+                        } else {
+                            cbdata.write.value_len  = 0;  
+                        }
+                    }
                 } else if (event == ESP_GATTS_CONNECT_EVT || event == ESP_GATTS_DISCONNECT_EVT) {
-
-
-
                     cbdata.event = event == ESP_GATTS_CONNECT_EVT ? NETWORK_BLUETOOTH_CONNECT : NETWORK_BLUETOOTH_DISCONNECT;
                     cbdata.connect.conn_id = param->connect.conn_id;
                     memcpy(cbdata.connect.bda, param->connect.remote_bda, ESP_BD_ADDR_LEN);
                     bluetooth->conn_id = param->connect.conn_id;
                     bluetooth->gatts_connected = event == ESP_GATTS_CONNECT_EVT;
-
-                    /*
-                       mp_obj_t cd_args [] = {
-                       MP_OBJ_NEW_SMALL_INT(event == ESP_GATTS_CONNECT_EVT ? NETWORK_BLUETOOTH_CONNECT : NETWORK_BLUETOOTH_DISCONNECT),
-                       mp_obj_new_bytearray(sizeof(param->connect.remote_bda), &param->connect.remote_bda), };
-                       args = mp_obj_new_list(MP_ARRAY_SIZE(cd_args), cd_args);
-                       */
                 }
 
 
