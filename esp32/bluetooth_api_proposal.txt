@@ -130,7 +130,7 @@ b.ble_settings(
     adv_is_scan_rsp = False,
     adv_dev_name = None,
     adv_man_name = None,
-    adv_inc_txpower = False,
+    adv_inc_tx_power = False,
     adv_int_min = 1280,
     adv_int_max = 1280,
     adv_appearance = 0,
