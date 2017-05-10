@@ -2154,7 +2154,7 @@ STATIC void network_bluetooth_characteristic_print(const mp_print_t *print, mp_o
 STATIC void network_bluetooth_connection_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
 
     network_bluetooth_connection_obj_t *connection = MP_OBJ_TO_PTR(self_in);
-    mp_printf(print, "Connection(bda = ");
+    mp_printf(print, "GATTCConn(bda = ");
     network_bluetooth_print_bda(print, connection->bda);
     mp_printf(print, ", connected = %s", connection->conn_id == -1 ? "False" : "True");
     mp_printf(print, ")");
@@ -2390,7 +2390,7 @@ STATIC mp_obj_t network_bluetooth_ble_settings(size_t n_args, const mp_obj_t *po
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_int_min,              MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = -1} },
         { MP_QSTR_int_max,              MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = -1} },
-        { MP_QSTR_type,                 MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = -1 }},
+        { MP_QSTR_adv_type,             MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = -1 }},
         { MP_QSTR_own_addr_type,        MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = -1 }},
         { MP_QSTR_peer_addr,            MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = NULL }},
         { MP_QSTR_peer_addr_type,       MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = -1 }},
@@ -3202,6 +3202,14 @@ STATIC void network_bluetooth_service_attr(mp_obj_t self_in, qstr attr, mp_obj_t
                     dest[0] = self->chars;
                     break;
 
+                case MP_QSTR_uuid:
+                    {
+                        esp_bt_uuid_t uuid128;
+                        uuid_to_uuid128(&self->service_id.id.uuid, &uuid128);
+                        dest[0] = mp_obj_new_bytearray(uuid128.len, uuid128.uuid.uuid128);
+                    }
+                    break;
+
                 case MP_QSTR_is_primary:
                     dest[0] = self->service_id.is_primary ? mp_const_true : mp_const_false ;
                     break;
@@ -3335,6 +3343,15 @@ STATIC const mp_rom_map_elem_t network_bluetooth_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_ADV_CHNL_38),                 MP_ROM_INT(ADV_CHNL_38) },
     { MP_ROM_QSTR(MP_QSTR_ADV_CHNL_39),                 MP_ROM_INT(ADV_CHNL_39) },
     { MP_ROM_QSTR(MP_QSTR_ADV_CHNL_ALL),                MP_ROM_INT(ADV_CHNL_ALL) },
+    
+ // BLE_ADV_DATA_FLAG
+
+    { MP_ROM_QSTR(MP_QSTR_BLE_ADV_FLAG_LIMIT_DISC),         MP_ROM_INT(ESP_BLE_ADV_FLAG_LIMIT_DISC) },
+    { MP_ROM_QSTR(MP_QSTR_BLE_ADV_FLAG_GEN_DISC),           MP_ROM_INT(ESP_BLE_ADV_FLAG_GEN_DISC) },
+    { MP_ROM_QSTR(MP_QSTR_BLE_ADV_FLAG_BREDR_NOT_SPT),      MP_ROM_INT(ESP_BLE_ADV_FLAG_BREDR_NOT_SPT) },
+    { MP_ROM_QSTR(MP_QSTR_BLE_ADV_FLAG_DMT_CONTROLLER_SPT), MP_ROM_INT(ESP_BLE_ADV_FLAG_DMT_CONTROLLER_SPT) },
+    { MP_ROM_QSTR(MP_QSTR_BLE_ADV_FLAG_DMT_HOST_SPT),       MP_ROM_INT(ESP_BLE_ADV_FLAG_DMT_HOST_SPT) },
+    { MP_ROM_QSTR(MP_QSTR_BLE_ADV_FLAG_NON_LIMIT_DISC),     MP_ROM_INT(ESP_BLE_ADV_FLAG_NON_LIMIT_DISC) },
 
     // exp_gatt_perm_t
     { MP_ROM_QSTR(MP_QSTR_PERM_READ),                   MP_ROM_INT(ESP_GATT_PERM_READ) },
@@ -3394,7 +3411,7 @@ STATIC MP_DEFINE_CONST_DICT(network_bluetooth_connection_locals_dict, network_bl
 
 const mp_obj_type_t network_bluetooth_connection_type = {
     { &mp_type_type },
-    .name = MP_QSTR_Connection,
+    .name = MP_QSTR_GATTCConn,
     .print = network_bluetooth_connection_print,
     //.make_new = network_bluetooth_service_make_new,
     .locals_dict = (mp_obj_dict_t*)&network_bluetooth_connection_locals_dict,
