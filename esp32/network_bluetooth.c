@@ -2259,54 +2259,31 @@ STATIC mp_obj_t network_bluetooth_init(mp_obj_t self_in) {
         esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
         esp_bt_controller_init(&bt_cfg);
 
-        switch (esp_bt_controller_enable(ESP_BT_MODE_BTDM)) {
-            case ESP_OK:
-                break;
-            default:
+        if (esp_bt_controller_enable(ESP_BT_MODE_BTDM) != ESP_OK) {
                 mp_raise_msg(&mp_type_OSError, "esp_bt_controller_enable() failed");
-                break;
         }
 
-        switch (esp_bluedroid_init()) {
-            case ESP_OK:
-                break;
-            default:
+        if (esp_bluedroid_init() != ESP_OK) {
                 mp_raise_msg(&mp_type_OSError, "esp_bluedroid_init() failed");
-                break;
-
         }
-        switch (esp_bluedroid_enable()) {
-            case ESP_OK:
-                break;
-            default:
+
+        if (esp_bluedroid_enable() != ESP_OK) {
                 mp_raise_msg(&mp_type_OSError, "esp_bluedroid_enable() failed");
-                break;
         }
 
         esp_ble_gatts_register_callback(network_bluetooth_gatts_event_handler);
         esp_ble_gattc_register_callback(network_bluetooth_gattc_event_handler);
         esp_ble_gap_register_callback(network_bluetooth_gap_event_handler);
 
-        // FIXME, this is hardcoded
-        switch (esp_ble_gatts_app_register(0)) {
-            case ESP_OK:
-                break;
-
-            default:
+        if (esp_ble_gatts_app_register(0) != ESP_OK) {
                 mp_raise_msg(&mp_type_OSError, "esp_ble_gatts_app_register() failed");
-                break;
         }
-        // FIXME, this is hardcoded
-        switch (esp_ble_gattc_app_register(1)) {
-            case ESP_OK:
-                break;
-
-            default:
+        
+        if (esp_ble_gattc_app_register(1) != ESP_OK) {
                 mp_raise_msg(&mp_type_OSError, "esp_ble_gattc_app_register() failed");
-                break;
         }
-        self->state = NETWORK_BLUETOOTH_STATE_INIT;
 
+        self->state = NETWORK_BLUETOOTH_STATE_INIT;
     }
     return mp_const_none;
 }
@@ -2621,7 +2598,7 @@ STATIC mp_obj_t network_bluetooth_connect(mp_obj_t self_in, mp_obj_t bda) {
     network_bluetooth_obj_t * bluetooth = (network_bluetooth_obj_t *)self_in;
     mp_buffer_info_t bda_buf = { 0 };
 
-    if (!MP_OBJ_IS_TYPE(bda, &mp_type_bytearray)) {
+    if (!MP_OBJ_IS_BYTEARRAY_OR_BYTES(bda)) {
         goto NETWORK_BLUETOOTH_connect_BAD_ADX;
     }
     mp_get_buffer(bda, &bda_buf, MP_BUFFER_READ);
@@ -3204,28 +3181,16 @@ STATIC mp_obj_t network_bluetooth_deinit(mp_obj_t self_in) {
         }
 
 
-        switch (esp_bluedroid_disable()) {
-            case ESP_OK:
-                break;
-            default:
-                mp_raise_msg(&mp_type_OSError, "esp_bluedroid_disable() failed");
-                break;
-        }
-        switch (esp_bluedroid_deinit()) {
-            case ESP_OK:
-                break;
-            default:
-                mp_raise_msg(&mp_type_OSError, "esp_bluedroid_deinit() failed");
-                break;
-
+        if (esp_bluedroid_disable() != ESP_OK) {
+            mp_raise_msg(&mp_type_OSError, "esp_bluedroid_disable() failed");
         }
 
-        switch (esp_bt_controller_disable(ESP_BT_MODE_BTDM)) {
-            case ESP_OK:
-                break;
-            default:
-                mp_raise_msg(&mp_type_OSError, "esp_bt_controller_disable(ESP_BT_MODE_BTDM) failed");
-                break;
+        if (esp_bluedroid_deinit() != ESP_OK) {
+            mp_raise_msg(&mp_type_OSError, "esp_bluedroid_deinit() failed");
+        }
+
+        if (esp_bt_controller_disable(ESP_BT_MODE_BTDM) != ESP_OK) {
+            mp_raise_msg(&mp_type_OSError, "esp_bt_controller_disable(ESP_BT_MODE_BTDM) failed");
         }
     }
 
