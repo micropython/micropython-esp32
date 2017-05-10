@@ -31,7 +31,7 @@ Note that these defaults are set when you create the Bluetooth object.  You need
 bluetooth.ble_settings(int_min = 1280, int_max = 1280,
     adv_type = bluetooth.ADV_TYPE_IND,
     own_addr_type = bluetooth.BLE_ADDR_TYPE_PUBLIC,
-    peer_addr = bytearray([0] * 6)), a
+    peer_addr = bytes([0] * 6), 
     peer_addr_type = bluetooth.BLE_ADDR_TYPE_PUBLIC,
     channel_map = bluetooth.ADV_CHNL_ALL,
     filter_policy = blueooth.ADV_FILTER_ALLOW_SCAN_ANY_CON_ANY,
@@ -60,7 +60,7 @@ bluetooth.ble_settings(int_min = 1280, int_max = 1280,
 * `bluetooth.BLE_ADDR_TYPE_RPA_PUBLIC`
 * `bluetooth.BLE_ADDR_TYPE_RPA_RANDOM`
 
-`peer_addr` is a `bytearray(6)` or `bytes` representing the peer address.
+`peer_addr` is a `bytes(6)` or `bytearray(6)` representing the peer address.
 
 `channel_map` is a binary OR of:
 
@@ -103,9 +103,9 @@ bluetooth.ble_settings(int_min = 1280, int_max = 1280,
 
 `bluetooth.deinit()` shutdown Bluetooth.  Due to present limitations in the IDF, this does _not_ return the BT stack to a lower powered state.
 
-`bluetooth.connect(bda)` GATTC - connect to a remote GATTS server.  BDA is the remote address, as a `bytearray(6)`.  See [GATTC](#gattc) for more information
+`bluetooth.connect(bda)` GATTC - connect to a remote GATTS server.  BDA is the remote address, as a `bytes(6)`.  See [GATTC](#gattc) for more information
 
-`bluetooth.Service(uuid, is_primary = True)` GATTS - create a new GATTSService object. `uuid` is either an integer or a bytearray(16). UUIDs are globally unique with in GATTS.  If you attempt to create a service with a UUID that is the same as an existing (but not closed) service, you will receive the same service object, and no new service will be created.
+`bluetooth.Service(uuid, is_primary = True)` GATTS - create a new GATTSService object. `uuid` is either an integer or a `bytes(16)`. UUIDs are globally unique with in GATTS.  If you attempt to create a service with a UUID that is the same as an existing (but not closed) service, you will receive the same service object, and no new service will be created.
 
 `bluetooth.services` GATTS - returns the existing GATTS services.
 
@@ -118,7 +118,7 @@ bluetooth.ble_settings(int_min = 1280, int_max = 1280,
     * `bluetooth.SCAN_RES` for GATTC scan results
     * `bluetooth.SCAN_CMPL` when GATTC scan is complete
 3. Event data:
-    * For `bluetooth.CONNECT`, `bluetooth.DISCONNECT` events, this will be a bytearray represeting the remote address.
+    * For `bluetooth.CONNECT`, `bluetooth.DISCONNECT` events, this will be a `bytes(6)` represeting the remote address.
     * For `bluetooth.SCAN_RES` this will be a 2-tuple of `(<remote BDA>, <advertised name>)`
     * For `bluetooth.SCAN_CMPL` this will be `None`.
 4. The `<callback_data` parameter from the `bluetooth.callback()` call.
@@ -128,6 +128,16 @@ bluetooth.ble_settings(int_min = 1280, int_max = 1280,
 `bluetooth.scan_stop()` GATTC - terminate scanning early.  If called before the scan timeout, you will _not_ receive a `bluetooth.SCAN_CMPL` event.
 
 `bluetooth.is_scanning` GATTC - returns `True` if the scan is still active
+
+## GAP
+
+### Start and stop advertising
+
+`bluetooth.adv_enable(True)`
+
+`bluetooth.adv_enable(False)`
+
+When a GATTC connects, advertising ends.  After disconnect, then advertising must be restarted.
 
 ## GATTS
 
@@ -251,165 +261,106 @@ When the callback is called, it will be called with 4 parameters:
 
 `descr.char` Get the [`GATTCChar`](#gattcchar-objects) the descriptor is attached to
 
+## Examples
 
-------------------
+### Heart Rate and GATTS
 
-### GATT Server
+In the example below, this script is meant to be installed as your `boot.py`.  
 
-A GATT server is a device like a heart rate monitor.  A GATT *client* would be a device
-like a smart phone or tablet.
+From the µPy prompt, you can enter `gatts()` to make the ESP32 a gatts server that can then be connected to by a smartphone or PC.
 
-#### GATT Services
-
-
-###### Constructor
-```python
-service = bluetooth.Service(uuid, primary = True)
-```
-
-Services with the same UUID are the same object.  Constructing a second
-service with the same UUID will return the same service object. The exception
-are services that have been closed (via the `.close()` method) -- this
-deallocates the service from the BLE stack.
-
-The only way to remove a service is the `close()` method of service objects.
-
-###### Characteristic constructor
-```python
-char = service.Char(uuid, value = None, permissions = b.PERM_READ | b.PERM_WRITE, properties = b.PROP_READ | b.PROP_WRITE | b.PROP_NOTIFY)
-```
-
-Characteristics are associated with services.
-
-###### Start or stop service
-```python
-service.start()
-
-# stuff
-service.stop()
-
-# services can be restarted:
-service.start()
-
-```
-
-###### Closing a service
-```python
-service.close() # Will call stop()
-
-service.start() # Runtime error; service is no longer usable
-```
-
-Closed service objects are completely "forgotten" by the BLE stack, you
-needn't keep reference. You will no longer receive callbacks characteristics attached to the service.
-
-###### Get a list of current services
-```python
-currentServices = b.services
-```
-
-###### Get a list of service characteristics
-```python
-chars = service.chars
-```
-
-
-### Callbacks
-
-##### Bluetooth Callback
+Alternatively, the `hr(<bda>)` function will connect to a heart rate monitor at address `<bda>`, and configure it to send heartrate notifications; the callback function will then print the heart rate.
 
 ```python
-def bt_callback(btObj, event, data, userdata):
-    print ("Bluetooth object", btObj)
-    if event == btObj.CONNECT:
-        print ("connected")
-    if event == btObj.DISCONNECT:
-        print ("disconnected")
+
+import gc
+import sys
+import network as n
+import gc
+import time
+
+b = n.Bluetooth()
+
+found = {}
+complete = True
+
+def bcb(b,e,d,u):
+    global complete
+    global found
+    if e == b.CONNECT:
+	print("CONNECT")
+    elif e == b.DISCONNECT:
+	print("DISCONNECT")
+    elif e == b.SCAN_RES:
+        if complete:
+            complete = False
+            found = {}
+            
+        adx, name = d
+        if adx not in found:
+            found[adx] = name
+
+    elif e == b.SCAN_CMPL:
+	print("Scan Complete")
+        complete = True
+        print ('\nFinal List:')
+        for adx, name in found.items():
+            print ('Found:' + ':'.join(['%02X' % i for i in adx]), name)
+        onScanComplete()
+    else:
+        print ('Unknown event', e,d)
+
+def cb (cb, event, value, userdata):
+    print('charcb ', cb, userdata, ' ', end='')
+    if event == b.READ:
+        print('Read')
+        return 'ABCDEFG'
+    elif event == b.WRITE:
+        print ('Write', value)
+    elif event == b.NOTIFY:
+        print ('Notify', value)
+        period = None
+        flags = value[0]
+        hr = value[1]
+        if flags & 0x10:
+            period = (value[3] << 8) + value[2]
+        print ('HR:', hr, 'Period:', period, 'ms')
+
+def hr(bda):
+    ''' Will connect to a BLE heartrate monitor, and enable HR notifications '''
+
+    conn = b.connect(bda)
+    while not conn.is_connected:
+        time.sleep(.1)
+
+    time.sleep(2) # Wait for services
+
+    service = ([s for s in conn.services if s.uuid[0:4] == b'\x00\x00\x18\x0d'] + [None])[0]
+    if service:
+        char = ([c for c in service.chars if c.uuid[0:4] == b'\x00\x00\x2a\x37'] + [None])[0]
+        if char: 
+            descr = ([d for d in char.descriptors if d.uuid[0:4] == b'\x00\x00\x29\x02'] + [None])[0]
+            if descr:
+                char.callback(cb)
+                descr.write(b'\x01\x00') # Turn on notify
 
 
-Bluetooth.callback(bt_callback, "hello")
+def gatts():
+    s1 = b.Service(0xaabb)
+    s2 = b.Service(0xDEAD)
+
+    c1 = s1.Char(0xccdd)
+    c2 = s2.Char(0xccdd)
+
+    c1.callback(cb, 'c1 data')
+    c2.callback(cb, 'c2 data')
+
+    s1.start() 
+    s2.start() 
+
+    b.ble_settings(adv_man_name = "mangocorp", adv_dev_name="mangoprod")
+    b.ble_adv_enable(True)
+
+
+b.callback(bcb)
 ```
-
-`Bluetooth.callback` takes two parameters: The callback function itself, and an optional userdata value to be passed in on callbacks. It returns the current callback function and usedata as tuple.
-
-`cb_function` can be None, which disables callbacks. `cb_function` is called with four parameters; the bluetooth object, event, event data, and the userdata.
-
-Event values:
-* `Bluetooth.CONNECT` Data param is remote addr
-* `Bluetooth.DISCONNECT`
-* `Bluetooth.SCAN_DATA` Scan data
-* `Bluetooth.SCAN_CMPL` Scan complete
-
-##### Characteristic Callbacks
-
-```python
-def char_callback(charObj, event, value, userdata):
-    print('charcb ', cb, userdata,' ', end='')
-        if event == b.READ:
-            print('Read')
-            return 'ABCDEFG'
-        elif event == b.WRITE:
-            print ('Write', value)
-
-Char.callback(cb_function, userdata)
-```
-
-`Char.callback` takes two parameters: The callback function itself, and an optional userdata value to be passed in on callbacks. It returns the current callback function and userdata as tuple.
-
-`cb_function` can be None, which disables callbacks. `cb_function` is called with four parameters; the characteristic object, the event type, the event value (the sent value for `WRITE` or the current characteristic value for `READ`), and userdata.
-
-The event type will be one of `Bluetooth.READ` or `Bluetooth.WRITE`.
-
-Characteristics have an internal value, which is _not_ used and _not_ updated when there is a callback, though the callback is free to update or use the value as it sees fit.  For `READ` operations (or `WRITE` operations that require a return value) the return value of the callback is sent, which must be a `bytearray`, `str`, `bytes`, or `None`.
-
-###### Value behavior without a callback
-
-If there is no callback defined for a characteristic, it's internal value will be used for `READ` or `WRITE` events, and `WRITE` events that expect a response will simply return the just-written value.
-
-
-
-
-### Advertising
-##### BLE settings
-
-```python
-b.ble_settings(
-    int_min = 1280,
-    int_max = 1280,
-    type b.ADV_TYPE_IND,
-    own_addr_type = b.BLE_ADDR_TYPE_PUBLIC,
-    peer_addr = bytearray([0 for x in range(6)]),
-    peer_addr_type = b.BLE_ADDR_TYPE_PUBLIC,
-    channel_map = b.ADV_CHNL_ALL,
-    filter_policy = b.ADV_FILTER_ALLOW_SCAN_ANY_CON_ANY,
-    adv_is_scan_rsp = False,
-    adv_dev_name = None,
-    adv_man_name = None,
-    adv_inc_tx_power = False,
-    adv_int_min = 1280,
-    adv_int_max = 1280,
-    adv_appearance = 0,
-    adv_uuid = None,
-    adv_flags = 0)
-
-b.adv_enable(True)
-```
-
-### Scanning
-
-###### Scan start:
-
-Advertising and scanning cannot be run at the same time
-
-`Bluetooth.scan_start(timeout)`
-
-###### Scan stop:
-`Bluetooth.scan_stop()`
-
-
-###### Scan callback data
-
-The Bluetooth callback will receive:
-
-* `Bluetooth.SCAN_DATA` Data will be a 2-tuple of `(remote_address, adv_name)`
-* `Bluetooth.SCAN_CMPL` Scan has completed; data will be None
