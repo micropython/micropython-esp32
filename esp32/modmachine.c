@@ -96,8 +96,7 @@ STATIC mp_obj_t machine_deepsleep(size_t n_args, const mp_obj_t *pos_args, mp_ma
     }
 
     if (machine_rtc_config.wake_on_touch) {
-         esp_deep_sleep_enable_touchpad_wakeup();
-        nlr_raise(mp_obj_new_exception_msg(&mp_type_RuntimeError, "touchpad wakeup not available for this version of ESP-IDF"));
+        esp_deep_sleep_enable_touchpad_wakeup();
     }
 
     esp_deep_sleep_start();
