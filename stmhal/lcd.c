@@ -274,11 +274,11 @@ STATIC mp_obj_t pyb_lcd_make_new(const mp_obj_type_t *type, size_t n_args, size_
     mp_hal_pin_output(lcd->pin_bl);
 
     // init the LCD
-    HAL_Delay(1); // wait a bit
+    mp_hal_delay_ms(1); // wait a bit
     mp_hal_pin_low(lcd->pin_rst); // RST=0; reset
-    HAL_Delay(1); // wait for reset; 2us min
+    mp_hal_delay_ms(1); // wait for reset; 2us min
     mp_hal_pin_high(lcd->pin_rst); // RST=1; enable
-    HAL_Delay(1); // wait for reset; 2us min
+    mp_hal_delay_ms(1); // wait for reset; 2us min
     lcd_out(lcd, LCD_INSTR, 0xa0); // ADC select, normal
     lcd_out(lcd, LCD_INSTR, 0xc0); // common output mode select, normal (this flips the display)
     lcd_out(lcd, LCD_INSTR, 0xa2); // LCD bias set, 1/9 bias
@@ -373,7 +373,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_2(pyb_lcd_light_obj, pyb_lcd_light);
 /// Write the string `str` to the screen.  It will appear immediately.
 STATIC mp_obj_t pyb_lcd_write(mp_obj_t self_in, mp_obj_t str) {
     pyb_lcd_obj_t *self = self_in;
-    mp_uint_t len;
+    size_t len;
     const char *data = mp_obj_str_get_data(str, &len);
     lcd_write_strn(self, data, len);
     return mp_const_none;
@@ -445,7 +445,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(pyb_lcd_pixel_obj, 4, 4, pyb_lcd_pixe
 STATIC mp_obj_t pyb_lcd_text(mp_uint_t n_args, const mp_obj_t *args) {
     // extract arguments
     pyb_lcd_obj_t *self = args[0];
-    mp_uint_t len;
+    size_t len;
     const char *data = mp_obj_str_get_data(args[1], &len);
     int x0 = mp_obj_get_int(args[2]);
     int y0 = mp_obj_get_int(args[3]);

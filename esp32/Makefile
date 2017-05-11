@@ -16,7 +16,7 @@ include ../py/py.mk
 
 PORT ?= /dev/ttyUSB0
 BAUD ?= 460800
-FLASH_MODE ?= qio
+FLASH_MODE ?= dio
 FLASH_FREQ ?= 40m
 FLASH_SIZE ?= 4MB
 CROSS_COMPILE ?= xtensa-esp32-elf-
@@ -29,7 +29,7 @@ ESPCOMP = $(ESPIDF)/components
 ESPTOOL ?= $(ESPCOMP)/esptool_py/esptool/esptool.py
 
 # verify the ESP IDF version
-ESPIDF_SUPHASH := c06cc31d85cc700e1dbddbe527d4282c4bc5845a
+ESPIDF_SUPHASH := f73c6f875cc564fa6c9962be71eac4dbdc56aa63
 ESPIDF_CURHASH := $(shell git -C $(ESPIDF) show -s --pretty=format:'%H')
 ifneq ($(ESPIDF_CURHASH),$(ESPIDF_SUPHASH))
 $(info ** WARNING **)
@@ -55,6 +55,7 @@ INC += -I$(ESPCOMP)/driver/include/driver
 INC += -I$(ESPCOMP)/nghttp/port/include
 INC += -I$(ESPCOMP)/nghttp/include
 INC += -I$(ESPCOMP)/esp32/include
+INC += -I$(ESPCOMP)/soc/esp32/include
 INC += -I$(ESPCOMP)/ethernet/include
 INC += -I$(ESPCOMP)/expat/include/expat
 INC += -I$(ESPCOMP)/expat/port/include
@@ -64,7 +65,6 @@ INC += -I$(ESPCOMP)/log/include
 INC += -I$(ESPCOMP)/newlib/include
 INC += -I$(ESPCOMP)/nvs_flash/include
 INC += -I$(ESPCOMP)/freertos/include
-INC += -I$(ESPCOMP)/freertos/include/freertos
 INC += -I$(ESPCOMP)/tcpip_adapter/include
 INC += -I$(ESPCOMP)/lwip/include/lwip
 INC += -I$(ESPCOMP)/lwip/include/lwip/port
@@ -91,7 +91,7 @@ LDFLAGS = -nostdlib -Map=$(@:.elf=.map) --cref
 LDFLAGS += --gc-sections -static -EL
 LDFLAGS += -u call_user_start_cpu0 -u uxTopUsedPriority
 LDFLAGS += -u __cxa_guard_dummy # so that implementation of static guards is taken from cxx_guards.o instead of libstdc++.a
-LDFLAGS += -L$(ESPCOMP)/esp32/ld -T $(BUILD)/esp32_out.ld -T ./esp32.custom_common.ld -T esp32.rom.ld -T esp32.peripherals.ld
+LDFLAGS += -L$(ESPCOMP)/esp32/ld -T $(BUILD)/esp32_out.ld -T ./esp32.custom_common.ld -T esp32.rom.ld -T esp32.rom.spiflash.ld -T esp32.peripherals.ld
 
 LIBGCC_FILE_NAME = $(shell $(CC) $(CFLAGS) -print-libgcc-file-name)
 LIBSTDCXX_FILE_NAME = $(shell $(CXX) $(CXXFLAGS) -print-file-name=libstdc++.a)
@@ -129,6 +129,8 @@ SRC_C = \
 	modesp.c \
 	espneopixel.c \
 	machine_rtc.c \
+	machine_hw_spi.c \
+	mpthreadport.c \
 	$(SRC_MOD)
 
 STM_SRC_C = $(addprefix stmhal/,\
@@ -202,13 +204,17 @@ ESPIDF_DRIVER_O = $(addprefix $(ESPCOMP)/driver/,\
 	ledc.o \
 	gpio.o \
 	timer.o \
+	spi_master.o \
 	rtc_module.o \
 	)
 
 ESPIDF_ESP32_O = $(addprefix $(ESPCOMP)/esp32/,\
+	app_trace.o \
 	panic.o \
 	event_default_handlers.o \
 	task_wdt.o \
+	cache_err_int.o \
+	core_dump.o \
 	cpu_start.o \
 	gdbstub.o \
 	crosscore_int.o \
@@ -218,16 +224,24 @@ ESPIDF_ESP32_O = $(addprefix $(ESPCOMP)/esp32/,\
 	int_wdt.o \
 	event_loop.o \
 	cpu_freq.o \
-	brownout.o \
 	hwcrypto/sha.o \
 	hwcrypto/aes.o \
 	lib_printf.o \
 	freertos_hooks.o \
-	cpu_util.o \
 	system_api.o \
 	hw_random.o \
 	phy_init.o \
 	intr_alloc.o \
+	)
+
+ESPIDF_SOC_O = $(addprefix $(ESPCOMP)/soc/,\
+	esp32/brownout.o \
+	esp32/cpu_util.o \
+	esp32/rtc_clk.o \
+	esp32/rtc_init.o \
+	esp32/rtc_pm.o \
+	esp32/rtc_sleep.o \
+	esp32/rtc_time.o \
 	)
 
 ESPIDF_CXX_O = $(addprefix $(ESPCOMP)/cxx/,\
@@ -253,11 +267,12 @@ ESPIDF_EXPAT_O = $(addprefix $(ESPCOMP)/expat/,\
 
 # Assembler .S files need only basic flags, and in particular should not have
 # -Os because that generates subtly different code.
-CFLAGS_ASM = -I$(ESPCOMP)/esp32/include -I$(ESPCOMP)/freertos/include/freertos -I.
+CFLAGS_ASM = -I$(ESPCOMP)/esp32/include -I$(ESPCOMP)/soc/esp32/include -I$(ESPCOMP)/freertos/include/freertos -I.
 $(BUILD)/$(ESPCOMP)/freertos/portasm.o: CFLAGS = $(CFLAGS_ASM)
 $(BUILD)/$(ESPCOMP)/freertos/xtensa_context.o: CFLAGS = $(CFLAGS_ASM)
 $(BUILD)/$(ESPCOMP)/freertos/xtensa_intr_asm.o: CFLAGS = $(CFLAGS_ASM)
 $(BUILD)/$(ESPCOMP)/freertos/xtensa_vectors.o: CFLAGS = $(CFLAGS_ASM)
+$(BUILD)/$(ESPCOMP)/freertos/%.o: CFLAGS += -I$(ESPCOMP)/freertos/include/freertos
 ESPIDF_FREERTOS_O = $(addprefix $(ESPCOMP)/freertos/,\
 	croutine.o \
 	event_groups.o \
@@ -366,7 +381,6 @@ ESPIDF_LWIP_O = $(addprefix $(ESPCOMP)/lwip/,\
 	api/err.o \
 	api/api_msg.o \
 	api/sockets.o \
-	api/lwip_debug.o \
 	apps/sntp/sntp.o \
 	apps/dhcpserver.o \
 	core/ipv4/ip_frag.o \
@@ -521,6 +535,7 @@ OBJ_ESPIDF =
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_NEWLIB_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_DRIVER_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_ESP32_O))
+OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_SOC_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_CXX_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_ETHERNET_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_EXPAT_O))
@@ -572,7 +587,7 @@ APP_LD_ARGS += -L$(dir $(LIBSTDCXX_FILE_NAME)) -lstdc++
 APP_LD_ARGS += $(ESPCOMP)/newlib/lib/libc.a
 APP_LD_ARGS += $(ESPCOMP)/newlib/lib/libm.a
 APP_LD_ARGS += $(ESPCOMP)/esp32/libhal.a
-APP_LD_ARGS += -L$(ESPCOMP)/esp32/lib -lcore -lnet80211 -lphy -lrtc -lrtc_clk -lpp -lwpa -lsmartconfig -lcoexist
+APP_LD_ARGS += -L$(ESPCOMP)/esp32/lib -lcore -lnet80211 -lphy -lrtc -lpp -lwpa -lsmartconfig -lcoexist
 APP_LD_ARGS += $(OBJ)
 APP_LD_ARGS += --end-group
 
@@ -618,6 +633,7 @@ BOOTLOADER_OBJ = $(addprefix $(BUILD)/bootloader/$(ESPCOMP)/,\
 	bootloader_support/src/flash_partitions.o \
 	log/log.o \
 	spi_flash/spi_flash_rom_patch.o \
+	soc/esp32/rtc_clk.o \
 	micro-ecc/micro-ecc/uECC.o \
 	bootloader/src/main/bootloader_start.o \
 	)
@@ -625,7 +641,7 @@ BOOTLOADER_OBJ = $(addprefix $(BUILD)/bootloader/$(ESPCOMP)/,\
 BOOTLOADER_LIBS =
 BOOTLOADER_LIBS += -Wl,--start-group
 BOOTLOADER_LIBS += $(BOOTLOADER_OBJ)
-BOOTLOADER_LIBS += -L$(ESPCOMP)/esp32/lib -lrtc -lrtc_clk
+BOOTLOADER_LIBS += -L$(ESPCOMP)/esp32/lib -lrtc
 BOOTLOADER_LIBS += -L$(dir $(LIBGCC_FILE_NAME)) -lgcc
 BOOTLOADER_LIBS += -Wl,--end-group
 
@@ -641,6 +657,7 @@ BOOTLOADER_LDFLAGS += -Wl,-Map=$(@:.elf=.map) -Wl,--cref
 BOOTLOADER_LDFLAGS += -T $(ESPCOMP)/bootloader/src/main/esp32.bootloader.ld
 BOOTLOADER_LDFLAGS += -T $(ESPCOMP)/bootloader/src/main/esp32.bootloader.rom.ld
 BOOTLOADER_LDFLAGS += -T $(ESPCOMP)/esp32/ld/esp32.rom.ld
+BOOTLOADER_LDFLAGS += -T $(ESPCOMP)/esp32/ld/esp32.rom.spiflash.ld
 
 BOOTLOADER_OBJ_DIRS = $(sort $(dir $(BOOTLOADER_OBJ)))
 $(BOOTLOADER_OBJ): | $(BOOTLOADER_OBJ_DIRS)

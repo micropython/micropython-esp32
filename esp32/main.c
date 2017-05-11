@@ -34,6 +34,7 @@
 #include "esp_system.h"
 #include "nvs_flash.h"
 #include "esp_task.h"
+#include "soc/cpu.h"
 
 #include "py/stackctrl.h"
 #include "py/nlr.h"
@@ -45,6 +46,8 @@
 #include "lib/mp-readline/readline.h"
 #include "lib/utils/pyexec.h"
 #include "uart.h"
+#include "modmachine.h"
+#include "mpthreadport.h"
 
 // MicroPython runs as a task under FreeRTOS
 #define MP_TASK_PRIORITY        (ESP_TASK_PRIO_MIN + 1)
@@ -52,23 +55,31 @@
 #define MP_TASK_STACK_LEN       (MP_TASK_STACK_SIZE / sizeof(StackType_t))
 #define MP_TASK_HEAP_SIZE       (96 * 1024)
 
-//STATIC StaticTask_t mp_task_tcb;
-//STATIC StackType_t mp_task_stack[MP_TASK_STACK_LEN] __attribute__((aligned (8)));
+STATIC StaticTask_t mp_task_tcb;
+STATIC StackType_t mp_task_stack[MP_TASK_STACK_LEN] __attribute__((aligned (8)));
 STATIC uint8_t mp_task_heap[MP_TASK_HEAP_SIZE];
 
 void mp_task(void *pvParameter) {
+    volatile uint32_t sp = (uint32_t)get_sp();
+    #if MICROPY_PY_THREAD
+    mp_thread_init(&mp_task_stack[0], MP_TASK_STACK_LEN);
+    #endif
     uart_init();
+
 soft_reset:
-    mp_stack_set_top((void*)&pvParameter);
-    mp_stack_set_limit(MP_TASK_STACK_SIZE - 512);
+    // initialise the stack pointer for the main thread
+    mp_stack_set_top((void *)sp);
+    mp_stack_set_limit(MP_TASK_STACK_SIZE - 1024);
     gc_init(mp_task_heap, mp_task_heap + sizeof(mp_task_heap));
     mp_init();
-    MP_STATE_PORT(mp_kbd_exception) = mp_obj_new_exception(&mp_type_KeyboardInterrupt);
     mp_obj_list_init(mp_sys_path, 0);
     mp_obj_list_append(mp_sys_path, MP_OBJ_NEW_QSTR(MP_QSTR_));
     mp_obj_list_append(mp_sys_path, MP_OBJ_NEW_QSTR(MP_QSTR__slash_flash_slash_lib));
     mp_obj_list_init(mp_sys_argv, 0);
     readline_init0();
+
+    // initialise peripherals
+    machine_pins_init();
 
     // run boot-up scripts
     pyexec_frozen_module("_boot.py");
@@ -89,7 +100,15 @@ soft_reset:
         }
     }
 
+    #if MICROPY_PY_THREAD
+    mp_thread_deinit();
+    #endif
+
     mp_hal_stdout_tx_str("PYB: soft reboot\r\n");
+
+    // deinitialise peripherals
+    machine_pins_deinit();
+
     mp_deinit();
     fflush(stdout);
     goto soft_reset;
@@ -97,15 +116,13 @@ soft_reset:
 
 void app_main(void) {
     nvs_flash_init();
-    // TODO use xTaskCreateStatic (needs custom FreeRTOSConfig.h)
-    xTaskCreatePinnedToCore(mp_task, "mp_task", MP_TASK_STACK_LEN, NULL, MP_TASK_PRIORITY, NULL, 0);
-    //xTaskCreateStatic(mp_task, "mp_task", MP_TASK_STACK_LEN, NULL, MP_TASK_PRIORITY, &mp_task_stack[0], &mp_task_tcb);
+    xTaskCreateStaticPinnedToCore(mp_task, "mp_task", MP_TASK_STACK_LEN, NULL, MP_TASK_PRIORITY,
+                                  &mp_task_stack[0], &mp_task_tcb, 0);
 }
 
 void nlr_jump_fail(void *val) {
     printf("NLR jump failed, val=%p\n", val);
-    for (;;) {
-    }
+    esp_restart();
 }
 
 // modussl_mbedtls uses this function but it's not enabled in ESP IDF

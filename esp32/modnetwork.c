@@ -241,7 +241,9 @@ STATIC mp_obj_t esp_connect(size_t n_args, const mp_obj_t *args) {
         memcpy(wifi_sta_config.sta.password, p, MIN(len, sizeof(wifi_sta_config.sta.password)));
         ESP_EXCEPTIONS( esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_sta_config) );
     }
+    MP_THREAD_GIL_EXIT();
     ESP_EXCEPTIONS( esp_wifi_connect() );
+    MP_THREAD_GIL_ENTER();
     wifi_sta_connected = true;
 
     return mp_const_none;
@@ -274,7 +276,9 @@ STATIC mp_obj_t esp_scan(mp_obj_t self_in) {
     mp_obj_t list = mp_obj_new_list(0, NULL);
     wifi_scan_config_t config = { 0 };
     // XXX how do we scan hidden APs (and if we can scan them, are they really hidden?)
+    MP_THREAD_GIL_EXIT();
     esp_err_t status = esp_wifi_scan_start(&config, 1);
+    MP_THREAD_GIL_ENTER();
     if (status == 0) {
         uint16_t count = 0;
         ESP_EXCEPTIONS( esp_wifi_scan_get_ap_num(&count) );

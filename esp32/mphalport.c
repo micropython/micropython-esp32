@@ -48,6 +48,7 @@ int mp_hal_stdin_rx_chr(void) {
         if (c != -1) {
             return c;
         }
+        MICROPY_EVENT_POLL_HOOK
         vTaskDelay(1);
     }
 }
@@ -58,24 +59,30 @@ void mp_hal_stdout_tx_char(char c) {
 }
 
 void mp_hal_stdout_tx_str(const char *str) {
+    MP_THREAD_GIL_EXIT();
     while (*str) {
         mp_hal_stdout_tx_char(*str++);
     }
+    MP_THREAD_GIL_ENTER();
 }
 
 void mp_hal_stdout_tx_strn(const char *str, uint32_t len) {
+    MP_THREAD_GIL_EXIT();
     while (len--) {
         mp_hal_stdout_tx_char(*str++);
     }
+    MP_THREAD_GIL_ENTER();
 }
 
 void mp_hal_stdout_tx_strn_cooked(const char *str, uint32_t len) {
+    MP_THREAD_GIL_EXIT();
     while (len--) {
         if (*str == '\n') {
             mp_hal_stdout_tx_char('\r');
         }
         mp_hal_stdout_tx_char(*str++);
     }
+    MP_THREAD_GIL_ENTER();
 }
 
 uint32_t mp_hal_ticks_ms(void) {
@@ -92,12 +99,21 @@ uint32_t mp_hal_ticks_us(void) {
 
 void mp_hal_delay_ms(uint32_t ms) {
     struct timeval tv_start;
-    gettimeofday(&tv_start, NULL);
-    vTaskDelay(ms / portTICK_PERIOD_MS);
     struct timeval tv_end;
-    gettimeofday(&tv_end, NULL);
-    uint64_t dt = (tv_end.tv_sec - tv_start.tv_sec) * 1000 + (tv_end.tv_usec - tv_start.tv_usec) / 1000;
+    uint64_t dt;
+    gettimeofday(&tv_start, NULL);
+    for (;;) {
+        gettimeofday(&tv_end, NULL);
+        dt = (tv_end.tv_sec - tv_start.tv_sec) * 1000 + (tv_end.tv_usec - tv_start.tv_usec) / 1000;
+        if (dt + portTICK_PERIOD_MS >= ms) {
+            // doing a vTaskDelay would take us beyound requested delay time
+            break;
+        }
+        MICROPY_EVENT_POLL_HOOK
+        vTaskDelay(1);
+    }
     if (dt < ms) {
+        // do the remaining delay accurately
         ets_delay_us((ms - dt) * 1000);
     }
 }

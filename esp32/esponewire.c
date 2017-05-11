@@ -44,30 +44,30 @@ uint16_t esp_onewire_timings[9] = {480, 40, 420, 5, 5, 40, 10, 50, 10};
 int esp_onewire_reset(mp_hal_pin_obj_t pin) {
     mp_hal_pin_write(pin, 0);
     DELAY_US(esp_onewire_timings[TIMING_RESET1]);
-    uint32_t i = disable_irq();
+    uint32_t i = MICROPY_BEGIN_ATOMIC_SECTION();
     mp_hal_pin_write(pin, 1);
     DELAY_US(esp_onewire_timings[TIMING_RESET2]);
     int status = !mp_hal_pin_read(pin);
-    enable_irq(i);
+    MICROPY_END_ATOMIC_SECTION(i);
     DELAY_US(esp_onewire_timings[TIMING_RESET3]);
     return status;
 }
 
 int esp_onewire_readbit(mp_hal_pin_obj_t pin) {
     mp_hal_pin_write(pin, 1);
-    uint32_t i = disable_irq();
+    uint32_t i = MICROPY_BEGIN_ATOMIC_SECTION();
     mp_hal_pin_write(pin, 0);
     DELAY_US(esp_onewire_timings[TIMING_READ1]);
     mp_hal_pin_write(pin, 1);
     DELAY_US(esp_onewire_timings[TIMING_READ2]);
     int value = mp_hal_pin_read(pin);
-    enable_irq(i);
+    MICROPY_END_ATOMIC_SECTION(i);
     DELAY_US(esp_onewire_timings[TIMING_READ3]);
     return value;
 }
 
 void esp_onewire_writebit(mp_hal_pin_obj_t pin, int value) {
-    uint32_t i = disable_irq();
+    uint32_t i = MICROPY_BEGIN_ATOMIC_SECTION();
     mp_hal_pin_write(pin, 0);
     DELAY_US(esp_onewire_timings[TIMING_WRITE1]);
     if (value) {
@@ -76,5 +76,5 @@ void esp_onewire_writebit(mp_hal_pin_obj_t pin, int value) {
     DELAY_US(esp_onewire_timings[TIMING_WRITE2]);
     mp_hal_pin_write(pin, 1);
     DELAY_US(esp_onewire_timings[TIMING_WRITE3]);
-    enable_irq(i);
+    MICROPY_END_ATOMIC_SECTION(i);
 }

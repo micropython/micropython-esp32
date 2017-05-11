@@ -43,33 +43,38 @@
 // Returns MP_VFS_ROOT for root dir (and then path_out is undefined) and
 // MP_VFS_NONE for path not found.
 mp_vfs_mount_t *mp_vfs_lookup_path(const char *path, const char **path_out) {
-    if (path[0] == '/' && path[1] == 0) {
-        return MP_VFS_ROOT;
-    } else if (MP_STATE_VM(vfs_cur) == MP_VFS_ROOT) {
-        // in root dir
-        if (path[0] == 0) {
-            return MP_VFS_ROOT;
+    if (*path == '/' || MP_STATE_VM(vfs_cur) == MP_VFS_ROOT) {
+        // an absolute path, or the current volume is root, so search root dir
+        bool is_abs = 0;
+        if (*path == '/') {
+            ++path;
+            is_abs = 1;
         }
-    } else if (*path != '/') {
-        // a relative path within a mounted device
-        *path_out = path;
-        return MP_STATE_VM(vfs_cur);
-    }
-
-    for (mp_vfs_mount_t *vfs = MP_STATE_VM(vfs_mount_table); vfs != NULL; vfs = vfs->next) {
-        if (strncmp(path, vfs->str, vfs->len) == 0) {
-            if (path[vfs->len] == '/') {
-                *path_out = path + vfs->len;
-                return vfs;
-            } else if (path[vfs->len] == '\0') {
-                *path_out = "/";
-                return vfs;
+        for (mp_vfs_mount_t *vfs = MP_STATE_VM(vfs_mount_table); vfs != NULL; vfs = vfs->next) {
+            size_t len = vfs->len - 1;
+            if (strncmp(path, vfs->str + 1, len) == 0) {
+                if (path[len] == '/') {
+                    *path_out = path + len;
+                    return vfs;
+                } else if (path[len] == '\0') {
+                    *path_out = "/";
+                    return vfs;
+                }
             }
         }
+        if (*path == '\0') {
+            // path was "" or "/" so return virtual root
+            return MP_VFS_ROOT;
+        }
+        if (is_abs) {
+            // path began with / and was not found
+            return MP_VFS_NONE;
+        }
     }
 
-    // mount point not found
-    return MP_VFS_NONE;
+    // a relative path within a mounted device
+    *path_out = path;
+    return MP_STATE_VM(vfs_cur);
 }
 
 // Version of mp_vfs_lookup_path that takes and returns uPy string objects.
@@ -129,14 +134,27 @@ mp_obj_t mp_vfs_mount(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args
     mp_arg_parse_all(n_args - 2, pos_args + 2, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
     // get the mount point
-    mp_uint_t mnt_len;
+    size_t mnt_len;
     const char *mnt_str = mp_obj_str_get_data(pos_args[1], &mnt_len);
+
+    // see if we need to auto-detect and create the filesystem
+    mp_obj_t vfs_obj = pos_args[0];
+    mp_obj_t dest[2];
+    mp_load_method_maybe(vfs_obj, MP_QSTR_mount, dest);
+    if (dest[0] == MP_OBJ_NULL) {
+        // Input object has no mount method, assume it's a block device and try to
+        // auto-detect the filesystem and create the corresponding VFS entity.
+        // (At the moment we only support FAT filesystems.)
+        #if MICROPY_VFS_FAT
+        vfs_obj = mp_fat_vfs_type.make_new(&mp_fat_vfs_type, 1, 0, &vfs_obj);
+        #endif
+    }
 
     // create new object
     mp_vfs_mount_t *vfs = m_new_obj(mp_vfs_mount_t);
     vfs->str = mnt_str;
     vfs->len = mnt_len;
-    vfs->obj = pos_args[0];
+    vfs->obj = vfs_obj;
     vfs->next = NULL;
 
     // call the underlying object to do any mounting operation
@@ -162,7 +180,7 @@ MP_DEFINE_CONST_FUN_OBJ_KW(mp_vfs_mount_obj, 2, mp_vfs_mount);
 mp_obj_t mp_vfs_umount(mp_obj_t mnt_in) {
     // remove vfs from the mount table
     mp_vfs_mount_t *vfs = NULL;
-    mp_uint_t mnt_len;
+    size_t mnt_len;
     const char *mnt_str = NULL;
     if (MP_OBJ_IS_STR(mnt_in)) {
         mnt_str = mp_obj_str_get_data(mnt_in, &mnt_len);
@@ -262,6 +280,9 @@ MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mp_vfs_listdir_obj, 0, 1, mp_vfs_listdir);
 mp_obj_t mp_vfs_mkdir(mp_obj_t path_in) {
     mp_obj_t path_out;
     mp_vfs_mount_t *vfs = lookup_path(path_in, &path_out);
+    if (vfs == MP_VFS_ROOT || (vfs != MP_VFS_NONE && !strcmp(mp_obj_str_get_str(path_out), "/"))) {
+        mp_raise_OSError(MP_EEXIST);
+    }
     return mp_vfs_proxy_call(vfs, MP_QSTR_mkdir, 1, &path_out);
 }
 MP_DEFINE_CONST_FUN_OBJ_1(mp_vfs_mkdir_obj, mp_vfs_mkdir);
@@ -295,6 +316,14 @@ MP_DEFINE_CONST_FUN_OBJ_1(mp_vfs_rmdir_obj, mp_vfs_rmdir);
 mp_obj_t mp_vfs_stat(mp_obj_t path_in) {
     mp_obj_t path_out;
     mp_vfs_mount_t *vfs = lookup_path(path_in, &path_out);
+    if (vfs == MP_VFS_ROOT) {
+        mp_obj_tuple_t *t = MP_OBJ_TO_PTR(mp_obj_new_tuple(10, NULL));
+        t->items[0] = MP_OBJ_NEW_SMALL_INT(0x4000); // st_mode = stat.S_IFDIR
+        for (int i = 1; i <= 9; ++i) {
+            t->items[i] = MP_OBJ_NEW_SMALL_INT(0); // dev, nlink, uid, gid, size, atime, mtime, ctime
+        }
+        return MP_OBJ_FROM_PTR(t);
+    }
     return mp_vfs_proxy_call(vfs, MP_QSTR_stat, 1, &path_out);
 }
 MP_DEFINE_CONST_FUN_OBJ_1(mp_vfs_stat_obj, mp_vfs_stat);

@@ -31,4 +31,4 @@ if size < 1024*1024:
     bdev = None
 else:
     # for now we use a fixed size for the filesystem
-    bdev = FlashBdev(256 * 1024 // FlashBdev.SEC_SIZE)
+    bdev = FlashBdev(2048 * 1024 // FlashBdev.SEC_SIZE)
