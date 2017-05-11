@@ -3,7 +3,6 @@
 #define MICROPY_INCLUDED_ESP32_MACINE_RTC_H
 
 typedef struct {
-    uint64_t expiry;    // in microseconds
     uint64_t ext1_pins; // set bit == pin#
     int8_t ext0_pin;   // just the pin#, -1 == None
     bool wake_on_touch : 1;

@@ -147,26 +147,10 @@ STATIC mp_obj_t machine_rtc_memory(mp_uint_t n_args, const mp_obj_t *args) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(machine_rtc_memory_obj, 1, 2, machine_rtc_memory);
 
-STATIC mp_obj_t machine_rtc_alarm(mp_obj_t self_in, mp_obj_t alarm_id, mp_obj_t time_in) {
-    (void)self_in; // unused
-
-    // check we want alarm0
-    if (mp_obj_get_int(alarm_id) != 0) {
-        nlr_raise(mp_obj_new_exception_msg(&mp_type_ValueError, "invalid alarm"));
-    }
-
-    // set expiry time (in microseconds)
-    machine_rtc_config.expiry = (uint64_t)mp_obj_get_int(time_in) * 1000;
-
-    return mp_const_none;
-
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_3(machine_rtc_alarm_obj, machine_rtc_alarm);
-
 STATIC mp_obj_t machine_rtc_wake_on_touch(mp_obj_t self_in, const mp_obj_t wake) {
     (void)self_in; // unused
     
-    machine_rtc_config.wake_on_touch = mp_obj_get_int(wake);
+    machine_rtc_config.wake_on_touch = mp_obj_is_true(wake);
     return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(machine_rtc_wake_on_touch_obj, machine_rtc_wake_on_touch);
@@ -174,8 +158,8 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_2(machine_rtc_wake_on_touch_obj, machine_rtc_wake
 STATIC mp_obj_t machine_rtc_wake_on_ext0(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum {ARG_pin, ARG_level};
     const mp_arg_t allowed_args[] = {
-        { MP_QSTR_pin, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_obj_new_int(machine_rtc_config.ext0_pin)} },
-        { MP_QSTR_level, MP_ARG_KW_ONLY | MP_ARG_BOOL, {.u_bool = machine_rtc_config.ext0_level} },
+        { MP_QSTR_pin,  MP_ARG_OBJ, {.u_obj = mp_obj_new_int(machine_rtc_config.ext0_pin)} },
+        { MP_QSTR_level,  MP_ARG_BOOL, {.u_bool = machine_rtc_config.ext0_level} },
     };
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
     mp_arg_parse_all(n_args - 1, pos_args + 1, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
@@ -201,8 +185,8 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_KW(machine_rtc_wake_on_ext0_obj, 1, machine_rtc_w
 STATIC mp_obj_t machine_rtc_wake_on_ext1(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum {ARG_pins, ARG_level};
     const mp_arg_t allowed_args[] = {
-        { MP_QSTR_pins, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_const_none} },
-        { MP_QSTR_level, MP_ARG_KW_ONLY | MP_ARG_BOOL, {.u_bool = machine_rtc_config.ext1_level} },
+        { MP_QSTR_pins, MP_ARG_OBJ, {.u_obj = mp_const_none} },
+        { MP_QSTR_level, MP_ARG_BOOL, {.u_bool = machine_rtc_config.ext1_level} },
     };
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
     mp_arg_parse_all(n_args - 1, pos_args + 1, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
@@ -237,35 +221,12 @@ STATIC mp_obj_t machine_rtc_wake_on_ext1(size_t n_args, const mp_obj_t *pos_args
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_KW(machine_rtc_wake_on_ext1_obj, 1, machine_rtc_wake_on_ext1);
 
-STATIC mp_obj_t machine_rtc_irq(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
-    // This function essentially does nothing, for backwards compatibility
-
-    enum { ARG_trigger, ARG_wake };
-    static const mp_arg_t allowed_args[] = {
-        { MP_QSTR_trigger, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 0} },
-        { MP_QSTR_wake, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 0} },
-    };
-    mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
-    mp_arg_parse_all(n_args - 1, pos_args + 1, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
-
-    // check we want alarm0
-    if (args[ARG_trigger].u_int != 0) {
-        nlr_raise(mp_obj_new_exception_msg(&mp_type_ValueError, "invalid alarm"));
-    }
-
-    return mp_const_none;
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_KW(machine_rtc_irq_obj, 1, machine_rtc_irq);
-
 STATIC const mp_map_elem_t machine_rtc_locals_dict_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR_datetime), (mp_obj_t)&machine_rtc_datetime_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_memory), (mp_obj_t)&machine_rtc_memory_obj },
-    { MP_OBJ_NEW_QSTR(MP_QSTR_alarm), (mp_obj_t)&machine_rtc_alarm_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_wake_on_touch), (mp_obj_t)&machine_rtc_wake_on_touch_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_wake_on_ext0), (mp_obj_t)&machine_rtc_wake_on_ext0_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_wake_on_ext1), (mp_obj_t)&machine_rtc_wake_on_ext1_obj },
-    { MP_OBJ_NEW_QSTR(MP_QSTR_irq), (mp_obj_t)&machine_rtc_irq_obj},
-    { MP_OBJ_NEW_QSTR(MP_QSTR_ALARM0), MP_OBJ_NEW_SMALL_INT(0) },
     { MP_OBJ_NEW_QSTR(MP_QSTR_WAKEUP_ALL_LOW), mp_const_false },
     { MP_OBJ_NEW_QSTR(MP_QSTR_WAKEUP_ANY_HIGH), mp_const_true },
 };

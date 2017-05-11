@@ -47,9 +47,7 @@
 
 #if MICROPY_PY_MACHINE
 
-// amount of time to sleep
 extern machine_rtc_config_t machine_rtc_config;
-#define MACHINE_WAKE_DEEPSLEEP (0x04)
 
 STATIC mp_obj_t machine_freq(size_t n_args, const mp_obj_t *args) {
     if (n_args == 0) {
@@ -70,10 +68,21 @@ STATIC mp_obj_t machine_freq(size_t n_args, const mp_obj_t *args) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(machine_freq_obj, 0, 1, machine_freq);
 
-STATIC mp_obj_t machine_deepsleep(void) {
+STATIC mp_obj_t machine_deepsleep(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
 
-    if (machine_rtc_config.expiry != 0) {
-        esp_deep_sleep_enable_timer_wakeup(machine_rtc_config.expiry);
+    enum {ARG_sleep_ms};
+    const mp_arg_t allowed_args[] = {
+        { MP_QSTR_sleep_ms, MP_ARG_INT, { .u_int = 0 } },
+    };
+
+    mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
+    mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
+
+
+    mp_int_t expiry = args[ARG_sleep_ms].u_int;
+
+    if (expiry != 0) {
+        esp_deep_sleep_enable_timer_wakeup(expiry * 1000);
     }
 
     if (machine_rtc_config.ext0_pin != -1) {
@@ -87,7 +96,7 @@ STATIC mp_obj_t machine_deepsleep(void) {
     }
 
     if (machine_rtc_config.wake_on_touch) {
-        // esp_deep_sleep_enable_touchpad_wakeup();
+         esp_deep_sleep_enable_touchpad_wakeup();
         nlr_raise(mp_obj_new_exception_msg(&mp_type_RuntimeError, "touchpad wakeup not available for this version of ESP-IDF"));
     }
 
@@ -95,7 +104,7 @@ STATIC mp_obj_t machine_deepsleep(void) {
     return mp_const_none;
 }
 
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(machine_deepsleep_obj, machine_deepsleep);
+STATIC MP_DEFINE_CONST_FUN_OBJ_KW(machine_deepsleep_obj, 0,  machine_deepsleep);
 
 STATIC mp_obj_t machine_reset(void) {
     esp_restart();
@@ -139,8 +148,6 @@ STATIC const mp_rom_map_elem_t machine_module_globals_table[] = {
 
     { MP_ROM_QSTR(MP_QSTR_time_pulse_us), MP_ROM_PTR(&machine_time_pulse_us_obj) },
 
-    // wake abilities
-    { MP_ROM_QSTR(MP_QSTR_DEEPSLEEP), MP_ROM_INT(MACHINE_WAKE_DEEPSLEEP) },
 
     { MP_ROM_QSTR(MP_QSTR_Pin), MP_ROM_PTR(&machine_pin_type) },
     { MP_ROM_QSTR(MP_QSTR_TouchPad), MP_ROM_PTR(&machine_touchpad_type) },
