@@ -149,7 +149,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(machine_rtc_memory_obj, 1, 2, machine
 
 STATIC mp_obj_t machine_rtc_wake_on_touch(mp_obj_t self_in, const mp_obj_t wake) {
     (void)self_in; // unused
-    
+
     machine_rtc_config.wake_on_touch = mp_obj_is_true(wake);
     return mp_const_none;
 }
@@ -194,13 +194,13 @@ STATIC mp_obj_t machine_rtc_wake_on_ext1(size_t n_args, const mp_obj_t *pos_args
 
 
     // Check that all pins are allowed
-    if(args[ARG_pins].u_obj != mp_const_none) {
+    if (args[ARG_pins].u_obj != mp_const_none) {
         mp_uint_t len = 0;
         mp_obj_t *elem;
         mp_obj_get_array(args[ARG_pins].u_obj, &len, &elem);
         ext1_pins = 0;
 
-        for(int i = 0; i < len; i++) {
+        for (int i = 0; i < len; i++) {
 
             gpio_num_t pin_id = machine_pin_get_id(elem[i]);
             // mp_int_t pin = mp_obj_get_int(elem[i]);
@@ -224,7 +224,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_KW(machine_rtc_wake_on_ext1_obj, 1, machine_rtc_w
 STATIC const mp_map_elem_t machine_rtc_locals_dict_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR_datetime), (mp_obj_t)&machine_rtc_datetime_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_memory), (mp_obj_t)&machine_rtc_memory_obj },
-    // FIXME -- need to enable touch IRQ for this to work, 
+    // FIXME -- need to enable touch IRQ for this to work,
     // doesn't seem possible in the IDF presently.
     // { MP_OBJ_NEW_QSTR(MP_QSTR_wake_on_touch), (mp_obj_t)&machine_rtc_wake_on_touch_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_wake_on_ext0), (mp_obj_t)&machine_rtc_wake_on_ext0_obj },
