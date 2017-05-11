@@ -108,9 +108,13 @@ static int _socket_getaddrinfo2(const mp_obj_t host, const mp_obj_t portx, struc
         port = mp_obj_str_binary_op(MP_BINARY_OP_MODULO, mp_obj_new_str("%s", 2, true), port);
     }
 
-    mp_uint_t host_len, port_len;
-    const char *host_str = mp_obj_str_get_data(host, &host_len);
-    const char *port_str = mp_obj_str_get_data(port, &port_len);
+    const char *host_str = mp_obj_str_get_str(host);
+    const char *port_str = mp_obj_str_get_str(port);
+
+    if (host_str[0] == '\0') {
+        // a host of "" is equivalent to the default/all-local IP address
+        host_str = "0.0.0.0";
+    }
 
     MP_THREAD_GIL_EXIT();
     int res = lwip_getaddrinfo(host_str, port_str, &hints, resp);
