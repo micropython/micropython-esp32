@@ -49,7 +49,7 @@
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY(x)
 
-//#define EVENT_DEBUG
+#define EVENT_DEBUG
 
 #ifdef EVENT_DEBUG
 #   define EVENT_DEBUG_GATTC
@@ -2156,6 +2156,7 @@ STATIC void network_bluetooth_print(const mp_print_t *print, mp_obj_t self_in, m
               "peer_addr_type = %u, " NETWORK_BLUETOOTH_LF
               "channel_map = %u, " NETWORK_BLUETOOTH_LF
               "adv_filter_policy = %u" NETWORK_BLUETOOTH_LF
+              "state = %d" NETWORK_BLUETOOTH_LF
               ")"
               ,
               self->conn_id,
@@ -2174,7 +2175,8 @@ STATIC void network_bluetooth_print(const mp_print_t *print, mp_obj_t self_in, m
               self->adv_params.peer_addr[5],
               self->adv_params.peer_addr_type,
               self->adv_params.channel_map,
-              self->adv_params.adv_filter_policy
+              self->adv_params.adv_filter_policy,
+              self->state
              );
     mp_printf(print,
               ", data = ("
@@ -2545,7 +2547,7 @@ STATIC mp_obj_t network_bluetooth_scan_start(mp_obj_t self_in, mp_obj_t timeout_
 
     static esp_ble_scan_params_t params = {
         .scan_type              = BLE_SCAN_TYPE_ACTIVE,
-        .own_addr_type          = ESP_PUBLIC_ADDR,
+        .own_addr_type          = BLE_ADDR_TYPE_PUBLIC,
         .scan_filter_policy     = BLE_SCAN_FILTER_ALLOW_ALL,
         .scan_interval          = 0x50,
         .scan_window            = 0x30
