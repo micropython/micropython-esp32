@@ -29,7 +29,7 @@ ESPCOMP = $(ESPIDF)/components
 ESPTOOL ?= $(ESPCOMP)/esptool_py/esptool/esptool.py
 
 # verify the ESP IDF version
-ESPIDF_SUPHASH := f73c6f875cc564fa6c9962be71eac4dbdc56aa63
+ESPIDF_SUPHASH := 1e0710f1b24429a316c9c34732aa17bd3f189421
 ESPIDF_CURHASH := $(shell git -C $(ESPIDF) show -s --pretty=format:'%H')
 ifneq ($(ESPIDF_CURHASH),$(ESPIDF_SUPHASH))
 $(info ** WARNING **)
@@ -204,6 +204,7 @@ ESPIDF_DRIVER_O = $(addprefix $(ESPCOMP)/driver/,\
 	gpio.o \
 	timer.o \
 	spi_master.o \
+	spi_common.o \
 	rtc_module.o \
 	)
 
@@ -213,6 +214,7 @@ ESPIDF_ESP32_O = $(addprefix $(ESPCOMP)/esp32/,\
 	event_default_handlers.o \
 	task_wdt.o \
 	cache_err_int.o \
+	clk.o \
 	core_dump.o \
 	cpu_start.o \
 	gdbstub.o \
@@ -222,7 +224,6 @@ ESPIDF_ESP32_O = $(addprefix $(ESPCOMP)/esp32/,\
 	ipc.o \
 	int_wdt.o \
 	event_loop.o \
-	cpu_freq.o \
 	hwcrypto/sha.o \
 	hwcrypto/aes.o \
 	lib_printf.o \
@@ -231,6 +232,7 @@ ESPIDF_ESP32_O = $(addprefix $(ESPCOMP)/esp32/,\
 	hw_random.o \
 	phy_init.o \
 	intr_alloc.o \
+	dport_access.o \
 	)
 
 ESPIDF_SOC_O = $(addprefix $(ESPCOMP)/soc/,\
@@ -633,6 +635,7 @@ BOOTLOADER_OBJ = $(addprefix $(BUILD)/bootloader/$(ESPCOMP)/,\
 	log/log.o \
 	spi_flash/spi_flash_rom_patch.o \
 	soc/esp32/rtc_clk.o \
+	soc/esp32/rtc_time.o \
 	micro-ecc/micro-ecc/uECC.o \
 	bootloader/src/main/bootloader_start.o \
 	)
