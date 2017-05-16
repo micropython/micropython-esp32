@@ -208,6 +208,7 @@ ESPIDF_DRIVER_O = $(addprefix $(ESPCOMP)/driver/,\
 	rtc_module.o \
 	)
 
+$(BUILD)/$(ESPCOMP)/esp32/dport_access.o: CFLAGS += -Wno-error=array-bounds
 ESPIDF_ESP32_O = $(addprefix $(ESPCOMP)/esp32/,\
 	app_trace.o \
 	panic.o \
