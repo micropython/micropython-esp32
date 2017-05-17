@@ -526,7 +526,9 @@ STATIC const mp_rom_map_elem_t mp_module_network_globals_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR_WLAN), (mp_obj_t)&get_wlan_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_phy_mode), (mp_obj_t)&esp_phy_mode_obj },
 
+#if (MICROPY_BLUETOOTH)
     { MP_ROM_QSTR(MP_QSTR_Bluetooth), MP_ROM_PTR(&network_bluetooth_type) },
+#endif
 
 #if MODNETWORK_INCLUDE_CONSTANTS
     { MP_OBJ_NEW_QSTR(MP_QSTR_STA_IF),
