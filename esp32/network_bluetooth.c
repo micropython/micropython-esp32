@@ -49,7 +49,7 @@
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY(x)
 
-#define EVENT_DEBUG
+//#define EVENT_DEBUG
 
 #ifdef EVENT_DEBUG
 #   define EVENT_DEBUG_GATTC
