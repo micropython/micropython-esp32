@@ -80,7 +80,7 @@ STATIC mp_obj_t machine_rtc_make_new(const mp_obj_type_t *type, size_t n_args, s
     return (mp_obj_t)&machine_rtc_obj;
 }
 
-STATIC mp_obj_t machine_rtc_datetime(mp_uint_t n_args, const mp_obj_t *args) {
+STATIC mp_obj_t machine_rtc_datetime_helper(mp_uint_t n_args, const mp_obj_t *args) {
     if (n_args == 1) {
         // Get time
 
@@ -99,7 +99,7 @@ STATIC mp_obj_t machine_rtc_datetime(mp_uint_t n_args, const mp_obj_t *args) {
             mp_obj_new_int(tm.tm_hour),
             mp_obj_new_int(tm.tm_min),
             mp_obj_new_int(tm.tm_sec),
-            mp_obj_new_int(0xff - (tv.tv_usec / 3921)) // microseconds --> subseconds (255 --> 0)
+            mp_obj_new_int(tv.tv_usec)
         };
 
         return mp_obj_new_tuple(8, tuple);
@@ -119,14 +119,24 @@ STATIC mp_obj_t machine_rtc_datetime(mp_uint_t n_args, const mp_obj_t *args) {
         tm.tm_sec   = mp_obj_get_int(items[6]);
 
         tv.tv_sec   = mktime(&tm);
-        tv.tv_usec  = (0xff - mp_obj_get_int(items[7])) * 3921; // subseconds --> microseconds
+        tv.tv_usec  = mp_obj_get_int(items[7]);
 
         settimeofday(&tv, NULL);
 
         return mp_const_none;
     }
 }
+STATIC mp_obj_t machine_rtc_datetime(mp_uint_t n_args, const mp_obj_t *args) {
+    return machine_rtc_datetime_helper(n_args, args);
+}
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(machine_rtc_datetime_obj, 1, 2, machine_rtc_datetime);
+
+STATIC mp_obj_t machine_rtc_init(mp_obj_t self_in, mp_obj_t date) {
+    mp_obj_t args[2] = {self_in, date};
+    machine_rtc_datetime_helper(2, args);
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_2(machine_rtc_init_obj, machine_rtc_init);
 
 STATIC mp_obj_t machine_rtc_memory(mp_uint_t n_args, const mp_obj_t *args) {
 
@@ -222,6 +232,7 @@ STATIC mp_obj_t machine_rtc_wake_on_ext1(size_t n_args, const mp_obj_t *pos_args
 STATIC MP_DEFINE_CONST_FUN_OBJ_KW(machine_rtc_wake_on_ext1_obj, 1, machine_rtc_wake_on_ext1);
 
 STATIC const mp_map_elem_t machine_rtc_locals_dict_table[] = {
+    { MP_OBJ_NEW_QSTR(MP_QSTR_init), (mp_obj_t)&machine_rtc_datetime_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_datetime), (mp_obj_t)&machine_rtc_datetime_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_memory), (mp_obj_t)&machine_rtc_memory_obj },
     // FIXME -- need to enable touch IRQ for this to work,
