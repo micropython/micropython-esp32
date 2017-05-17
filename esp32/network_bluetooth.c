@@ -2105,8 +2105,8 @@ STATIC void network_bluetooth_characteristic_print(const mp_print_t *print, mp_o
             mp_obj_print_helper(print, self->value, PRINT_REPR);
         } else {
             mp_printf(print, "GATTCChar(uuid = ");
+            network_bluetooth_gatt_id_print(print, &self->char_id);
         }
-        network_bluetooth_gatt_id_print(print, &self->char_id);
         mp_printf(print, ", prop = %02X", self->prop);
     }
     mp_printf(print, ")");
