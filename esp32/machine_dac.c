@@ -57,7 +57,11 @@ STATIC mp_obj_t mdac_make_new(const mp_obj_type_t *type, size_t n_args, size_t n
         if (pin_id == mdac_obj[i].gpio_id) { self = &mdac_obj[i]; break; }
     }
     if (!self) nlr_raise(mp_obj_new_exception_msg(&mp_type_ValueError, "invalid Pin for DAC"));
-    esp_err_t err = dac_out_voltage(self->dac_id, 0);
+
+    esp_err_t err = dac_output_enable(self->dac_id);
+    if (err == ESP_OK) {
+        err = dac_output_voltage(self->dac_id, 0);
+    }
     if (err == ESP_OK) return MP_OBJ_FROM_PTR(self);
     mp_raise_ValueError("Parameter Error");
 }
@@ -72,7 +76,7 @@ STATIC mp_obj_t mdac_write(mp_obj_t self_in, mp_obj_t value_in) {
     int value = mp_obj_get_int(value_in);
     if (value < 0 || value > 255) mp_raise_ValueError("Value out of range");
 
-    esp_err_t err = dac_out_voltage(self->dac_id, value);
+    esp_err_t err = dac_output_voltage(self->dac_id, value);
     if (err == ESP_OK) return mp_const_none;
     mp_raise_ValueError("Parameter Error");
 }
