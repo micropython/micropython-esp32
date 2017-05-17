@@ -92,14 +92,14 @@ STATIC mp_obj_t machine_rtc_datetime(mp_uint_t n_args, const mp_obj_t *args) {
         gmtime_r(&tv.tv_sec, &tm);
 
         mp_obj_t tuple[8] = {
-            mp_obj_new_int(tm.tm_year),
-            mp_obj_new_int(tm.tm_mon),
+            mp_obj_new_int(tm.tm_year + 1900),
+            mp_obj_new_int(tm.tm_mon + 1),
             mp_obj_new_int(tm.tm_mday),
-            mp_obj_new_int(tm.tm_wday),
+            mp_obj_new_int(tm.tm_wday + 1),
             mp_obj_new_int(tm.tm_hour),
             mp_obj_new_int(tm.tm_min),
             mp_obj_new_int(tm.tm_sec),
-            mp_obj_new_int(tv.tv_usec / 1000) // microseconds --> milliseconds
+            mp_obj_new_int(0xff - (tv.tv_usec / 3921)) // microseconds --> subseconds (255 --> 0)
         };
 
         return mp_obj_new_tuple(8, tuple);
@@ -111,15 +111,15 @@ STATIC mp_obj_t machine_rtc_datetime(mp_uint_t n_args, const mp_obj_t *args) {
         struct tm tm;
         struct timeval tv;
 
-        tm.tm_year  = mp_obj_get_int(items[0]);
-        tm.tm_mon   = mp_obj_get_int(items[1]);
+        tm.tm_year  = mp_obj_get_int(items[0]) - 1900;
+        tm.tm_mon   = mp_obj_get_int(items[1]) - 1;
         tm.tm_mday  = mp_obj_get_int(items[2]);
         tm.tm_hour  = mp_obj_get_int(items[4]);
         tm.tm_min   = mp_obj_get_int(items[5]);
         tm.tm_sec   = mp_obj_get_int(items[6]);
 
         tv.tv_sec   = mktime(&tm);
-        tv.tv_usec  = mp_obj_get_int(items[7]) * 1000;
+        tv.tv_usec  = (0xff - mp_obj_get_int(items[7])) * 3921; // subseconds --> microseconds
 
         settimeofday(&tv, NULL);
 
