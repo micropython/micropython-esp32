@@ -72,7 +72,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_0(machine_reset_obj, machine_reset);
 
 STATIC mp_obj_t machine_unique_id(void) {
     uint8_t chipid[6];
-    esp_efuse_read_mac(chipid);
+    esp_efuse_mac_get_default(chipid);
     return mp_obj_new_bytes(chipid, 6);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(machine_unique_id_obj, machine_unique_id);
