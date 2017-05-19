@@ -66,10 +66,9 @@ STATIC ledc_timer_config_t timer_cfg = {
 };
 
 STATIC void pwm_init(void) {
-    int x;
 
     // Initial condition: no channels assigned
-    for (x = 0; x < LEDC_CHANNEL_MAX; ++x) {
+    for (int x = 0; x < LEDC_CHANNEL_MAX; ++x) {
         chan_gpio[x] = -1;
     }
 
@@ -83,22 +82,20 @@ STATIC int set_freq(int newval) {
     timer_cfg.freq_hz = newval;
     if (ledc_timer_config(&timer_cfg) != ESP_OK) {
         timer_cfg.freq_hz = oval;
-        return(0);
+        return 0;
     }
-    return(1);
+    return 1;
 }
 
 /******************************************************************************/
 
 // MicroPython bindings for PWM
 
-STATIC void esp32_pwm_print(const mp_print_t *print,
-        mp_obj_t self_in, mp_print_kind_t kind) {
+STATIC void esp32_pwm_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
     esp32_pwm_obj_t *self = MP_OBJ_TO_PTR(self_in);
     mp_printf(print, "PWM(%u", self->pin);
     if (self->active) {
-        mp_printf(print, ", freq=%u, duty=%u",
-            timer_cfg.freq_hz,
+        mp_printf(print, ", freq=%u, duty=%u", timer_cfg.freq_hz,
             ledc_get_duty(PWMODE, self->channel));
     }
     mp_printf(print, ")");
@@ -116,7 +113,7 @@ STATIC void esp32_pwm_init_helper(esp32_pwm_obj_t *self,
         MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
     int channel;
-    int tval, dval, avail = -1;
+    int avail = -1;
 
     // Find a free PWM channel, also spot if our pin is
     //  already mentioned.
@@ -130,8 +127,7 @@ STATIC void esp32_pwm_init_helper(esp32_pwm_obj_t *self,
     }
     if (channel >= LEDC_CHANNEL_MAX) {
         if (avail == -1) {
-            nlr_raise(mp_obj_new_exception_msg_varg(&mp_type_ValueError,
-                "Out of PWM channels"));
+            mp_raise_ValueError("out of PWM channels");
         }
         channel = avail;
     }
@@ -141,7 +137,7 @@ STATIC void esp32_pwm_init_helper(esp32_pwm_obj_t *self,
     if (chan_gpio[channel] == -1) {
         ledc_channel_config_t cfg = {
             .channel = channel,
-            .duty = (1 << PWRES)/2,
+            .duty = (1 << PWRES) / 2,
             .gpio_num = self->pin,
             .intr_type = LEDC_INTR_DISABLE,
             .speed_mode = PWMODE,
@@ -156,7 +152,7 @@ STATIC void esp32_pwm_init_helper(esp32_pwm_obj_t *self,
     }
 
     // Maybe change PWM timer
-    tval = args[ARG_freq].u_int;
+    int tval = args[ARG_freq].u_int;
     if (tval != -1) {
         if (tval != timer_cfg.freq_hz) {
             if (!set_freq(tval)) {
@@ -167,7 +163,7 @@ STATIC void esp32_pwm_init_helper(esp32_pwm_obj_t *self,
     }
 
     // Set duty cycle?
-    dval = args[ARG_duty].u_int;
+    int dval = args[ARG_duty].u_int;
     if (dval != -1) {
         dval &= ((1 << PWRES)-1);
         ledc_set_duty(PWMODE, channel, dval);
@@ -239,8 +235,7 @@ STATIC mp_obj_t esp32_pwm_freq(size_t n_args, const mp_obj_t *args) {
     return mp_const_none;
 }
 
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(esp32_pwm_freq_obj,
-    1, 2, esp32_pwm_freq);
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(esp32_pwm_freq_obj, 1, 2, esp32_pwm_freq);
 
 STATIC mp_obj_t esp32_pwm_duty(size_t n_args, const mp_obj_t *args) {
     esp32_pwm_obj_t *self = MP_OBJ_TO_PTR(args[0]);
