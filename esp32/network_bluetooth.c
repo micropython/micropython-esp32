@@ -249,7 +249,7 @@ typedef struct {
     esp_gatt_id_t           id; // common
     esp_gatt_char_prop_t    prop;    // common
 
-    mp_obj_t                descriptors; // GATTC
+    mp_obj_t                descrs; // GATTC
 
     esp_gatt_perm_t         perm;    // GATTS
 
@@ -484,7 +484,7 @@ STATIC mp_obj_t network_bluetooth_item_op(mp_obj_t list, esp_bt_uuid_t* uuid, ui
                             }
                             size_t descr_len;
                             mp_obj_t *descr_items;
-                            mp_obj_get_array(chr->descriptors, &descr_len, &descr_items);
+                            mp_obj_get_array(chr->descrs, &descr_len, &descr_items);
                             for (int k = 0; k < descr_len; k++) {
                                 network_bluetooth_char_descr_obj_t* descr = (network_bluetooth_char_descr_obj_t*) descr_items[k];
                                 if ((uuid != NULL && uuid_eq(&descr->id.uuid, uuid)) || (uuid == NULL && descr->handle == handle_or_conn_id)) {
@@ -516,7 +516,7 @@ STATIC mp_obj_t network_bluetooth_item_op(mp_obj_t list, esp_bt_uuid_t* uuid, ui
                     }
                     size_t descr_len;
                     mp_obj_t *descr_items;
-                    mp_obj_get_array(chr->descriptors, &descr_len, &descr_items);
+                    mp_obj_get_array(chr->descrs, &descr_len, &descr_items);
                     for (int k = 0; k < descr_len; k++) {
                         network_bluetooth_char_descr_obj_t* descr = (network_bluetooth_char_descr_obj_t*) descr_items[k];
                         if ((uuid != NULL && uuid_eq(&descr->id.uuid, uuid)) || (uuid == NULL && descr->handle == handle_or_conn_id)) {
@@ -574,7 +574,7 @@ STATIC mp_obj_t network_bluetooth_find_char_descr_by_handle(uint16_t handle) {
 }
 
 STATIC mp_obj_t network_bluetooth_find_char_descr_in_char_descr_by_uuid(network_bluetooth_char_descr_obj_t* chr, esp_bt_uuid_t* uuid) {
-    return network_bluetooth_item_op(chr->descriptors, uuid, 0, NULL, NETWORK_BLUETOOTH_FIND_CHAR_DESCR_IN);
+    return network_bluetooth_item_op(chr->descrs, uuid, 0, NULL, NETWORK_BLUETOOTH_FIND_CHAR_DESCR_IN);
 }
 STATIC mp_obj_t network_bluetooth_find_char_descr_in_service_by_uuid(network_bluetooth_service_obj_t* service, esp_bt_uuid_t* uuid) {
     return network_bluetooth_item_op(service->chars, uuid, 0, NULL, NETWORK_BLUETOOTH_FIND_CHAR_DESCR_IN);
@@ -1609,12 +1609,9 @@ STATIC mp_obj_t network_bluetooth_callback_queue_handler(mp_obj_t arg) {
                             ITEM_BEGIN();
                             size_t len;
                             mp_obj_t *items;
-                            mp_obj_get_array(chr->descriptors, &len, &items);
+                            mp_obj_get_array(chr->descrs, &len, &items);
                             for (int j = 0; j < len; j++) {
                                 network_bluetooth_char_descr_obj_t* descr = (network_bluetooth_char_descr_obj_t*) items[j];
-                                NETWORK_BLUETOOTH_DEBUG_PRINTF("Adding descr, service hndl = %04X, perm = %02X\n", service->handle, descr->perm);
-                                network_bluetooth_gatt_id_print(NULL, &descr->id);
-                                NETWORK_BLUETOOTH_DEBUG_PRINTF("\n");
                                 esp_ble_gatts_add_char_descr(service->handle, &descr->id.uuid, descr->perm, NULL, NULL);
                             }
                             ITEM_END();
@@ -1786,7 +1783,7 @@ STATIC mp_obj_t network_bluetooth_callback_queue_handler(mp_obj_t arg) {
                             chr->id = cbdata.gattc_get_char.char_id;
                             chr->prop = cbdata.gattc_get_char.props;
                             chr->parent = service;
-                            chr->descriptors = mp_obj_new_list(0, NULL);
+                            chr->descrs = mp_obj_new_list(0, NULL);
 
                             mp_obj_list_append(service->chars, chr);
                             esp_ble_gattc_get_descriptor(bluetooth->gattc_interface, conn->conn_id, &service->service_id, &chr->id, NULL);
@@ -1807,7 +1804,7 @@ STATIC mp_obj_t network_bluetooth_callback_queue_handler(mp_obj_t arg) {
                                 descr->base.type = &network_bluetooth_gattc_descr_type;
                                 descr->parent = chr;
                                 descr->id = cbdata.gattc_get_descr.descr_id;
-                                mp_obj_list_append(chr->descriptors, descr);
+                                mp_obj_list_append(chr->descrs, descr);
                             }
                         }
                     }
@@ -2974,7 +2971,7 @@ STATIC mp_obj_t network_bluetooth_char_descr_make_new(size_t n_args, const mp_ob
     self->value = args[ARG_value].u_obj;
     self->perm = args[ARG_perm].u_int;
     self->prop = args[ARG_prop].u_int;
-    self->descriptors = mp_obj_new_list(0, NULL);
+    self->descrs = mp_obj_new_list(0, NULL);
 
     ITEM_BEGIN();
     if (service != MP_OBJ_NULL) {
@@ -2984,7 +2981,7 @@ STATIC mp_obj_t network_bluetooth_char_descr_make_new(size_t n_args, const mp_ob
     } else {
         self->base.type = &network_bluetooth_gatts_descr_type;
         self->parent = chr;
-        mp_obj_list_append(chr->descriptors, self);
+        mp_obj_list_append(chr->descrs, self);
     }
     ITEM_END();
 
@@ -3016,7 +3013,7 @@ STATIC mp_obj_t network_bluetooth_service_start(mp_obj_t self_in) {
     mp_obj_get_array(bluetooth->services, &index, &items);
     while (index--) {
         network_bluetooth_char_descr_obj_t* chr = (network_bluetooth_char_descr_obj_t*)items[index];
-        numDescrs += mp_obj_get_int(mp_obj_len(chr->descriptors));
+        numDescrs += mp_obj_get_int(mp_obj_len(chr->descrs));
     }
 
 
@@ -3142,8 +3139,8 @@ STATIC void network_bluetooth_char_attr(mp_obj_t self_in, qstr attr, mp_obj_t *d
                 }
                 break;
 
-            case MP_QSTR_descriptors:
-                dest[0] = self->descriptors;
+            case MP_QSTR_descrs:
+                dest[0] = self->descrs;
                 break;
 
 
@@ -3468,7 +3465,7 @@ STATIC const mp_rom_map_elem_t network_bluetooth_gattc_char_locals_dict_table[] 
     { MP_ROM_QSTR(MP_QSTR_write), MP_ROM_PTR(&network_bluetooth_char_descr_write_obj) },
     { MP_ROM_QSTR(MP_QSTR_service), NULL }, // handled by attr handler
     { MP_ROM_QSTR(MP_QSTR_uuid), NULL }, // handled by attr handler
-    { MP_ROM_QSTR(MP_QSTR_descriptors), NULL }, // handled by attr handler
+    { MP_ROM_QSTR(MP_QSTR_descrs), NULL }, // handled by attr handler
 };
 
 STATIC MP_DEFINE_CONST_DICT(network_bluetooth_gattc_char_locals_dict, network_bluetooth_gattc_char_locals_dict_table);
