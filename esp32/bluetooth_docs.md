@@ -199,7 +199,6 @@ For `bluetooth.READ` events, the return value of the callback is what is returne
 
 In the absence of a callback, then the characteristic value is return for a read, and it is updated for a write.
 
-
 `char.indicate(<value>)` Send an indicate value.  `<value>` is `string`, `bytearray`, `bytes` or `None`.
 
 `char.notify(<value>)` Send a notify value.  `<value>` is `string`, `bytearray`, `bytes` or `None`.
@@ -208,8 +207,19 @@ In the absence of a callback, then the characteristic value is return for a read
 
 `char.value` Get or set the characteristic value.
 
-`char.service` Get the service this characteristic is attached to.
+`char.service` Get the parent service.
 
+`char.Descr(uuid, value = None, perm = bluetooth.PERM_READ | bluetooth.PERM_WRITE)` Create a new descriptor for a characteristic.  
+
+### GATTSDescr objects
+
+`descr.uuid` Get the descriptor UUID.
+
+`descr.value` Get or set the value.
+
+`descr.char` Get the parent characteristic.
+
+`descr.callback(<callback>, <callback_data>)` See `char.callback()`, above.
 
 ## GATTC
 
