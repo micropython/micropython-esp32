@@ -2139,10 +2139,10 @@ STATIC void network_bluetooth_char_descr_print(const mp_print_t *print, mp_obj_t
         mp_printf(print, "GATTCDescr");
     }  else if (MP_OBJ_IS_TYPE(self_in, &network_bluetooth_gatts_char_type)) {
         type = GATTS_CHAR;
-        mp_printf(print, "GATTCChar");
+        mp_printf(print, "GATTSChar");
     } else if (MP_OBJ_IS_TYPE(self_in, &network_bluetooth_gattc_char_type)) {
         type = GATTC_CHAR;
-        mp_printf(print, "GATTSChar");
+        mp_printf(print, "GATTCChar");
     } else {
         type = GATTS_DESCR;
         mp_printf(print, "GATTSDescr");
@@ -2151,24 +2151,14 @@ STATIC void network_bluetooth_char_descr_print(const mp_print_t *print, mp_obj_t
     mp_printf(print, "(uuid = ");
     network_bluetooth_gatt_id_print(print, &self->id);
 
-    switch (type) {
-        case GATTS_CHAR:
-            mp_printf(print, ", handle = %04X, perm = %02X, value = ", self->handle, self->perm);
-            mp_obj_print_helper(print, self->value, PRINT_REPR);
-        // intentional fallthrough
-
-        case GATTC_CHAR:
+    if (type != GATTC_DESCR) {
+        mp_printf(print, ", handle = %04X, perm = %02X, value = ", self->handle, self->perm);
+        mp_obj_print_helper(print, self->value, PRINT_REPR);
+        if (type == GATTC_CHAR) {
             mp_printf(print, ", prop = %02X", self->prop);
-            break;
-
-        case GATTC_DESCR:
-            // do nothing
-            break;
-
-        case GATTS_DESCR:
-            mp_printf(print, ", handle = %04X", self->handle);
-            break;
+        }
     }
+
     mp_printf(print, ")");
 }
 
@@ -2928,10 +2918,12 @@ STATIC mp_obj_t network_bluetooth_service_make_new(const mp_obj_type_t *type, si
 STATIC mp_obj_t network_bluetooth_char_descr_make_new(size_t n_args, const mp_obj_t *pos_args, mp_map_t * kw_args) {
 
     enum {ARG_uuid, ARG_value, ARG_perm, ARG_prop};
-    static const mp_arg_t allowed_args[] = {
+    mp_arg_t allowed_args[] = {
         { MP_QSTR_uuid,     MP_ARG_REQUIRED | MP_ARG_OBJ },
         { MP_QSTR_value,    MP_ARG_OBJ, {.u_obj = mp_const_none }},
         { MP_QSTR_perm,     MP_ARG_INT, {.u_int = ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE } },
+        // "prop" is disabled for descriptors, below
+        // Ensure the index of "prop" is updated if this list changes
         { MP_QSTR_prop,     MP_ARG_INT, {.u_int = ESP_GATT_CHAR_PROP_BIT_READ | ESP_GATT_CHAR_PROP_BIT_WRITE | ESP_GATT_CHAR_PROP_BIT_NOTIFY} },
     };
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
@@ -2939,10 +2931,12 @@ STATIC mp_obj_t network_bluetooth_char_descr_make_new(size_t n_args, const mp_ob
     network_bluetooth_service_obj_t* service = MP_OBJ_NULL;
     network_bluetooth_char_descr_obj_t* chr = MP_OBJ_NULL;
 
-    if (MP_OBJ_IS_TYPE(pos_args[0], &network_bluetooth_gatts_service_type)) { // Make new descriptor
+    if (MP_OBJ_IS_TYPE(pos_args[0], &network_bluetooth_gatts_service_type)) { // Make new char
         service = MP_OBJ_TO_PTR(pos_args[0]);
-    } else { // Make new char
+    } else { // Make new descriptor
         chr = MP_OBJ_TO_PTR(pos_args[0]);
+        // Disable the "prop" argument
+        allowed_args[3].qst = MP_QSTR_;
     }
 
     mp_arg_parse_all(n_args - 1, pos_args + 1, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
