@@ -43,7 +43,6 @@ typedef struct _machine_uart_obj_t {
     uint8_t parity;
     uint8_t stop;
     uint32_t baudrate;
-    // TODO: implement pins; tx, rx, rts, cts
     int8_t tx;
     int8_t rx;
     int8_t rts;
@@ -54,17 +53,18 @@ typedef struct _machine_uart_obj_t {
 
 STATIC const char *_parity_name[] = {"None", "1", "0"};
 
+QueueHandle_t UART_QUEUE[UART_NUM_MAX] = {};
+
 /******************************************************************************/
 // MicroPython bindings for UART
 
 STATIC void machine_uart_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
     machine_uart_obj_t *self = MP_OBJ_TO_PTR(self_in);
-    mp_printf(print, "UART(%u, baudrate=%u, bits=%u, parity=%s, stop=%u, timeout=%u, timeout_char=%u)",
+    mp_printf(print, "UART(%u, baudrate=%u, bits=%u, parity=%s, stop=%u, tx=%d, rx=%d, rts=%d, cts=%d, timeout=%u, timeout_char=%u)",
         self->uart_num, self->baudrate, self->bits, _parity_name[self->parity],
-        self->stop, self->timeout, self->timeout_char);
+        self->stop, self->tx, self->rx, self->rts, self->cts, self->timeout, self->timeout_char);
 }
 
-// https://github.com/espressif/esp-idf/blob/9050307dfe600c915adaccf8076220d6474876db/components/driver/uart.c#L359
 STATIC void machine_uart_init_helper(machine_uart_obj_t *self, size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_baudrate, ARG_bits, ARG_parity, ARG_stop, ARG_tx, ARG_rx, ARG_rts, ARG_cts, ARG_timeout, ARG_timeout_char };
     static const mp_arg_t allowed_args[] = {
@@ -82,61 +82,47 @@ STATIC void machine_uart_init_helper(machine_uart_obj_t *self, size_t n_args, co
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
     mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
-     // Defaults
-    uart_config_t uartcfg = {
-        .baud_rate = 115200,
-        .data_bits = UART_DATA_8_BITS,
-        .parity = UART_PARITY_DISABLE,
-        .stop_bits = UART_STOP_BITS_1,
-        .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
-        .rx_flow_ctrl_thresh = 0
-    };
-    
     // set baudrate
     if (args[ARG_baudrate].u_int > 0) {
         self->baudrate = args[ARG_baudrate].u_int;
-        uartcfg.baud_rate = self->baudrate;
-        //uart_set_baudrate(self->uart_num, self->baudrate);
+        uart_set_baudrate(self->uart_num, self->baudrate);
     }
-    
+
     uart_set_pin(self->uart_num, args[ARG_tx].u_int, args[ARG_rx].u_int, args[ARG_rts].u_int, args[ARG_cts].u_int);
     if (args[ARG_tx].u_int != UART_PIN_NO_CHANGE) {
         self->tx = args[ARG_tx].u_int;
     }
-    
+
     if (args[ARG_rx].u_int != UART_PIN_NO_CHANGE) {
         self->rx = args[ARG_rx].u_int;
     }
-    
+
     if (args[ARG_rts].u_int != UART_PIN_NO_CHANGE) {
         self->rts = args[ARG_rts].u_int;
     }
-    
+
     if (args[ARG_cts].u_int != UART_PIN_NO_CHANGE) {
         self->cts = args[ARG_cts].u_int;
     }
+
     // set data bits
     switch (args[ARG_bits].u_int) {
         case 0:
             break;
         case 5:
-            //uart_set_word_length(self->uart_num, UART_DATA_5_BITS);
-            uartcfg.data_bits = UART_DATA_5_BITS;
+            uart_set_word_length(self->uart_num, UART_DATA_5_BITS);
             self->bits = 5;
             break;
         case 6:
-            //uart_set_word_length(self->uart_num, UART_DATA_6_BITS);
-            uartcfg.data_bits = UART_DATA_6_BITS;
+            uart_set_word_length(self->uart_num, UART_DATA_6_BITS);
             self->bits = 6;
             break;
         case 7:
-            //uart_set_word_length(self->uart_num, UART_DATA_7_BITS);
-            uartcfg.data_bits = UART_DATA_7_BITS;
+            uart_set_word_length(self->uart_num, UART_DATA_7_BITS);
             self->bits = 7;
             break;
         case 8:
-            //uart_set_word_length(self->uart_num, UART_DATA_8_BITS);
-            uartcfg.data_bits = UART_DATA_8_BITS;
+            uart_set_word_length(self->uart_num, UART_DATA_8_BITS);
             self->bits = 8;
             break;
         default:
@@ -147,18 +133,15 @@ STATIC void machine_uart_init_helper(machine_uart_obj_t *self, size_t n_args, co
     // set parity
     if (args[ARG_parity].u_obj != MP_OBJ_NULL) {
         if (args[ARG_parity].u_obj == mp_const_none) {
-            //uart_set_parity(self->uart_num, UART_PARITY_DISABLE);
-            uartcfg.parity = UART_PARITY_DISABLE;
+            uart_set_parity(self->uart_num, UART_PARITY_DISABLE);
             self->parity = 0;
         } else {
             mp_int_t parity = mp_obj_get_int(args[ARG_parity].u_obj);
             if (parity & 1) {
-                //uart_set_parity(self->uart_num, UART_PARITY_ODD);
-                uartcfg.parity = UART_PARITY_ODD;
+                uart_set_parity(self->uart_num, UART_PARITY_ODD);
                 self->parity = 1;
             } else {
-                //uart_set_parity(self->uart_num, UART_PARITY_EVEN);
-                uartcfg.parity = UART_PARITY_EVEN;
+                uart_set_parity(self->uart_num, UART_PARITY_EVEN);
                 self->parity = 2;
             }
         }
@@ -170,13 +153,11 @@ STATIC void machine_uart_init_helper(machine_uart_obj_t *self, size_t n_args, co
         case 0:
             break;
         case 1:
-            //uart_set_stop_bits(self->uart_num, UART_STOP_BITS_1);
-            uartcfg.stop_bits = UART_STOP_BITS_1;
+            uart_set_stop_bits(self->uart_num, UART_STOP_BITS_1);
             self->stop = 1;
             break;
         case 2:
-            //uart_set_stop_bits(self->uart_num, UART_STOP_BITS_2);
-            uartcfg.stop_bits = UART_STOP_BITS_2;
+            uart_set_stop_bits(self->uart_num, UART_STOP_BITS_2);
             self->stop = 2;
             break;
         default:
@@ -194,17 +175,6 @@ STATIC void machine_uart_init_helper(machine_uart_obj_t *self, size_t n_args, co
     if (self->timeout_char < min_timeout_char) {
         self->timeout_char = min_timeout_char;
     }
-
-    // setup
-    uart_param_config(self->uart_num, &uartcfg);
-    
-    // This should probably be located in make_new;
-    // https://github.com/espressif/esp-idf/blob/9050307dfe600c915adaccf8076220d6474876db/components/driver/include/driver/uart.h#L468
-    uart_driver_install(self->uart_num, 256, 0, 0, NULL, 0);
-    // FIXME: Do we want to use FreeRTOS's queue handler?
-    // https://github.com/espressif/esp-idf/blob/master/components/freertos/include/freertos/queue.h
-    //QueueHandle_t uart_queue;
-    //uart_driver_install(uart_num, 1024 * 2, 1024 * 2, 10, &uart_queue, 0);
 }
 
 STATIC mp_obj_t machine_uart_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args) {
@@ -216,6 +186,22 @@ STATIC mp_obj_t machine_uart_make_new(const mp_obj_type_t *type, size_t n_args, 
         nlr_raise(mp_obj_new_exception_msg_varg(&mp_type_ValueError, "UART(%d) does not exist", uart_num));
     }
 
+    // Attempts to use UART0 from Python has resulted in all sorts of fun errors.
+    // FIXME: UART0 is disabled for now.
+    if (uart_num == UART_NUM_0) {
+        nlr_raise(mp_obj_new_exception_msg_varg(&mp_type_ValueError, "UART(%d) is disabled (dedicated to REPL)", uart_num));
+    }
+
+     // Defaults
+    uart_config_t uartcfg = {
+        .baud_rate = 115200,
+        .data_bits = UART_DATA_8_BITS,
+        .parity = UART_PARITY_DISABLE,
+        .stop_bits = UART_STOP_BITS_1,
+        .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+        .rx_flow_ctrl_thresh = 0
+    };
+
     // create instance
     machine_uart_obj_t *self = m_new_obj(machine_uart_obj_t);
     self->base.type = &machine_uart_type;
@@ -224,13 +210,39 @@ STATIC mp_obj_t machine_uart_make_new(const mp_obj_type_t *type, size_t n_args, 
     self->bits = 8;
     self->parity = 0;
     self->stop = 1;
+    self->rts = UART_PIN_NO_CHANGE;
+    self->cts = UART_PIN_NO_CHANGE;
     self->timeout = 0;
     self->timeout_char = 0;
 
+    switch (uart_num) {
+        case UART_NUM_0:
+            self->rx = UART_PIN_NO_CHANGE; // GPIO 3
+            self->tx = UART_PIN_NO_CHANGE; // GPIO 1
+            break;
+        case UART_NUM_1:
+            self->rx = 9;
+            self->tx = 10;
+            break;
+        case UART_NUM_2:
+            self->rx = 16;
+            self->tx = 17;
+            break;
+    }
+
     // init the peripheral
+    // Setup
+    uart_param_config(self->uart_num, &uartcfg);
+
+    // RX and TX buffers hardcoded at 2048 bytes.
+    uart_driver_install(uart_num, 1024 * 2, 1024 * 2, 10, &UART_QUEUE[self->uart_num], 0);
+
     mp_map_t kw_args;
     mp_map_init_fixed_table(&kw_args, n_kw, args + n_args);
     machine_uart_init_helper(self, n_args - 1, args + 1, &kw_args);
+
+    // Make sure pins are connected.
+    uart_set_pin(self->uart_num, self->tx, self->rx, self->rts, self->cts);
 
     return MP_OBJ_FROM_PTR(self);
 }
@@ -255,23 +267,25 @@ STATIC MP_DEFINE_CONST_DICT(machine_uart_locals_dict, machine_uart_locals_dict_t
 STATIC mp_uint_t machine_uart_read(mp_obj_t self_in, void *buf_in, mp_uint_t size, int *errcode) {
     machine_uart_obj_t *self = MP_OBJ_TO_PTR(self_in);
 
-    //if (self->uart_num == 1) {
-    //    nlr_raise(mp_obj_new_exception_msg_varg(&mp_type_OSError, "UART(1) can't read"));
-    //}
-
     // make sure we want at least 1 char
     if (size == 0) {
         return 0;
     }
-    
-    TickType_t time_to_wait = pdMS_TO_TICKS(self->timeout * 1000);
+
+    TickType_t time_to_wait;
+    if (self->timeout == 0) {
+        time_to_wait = portMAX_DELAY; // No timeout.
+    } else {
+        time_to_wait = pdMS_TO_TICKS(self->timeout * 1000);
+    }
+
     int bytes_read = uart_read_bytes(self->uart_num, buf_in, size, time_to_wait);
-    
+
     if (bytes_read < 0) {
         *errcode = MP_EAGAIN;
         return MP_STREAM_ERROR;
     }
-    // TODO: what exactly does uart_read_bytes return?
+
     return bytes_read;
 }
 
@@ -279,12 +293,12 @@ STATIC mp_uint_t machine_uart_write(mp_obj_t self_in, const void *buf_in, mp_uin
     machine_uart_obj_t *self = MP_OBJ_TO_PTR(self_in);
 
     int bytes_written = uart_write_bytes(self->uart_num, buf_in, size);
-    
+
     if (bytes_written < 0) {
         *errcode = MP_EAGAIN;
         return MP_STREAM_ERROR;
     }
-    
+
     // return number of bytes written
     return bytes_written;
 }
