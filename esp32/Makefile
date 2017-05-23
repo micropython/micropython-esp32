@@ -129,6 +129,7 @@ SRC_C = \
 	modesp.c \
 	espneopixel.c \
 	machine_hw_spi.c \
+	machine_wdt.c \
 	mpthreadport.c \
 	$(SRC_MOD)
 
