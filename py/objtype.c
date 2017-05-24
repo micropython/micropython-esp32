@@ -1013,7 +1013,9 @@ STATIC mp_obj_t super_make_new(const mp_obj_type_t *type_in, size_t n_args, size
     // 0 arguments are turned into 2 in the compiler
     // 1 argument is not yet implemented
     mp_arg_check_num(n_args, n_kw, 2, 2, false);
-    return mp_obj_new_super(args[0], args[1]);
+    mp_obj_super_t *o = m_new_obj(mp_obj_super_t);
+    *o = (mp_obj_super_t){{type_in}, args[0], args[1]};
+    return MP_OBJ_FROM_PTR(o);
 }
 
 STATIC void super_attr(mp_obj_t self_in, qstr attr, mp_obj_t *dest) {
@@ -1068,10 +1070,9 @@ const mp_obj_type_t mp_type_super = {
     .attr = super_attr,
 };
 
-mp_obj_t mp_obj_new_super(mp_obj_t type, mp_obj_t obj) {
-    mp_obj_super_t *o = m_new_obj(mp_obj_super_t);
-    *o = (mp_obj_super_t){{&mp_type_super}, type, obj};
-    return MP_OBJ_FROM_PTR(o);
+void mp_load_super_method(qstr attr, mp_obj_t *dest) {
+    mp_obj_super_t super = {{&mp_type_super}, dest[1], dest[2]};
+    mp_load_method(MP_OBJ_FROM_PTR(&super), attr, dest);
 }
 
 /******************************************************************************/

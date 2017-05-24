@@ -45,6 +45,7 @@
 #endif
 #define MICROPY_COMP_MODULE_CONST   (1)
 #define MICROPY_COMP_TRIPLE_TUPLE_ASSIGN (1)
+#define MICROPY_COMP_RETURN_IF_EXPR (1)
 #define MICROPY_ENABLE_GC           (1)
 #define MICROPY_ENABLE_FINALISER    (1)
 #define MICROPY_STACK_CHECK         (1)
@@ -100,6 +101,7 @@
 #endif
 #define MICROPY_PY_CMATH            (1)
 #define MICROPY_PY_IO_FILEIO        (1)
+#define MICROPY_PY_IO_RESOURCE_STREAM (1)
 #define MICROPY_PY_GC_COLLECT_RETVAL (1)
 #define MICROPY_MODULE_FROZEN_STR   (1)
 
