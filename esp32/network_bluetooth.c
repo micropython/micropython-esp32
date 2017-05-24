@@ -2583,31 +2583,52 @@ STATIC mp_obj_t network_bluetooth_callback_helper(mp_obj_t* callback, mp_obj_t* 
     return tuple;
 }
 
-STATIC mp_obj_t network_bluetooth_scan_start(mp_obj_t self_in, mp_obj_t timeout_arg) {
-    network_bluetooth_obj_t *bluetooth = MP_OBJ_TO_PTR(self_in);
+STATIC mp_obj_t network_bluetooth_scan_start(size_t n_args, const mp_obj_t *pos_args, mp_map_t * kw_args) {
+    network_bluetooth_obj_t *bluetooth = MP_OBJ_TO_PTR(pos_args[0]);
 
     if (bluetooth->state != NETWORK_BLUETOOTH_STATE_INIT) {
         mp_raise_msg(&mp_type_OSError, "bluetooth is deinit");
     }
 
+    enum {
+        // params
+        ARG_timeout,
+        ARG_scan_type,
+        ARG_own_addr_type,
+        ARG_scan_filter_policy,
+        ARG_scan_interval,
+        ARG_scan_window
+    };
+
+    static const mp_arg_t allowed_args[] = {
+        { MP_QSTR_timeout,            MP_ARG_REQUIRED | MP_ARG_INT },
+        { MP_QSTR_scan_type,          MP_ARG_INT, {.u_int = BLE_SCAN_TYPE_ACTIVE} },
+        { MP_QSTR_own_addr_type,      MP_ARG_INT, {.u_int = BLE_ADDR_TYPE_PUBLIC} },
+        { MP_QSTR_scan_filter_policy, MP_ARG_INT, {.u_int = BLE_SCAN_FILTER_ALLOW_ALL }},
+        { MP_QSTR_scan_interval,      MP_ARG_INT, {.u_int = 0x50 }},
+        { MP_QSTR_scan_window,        MP_ARG_INT, {.u_int = 0x30 }},
+    };
+
+    mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
+    mp_arg_parse_all(n_args - 1, pos_args + 1, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
+
     if (bluetooth->scanning) {
         mp_raise_msg(&mp_type_OSError, "already scanning");
     }
-    mp_int_t timeout = mp_obj_get_int(timeout_arg);
 
-    static esp_ble_scan_params_t params = {
-        .scan_type              = BLE_SCAN_TYPE_ACTIVE,
-        .own_addr_type          = BLE_ADDR_TYPE_PUBLIC,
-        .scan_filter_policy     = BLE_SCAN_FILTER_ALLOW_ALL,
-        .scan_interval          = 0x50,
-        .scan_window            = 0x30
+    esp_ble_scan_params_t params = {
+        .scan_type              = args[ARG_scan_type].u_int,
+        .own_addr_type          = args[ARG_own_addr_type].u_int,
+        .scan_filter_policy     = args[ARG_scan_filter_policy].u_int,
+        .scan_interval          = args[ARG_scan_interval].u_int,
+        .scan_window            = args[ARG_scan_window].u_int
     };
 
     assert(esp_ble_gap_set_scan_params(&params) == ESP_OK);
-    assert(esp_ble_gap_start_scanning(timeout) == ESP_OK);
+    assert(esp_ble_gap_start_scanning((uint32_t)args[ARG_timeout].u_int) == ESP_OK);
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(network_bluetooth_scan_start_obj, network_bluetooth_scan_start);
+STATIC MP_DEFINE_CONST_FUN_OBJ_KW(network_bluetooth_scan_start_obj, 1, network_bluetooth_scan_start);
 
 STATIC mp_obj_t network_bluetooth_scan_stop(mp_obj_t self_in) {
     (void)self_in;
@@ -3296,7 +3317,8 @@ STATIC const mp_rom_map_elem_t network_bluetooth_locals_dict_table[] = {
     // esp_ble_addr_type_t
     { MP_ROM_QSTR(MP_QSTR_BLE_ADDR_TYPE_PUBLIC),        MP_ROM_INT(BLE_ADDR_TYPE_PUBLIC) },
     { MP_ROM_QSTR(MP_QSTR_BLE_ADDR_TYPE_RANDOM),        MP_ROM_INT(BLE_ADDR_TYPE_RANDOM) },
-    { MP_ROM_QSTR(MP_QSTR_BLE_ADDR_TYPE_RPA_PUBLIC),    MP_ROM_INT(BLE_ADDR_TYPE_RPA_PUBLIC) }, { MP_ROM_QSTR(MP_QSTR_BLE_ADDR_TYPE_RPA_RANDOM),    MP_ROM_INT(BLE_ADDR_TYPE_RPA_RANDOM) },
+    { MP_ROM_QSTR(MP_QSTR_BLE_ADDR_TYPE_RPA_PUBLIC),    MP_ROM_INT(BLE_ADDR_TYPE_RPA_PUBLIC) },
+    { MP_ROM_QSTR(MP_QSTR_BLE_ADDR_TYPE_RPA_RANDOM),    MP_ROM_INT(BLE_ADDR_TYPE_RPA_RANDOM) },
 
     // esp_ble_adv_channel_t
     { MP_ROM_QSTR(MP_QSTR_ADV_CHNL_37),                 MP_ROM_INT(ADV_CHNL_37) },
@@ -3312,6 +3334,16 @@ STATIC const mp_rom_map_elem_t network_bluetooth_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_BLE_ADV_FLAG_DMT_CONTROLLER_SPT), MP_ROM_INT(ESP_BLE_ADV_FLAG_DMT_CONTROLLER_SPT) },
     { MP_ROM_QSTR(MP_QSTR_BLE_ADV_FLAG_DMT_HOST_SPT),       MP_ROM_INT(ESP_BLE_ADV_FLAG_DMT_HOST_SPT) },
     { MP_ROM_QSTR(MP_QSTR_BLE_ADV_FLAG_NON_LIMIT_DISC),     MP_ROM_INT(ESP_BLE_ADV_FLAG_NON_LIMIT_DISC) },
+
+    // Scan param constants
+    { MP_ROM_QSTR(MP_QSTR_SCAN_TYPE_PASSIVE),               MP_ROM_INT(BLE_SCAN_TYPE_PASSIVE) },
+    { MP_ROM_QSTR(MP_QSTR_SCAN_TYPE_ACTIVE),                MP_ROM_INT(BLE_SCAN_TYPE_ACTIVE) },
+
+    { MP_ROM_QSTR(MP_QSTR_SCAN_FILTER_ALLOW_ALL),           MP_ROM_INT(BLE_SCAN_FILTER_ALLOW_ALL) },
+    { MP_ROM_QSTR(MP_QSTR_SCAN_FILTER_ALLOW_ONLY_WLST),     MP_ROM_INT(BLE_SCAN_FILTER_ALLOW_ONLY_WLST) },
+    { MP_ROM_QSTR(MP_QSTR_SCAN_FILTER_ALLOW_UND_RPA_DIR),   MP_ROM_INT(BLE_SCAN_FILTER_ALLOW_UND_RPA_DIR) },
+    { MP_ROM_QSTR(MP_QSTR_SCAN_FILTER_ALLOW_WLIST_PRA_DIR), MP_ROM_INT(BLE_SCAN_FILTER_ALLOW_WLIST_PRA_DIR) },
+
 
     // exp_gatt_perm_t
     { MP_ROM_QSTR(MP_QSTR_PERM_READ),                   MP_ROM_INT(ESP_GATT_PERM_READ) },
