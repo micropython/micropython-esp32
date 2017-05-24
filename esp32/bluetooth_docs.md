@@ -123,7 +123,26 @@ bluetooth.ble_settings(int_min = 1280, int_max = 1280,
     * For `bluetooth.SCAN_CMPL` this will be `None`.
 4. The `<callback_data` parameter from the `bluetooth.callback()` call.
 
-`bluetooth.scan_start(<timeout in seconds>)` GATTC - begin scanning for hosts.
+`bluetooth.scan_start(timeout, scan_type = bluetooth.SCAN_TYPE_ACTIVE, own_addr_type = bluetooth.BLE_ADDR_TYPE_PUBLIC, scan_filter_policy = SCAN_FILTER_ALLOW_ALL, scan_interval = 0x50, scan_window = 0x30)` GATTC - begin scanning for hosts.
+
+
+`scan_type` is one of:
+* `network.SCAN_TYPE_ACTIVE`
+* `network.SCAN_TYPE_PASSIVE`
+
+`own_addr_type` is one of:
+* `network.BLE_ADDR_TYPE_PUBLIC`
+* `network.BLE_ADDR_TYPE_RANDOM`
+* `network.BLE_ADDR_TYPE_RPA_PUBLIC`
+* `network.BLE_ADDR_TYPE_RPA_RANDOM`
+
+`scan_filter_policy` is one of:
+* `network.SCAN_FILTER_ALLOW_ALL`
+* `network.SCAN_FILTER_ALLOW_ONLY_WLST`
+* `network.SCAN_FILTER_ALLOW_UND_RPA_DIR`
+* `network.SCAN_FILTER_ALLOW_WLIST_PRA_DIR`
+
+
 
 `bluetooth.scan_stop()` GATTC - terminate scanning early.  If called before the scan timeout, you will _not_ receive a `bluetooth.SCAN_CMPL` event.
 
