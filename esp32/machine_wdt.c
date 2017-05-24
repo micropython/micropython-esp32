@@ -32,13 +32,13 @@
 
 #include "esp_task_wdt.h"
 
-const mp_obj_type_t esp_wdt_type;
+const mp_obj_type_t machine_wdt_type;
 
 typedef struct _machine_wdt_obj_t {
     mp_obj_base_t base;
 } machine_wdt_obj_t;
 
-STATIC machine_wdt_obj_t wdt_default = {{&esp_wdt_type}};
+STATIC machine_wdt_obj_t wdt_default = {{&machine_wdt_type}};
 
 STATIC mp_obj_t machine_wdt_make_new(const mp_obj_type_t *type_in, size_t n_args, size_t n_kw, const mp_obj_t *args) {
     mp_arg_check_num(n_args, n_kw, 0, 1, false);
@@ -76,7 +76,7 @@ STATIC const mp_map_elem_t machine_wdt_locals_dict_table[] = {
 };
 STATIC MP_DEFINE_CONST_DICT(machine_wdt_locals_dict, machine_wdt_locals_dict_table);
 
-const mp_obj_type_t esp_wdt_type = {
+const mp_obj_type_t machine_wdt_type = {
     { &mp_type_type },
     .name = MP_QSTR_WDT,
     .make_new = machine_wdt_make_new,
