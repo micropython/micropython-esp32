@@ -259,6 +259,8 @@ typedef struct {
     mp_obj_t                callback;           // common
     mp_obj_t                callback_userdata;  // common
 
+    mp_obj_t                next; // next charactersitic to add when service is started
+
 } network_bluetooth_char_descr_obj_t;
 
 // "Bluetooth" Declaration
@@ -1576,12 +1578,28 @@ STATIC mp_obj_t network_bluetooth_callback_queue_handler(mp_obj_t arg) {
                                 ITEM_BEGIN();
                                 size_t len;
                                 mp_obj_t *items;
+                                network_bluetooth_char_descr_obj_t* prev = MP_OBJ_NULL;
 
                                 mp_obj_get_array(service->chars, &len, &items);
 
+                                // Only start first
+                                // characteristic, and link chars together
+                                // for easier chaining of starts.
+                                //
+                                // This is because the IDF only allows adding
+                                // descriptors to the last-added charactersitic, 
+                                // so we have to add new chars after adding chars
+                                //
                                 for (int i = 0; i < len; i++) {
                                     network_bluetooth_char_descr_obj_t* chr = (network_bluetooth_char_descr_obj_t*) items[i];
-                                    esp_ble_gatts_add_char(service->handle, &chr->id.uuid, chr->perm, chr->prop, NULL, NULL);
+                                    if (i == 0) {
+                                        esp_ble_gatts_add_char(service->handle, &chr->id.uuid, chr->perm, chr->prop, NULL, NULL); 
+                                    }
+                                    chr->next = MP_OBJ_NULL;
+                                    if (prev != MP_OBJ_NULL) {
+                                        prev->next = chr;
+                                    }
+                                    prev = chr;
                                 }
                                 ITEM_END();
                             }
@@ -1613,6 +1631,10 @@ STATIC mp_obj_t network_bluetooth_callback_queue_handler(mp_obj_t arg) {
                             for (int j = 0; j < len; j++) {
                                 network_bluetooth_char_descr_obj_t* descr = (network_bluetooth_char_descr_obj_t*) items[j];
                                 esp_ble_gatts_add_char_descr(service->handle, &descr->id.uuid, descr->perm, NULL, NULL);
+                            }
+                            chr = chr->next; // Now add the next characteristic
+                            if (chr != MP_OBJ_NULL) {
+                                esp_ble_gatts_add_char(service->handle, &chr->id.uuid, chr->perm, chr->prop, NULL, NULL); 
                             }
                             ITEM_END();
                         }
