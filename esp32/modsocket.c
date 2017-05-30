@@ -383,13 +383,14 @@ STATIC mp_uint_t socket_stream_read(mp_obj_t self_in, void *buf, mp_uint_t size,
     // XXX Would be nicer to use RTC to handle timeouts
     for (int i=0; i<=sock->retries; i++) {
         MP_THREAD_GIL_EXIT();
-        int x = lwip_recvfrom_r(sock->fd, buf, size, 0, NULL, NULL);
+        int r = lwip_recvfrom_r(sock->fd, buf, size, 0, NULL, NULL);
         MP_THREAD_GIL_ENTER();
-        if (x >= 0) return x;
-        if (x < 0 && errno != EWOULDBLOCK) { *errcode = errno; return MP_STREAM_ERROR; }
+        if (r >= 0) return r;
+        if (r < 0 && errno != EWOULDBLOCK) { *errcode = errno; return MP_STREAM_ERROR; }
         check_for_exceptions();
     }
-    return 0;  // causes a timeout error to be raised.
+    *errcode = EWOULDBLOCK;
+    return MP_STREAM_ERROR;
 }
 
 STATIC mp_uint_t socket_stream_write(mp_obj_t self_in, const void *buf, mp_uint_t size, int *errcode) {
@@ -402,7 +403,8 @@ STATIC mp_uint_t socket_stream_write(mp_obj_t self_in, const void *buf, mp_uint_
         if (r < 0 && errno != EWOULDBLOCK) { *errcode = errno; return MP_STREAM_ERROR; }
         check_for_exceptions();
     }
-    return 0;
+    *errcode = EWOULDBLOCK;
+    return MP_STREAM_ERROR;
 }
 
 STATIC mp_uint_t socket_stream_ioctl(mp_obj_t self_in, mp_uint_t request, uintptr_t arg, int *errcode) {
