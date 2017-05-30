@@ -55,7 +55,6 @@ typedef struct _mp_obj_ssl_socket_t {
     mbedtls_x509_crt cacert;
     mbedtls_x509_crt cert;
     mbedtls_pk_context pkey;
-    bool blocking;
 } mp_obj_ssl_socket_t;
 
 struct ssl_args {
@@ -86,11 +85,10 @@ int _mbedtls_ssl_send(void *ctx, const byte *buf, size_t len) {
 
     int out_sz = sock_stream->write(sock, buf, len, &err);
     if (out_sz == MP_STREAM_ERROR) {
+        if(mp_is_nonblocking_error(err)) {
+            return MBEDTLS_ERR_SSL_WANT_WRITE;
+        }
         return -err;
-    }
-
-    if (out_sz == 0 && !o->blocking) {
-        return MBEDTLS_ERR_SSL_WANT_WRITE;
     }
     return out_sz;
 }
@@ -103,18 +101,16 @@ int _mbedtls_ssl_recv(void *ctx, byte *buf, size_t len) {
     int err;
     int out_sz = sock_stream->read(sock, buf, len, &err);
     if (out_sz == MP_STREAM_ERROR) {
+        if(mp_is_nonblocking_error(err)) {
+            return MBEDTLS_ERR_SSL_WANT_READ;
+        }
         return -err;
-    }
-
-    if (out_sz == 0 && !o->blocking) {
-        return MBEDTLS_ERR_SSL_WANT_READ;
     }
     return out_sz;
 }
 
 STATIC mp_obj_t socket_setblocking(mp_obj_t self_in, mp_obj_t flag_in) {
     mp_obj_ssl_socket_t *o = MP_OBJ_TO_PTR(self_in);
-    o->blocking = mp_obj_is_true(flag_in);
     mp_obj_t sock = o->sock;
     mp_obj_t dest[3];
 
