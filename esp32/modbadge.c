@@ -22,11 +22,11 @@
 #include "py/mperrno.h"
 #include "py/mphal.h"
 
-STATIC mp_obj_t badge_badge_eink_init_() {
+STATIC mp_obj_t badge_eink_init_() {
   badge_eink_init();
   return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_badge_eink_init_obj, badge_badge_eink_init_);
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_eink_init_obj, badge_eink_init_);
 
 #define NUM_PICTURES 5
 const uint8_t *pictures[NUM_PICTURES] = {
@@ -40,6 +40,7 @@ const uint8_t *pictures[NUM_PICTURES] = {
 STATIC mp_obj_t
 badge_display_picture_(mp_obj_t picture_id, mp_obj_t selected_lut)
 {
+  // TODO check for ranges
 	badge_eink_display(pictures[mp_obj_get_int(picture_id)], (mp_obj_get_int(selected_lut)+1) << DISPLAY_FLAG_LUT_BIT);
   return mp_const_none;
 }
@@ -48,7 +49,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_2(badge_display_picture_obj, badge_display_pictur
 STATIC const mp_rom_map_elem_t badge_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_badge) },
 
-    { MP_ROM_QSTR(MP_QSTR_badge_eink_init), MP_ROM_PTR(&badge_badge_eink_init_obj) },
+    { MP_ROM_QSTR(MP_QSTR_eink_init), MP_ROM_PTR(&badge_eink_init_obj) },
     { MP_ROM_QSTR(MP_QSTR_display_picture), MP_ROM_PTR(&badge_display_picture_obj) },
 };
 
@@ -58,4 +59,3 @@ const mp_obj_module_t badge_module = {
     .base = { &mp_type_module },
     .globals = (mp_obj_dict_t*)&badge_module_globals,
 };
-
