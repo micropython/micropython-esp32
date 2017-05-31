@@ -1,4 +1,5 @@
 .. currentmodule:: machine
+.. _machine.Pin:
 
 class Pin -- control I/O pins
 =============================
@@ -157,20 +158,6 @@ Methods
    and get the value of the pin.  It is equivalent to Pin.value([x]).
    See :meth:`Pin.value` for more details.
 
-.. method:: Pin.toggle()
-
-   Toggle the output value of the pin.  Equivalent to ``pin.value(not pin.out_value())``.
-   Returns ``None``.
-
-   Not all ports implement this method.
-
-   Availability: WiPy.
-
-.. method:: Pin.id()
-
-   Get the pin identifier.  This may return the ``id`` as specified in the
-   constructor.  Or it may return a canonical software-specific pin id.
-
 .. method:: Pin.mode([mode])
 
    Get or set the pin mode.
@@ -224,19 +211,6 @@ Methods
        more than one power mode.
 
    This method returns a callback object.
-
-Attributes
-----------
-
-.. class:: Pin.board
-
-    Contains all ``Pin`` objects supported by the board. Examples::
-
-        Pin.board.GP25
-        led = Pin(Pin.board.GP25, mode=Pin.OUT)
-        Pin.board.GP2.alt_list()
-
-    Availability: WiPy.
 
 Constants
 ---------
