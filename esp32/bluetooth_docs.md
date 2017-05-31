@@ -31,7 +31,7 @@ Note that these defaults are set when you create the Bluetooth object.  You need
 bluetooth.ble_settings(int_min = 1280, int_max = 1280,
     adv_type = bluetooth.ADV_TYPE_IND,
     own_addr_type = bluetooth.BLE_ADDR_TYPE_PUBLIC,
-    peer_addr = bytes([0] * 6), 
+    peer_addr = bytes([0] * 6),
     peer_addr_type = bluetooth.BLE_ADDR_TYPE_PUBLIC,
     channel_map = bluetooth.ADV_CHNL_ALL,
     filter_policy = blueooth.ADV_FILTER_ALLOW_SCAN_ANY_CON_ANY,
@@ -125,22 +125,23 @@ bluetooth.ble_settings(int_min = 1280, int_max = 1280,
 
 `bluetooth.scan_start(timeout, scan_type = bluetooth.SCAN_TYPE_ACTIVE, own_addr_type = bluetooth.BLE_ADDR_TYPE_PUBLIC, scan_filter_policy = SCAN_FILTER_ALLOW_ALL, scan_interval = 0x50, scan_window = 0x30)` GATTC - begin scanning for hosts.
 
+`timeout` is in seconds.
 
 `scan_type` is one of:
-* `network.SCAN_TYPE_ACTIVE`
-* `network.SCAN_TYPE_PASSIVE`
+* `bluetooth.SCAN_TYPE_ACTIVE`
+* `bluetooth.SCAN_TYPE_PASSIVE`
 
 `own_addr_type` is one of:
-* `network.BLE_ADDR_TYPE_PUBLIC`
-* `network.BLE_ADDR_TYPE_RANDOM`
-* `network.BLE_ADDR_TYPE_RPA_PUBLIC`
-* `network.BLE_ADDR_TYPE_RPA_RANDOM`
+* `bluetooth.BLE_ADDR_TYPE_PUBLIC`
+* `bluetooth.BLE_ADDR_TYPE_RANDOM`
+* `bluetooth.BLE_ADDR_TYPE_RPA_PUBLIC`
+* `bluetooth.BLE_ADDR_TYPE_RPA_RANDOM`
 
 `scan_filter_policy` is one of:
-* `network.SCAN_FILTER_ALLOW_ALL`
-* `network.SCAN_FILTER_ALLOW_ONLY_WLST`
-* `network.SCAN_FILTER_ALLOW_UND_RPA_DIR`
-* `network.SCAN_FILTER_ALLOW_WLIST_PRA_DIR`
+* `bluetooth.SCAN_FILTER_ALLOW_ALL`
+* `bluetooth.SCAN_FILTER_ALLOW_ONLY_WLST`
+* `bluetooth.SCAN_FILTER_ALLOW_UND_RPA_DIR`
+* `bluetooth.SCAN_FILTER_ALLOW_WLIST_PRA_DIR`
 
 
 
@@ -212,7 +213,7 @@ GATTSChar objects are created by calling the `service.Char()` constructor, and t
     * `bluetooth.READ` when a GATTC issues a read command for that characteristic.
     * `bluetooth.WRITE` when a GATTC issues a write command for that characteristic.
 3. The value.  For `bluetooth.READ`, this is the current stored value of the characteristic.  For `bluetooth.WRITE` this is the value written by the GATTC.
-4. the `<callback_data>` 
+4. the `<callback_data>`
 
 For `bluetooth.READ` events, the return value of the callback is what is returned to the GATTC.  When there is a callback for a characteristic, the characteristic value is not modified or otherwise used.  It's up to the callback to do whatever is necessary with the write data, or to return the proper data for a read.
 
@@ -270,7 +271,7 @@ When the callback is called, it will be called with 4 parameters:
 2. The event that occured, which is:
     * `bluetooth.NOTIFY` when a GATTS issues a notification for the characteristic
 3. The value of the notify/indicate
-4. the `<callback_data>` 
+4. the `<callback_data>`
 
 `char.descriptors` Returns a list of [`GATTCDescr`](#gattcdescr-objects) associated with this characteristic.
 
@@ -324,7 +325,7 @@ def bcb(b,e,d,u):
         if complete:
             complete = False
             found = {}
-            
+
         adx, name = d
         if adx not in found:
             found[adx] = name
@@ -367,7 +368,7 @@ def hr(bda):
     service = ([s for s in conn.services if s.uuid[0:4] == b'\x00\x00\x18\x0d'] + [None])[0]
     if service:
         char = ([c for c in service.chars if c.uuid[0:4] == b'\x00\x00\x2a\x37'] + [None])[0]
-        if char: 
+        if char:
             descr = ([d for d in char.descriptors if d.uuid[0:4] == b'\x00\x00\x29\x02'] + [None])[0]
             if descr:
                 char.callback(cb)
@@ -384,12 +385,12 @@ def gatts():
     c1.callback(cb, 'c1 data')
     c2.callback(cb, 'c2 data')
 
-    s1.start() 
-    s2.start() 
+    s1.start()
+    s2.start()
 
     b.ble_settings(adv_man_name = "mangocorp", adv_dev_name="mangoprod")
     b.ble_adv_enable(True)
 
 
 b.callback(bcb)
-```
+:```
