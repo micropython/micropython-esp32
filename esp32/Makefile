@@ -133,6 +133,23 @@ SRC_C = \
 	espneopixel.c \
 	machine_hw_spi.c \
 	mpthreadport.c \
+	badge_eink.c \
+	badge_i2c.c \
+	badge_leds.c \
+	badge_mpr121.c \
+	badge_portexp.c \
+	badge_touch.c \
+	depg0290b1.c \
+	font.c \
+	font_16px.c \
+	font_8px.c \
+	gde.c \
+	gdeh029a1.c \
+	imgv2_menu.c \
+	imgv2_nick.c \
+	imgv2_sha.c \
+	imgv2_test.c \
+	imgv2_weather.c \
 	$(SRC_MOD)
 
 STM_SRC_C = $(addprefix stmhal/,\

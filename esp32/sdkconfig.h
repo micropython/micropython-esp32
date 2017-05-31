@@ -103,3 +103,6 @@
 
 #define CONFIG_TOOLPREFIX "xtensa-esp32-elf-"
 #define CONFIG_PYTHON "python2"
+
+#define CONFIG_SHA_BADGE_EINK_GDEH029A1 1
+#define CONFIG_SHA_BADGE_V2 1
