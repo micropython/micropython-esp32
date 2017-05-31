@@ -151,6 +151,7 @@ SRC_C = \
 	imgv2_test.c \
 	imgv2_weather.c \
 	esprtcmem.c \
+	espdeepsleep.c \
 	$(SRC_MOD)
 
 STM_SRC_C = $(addprefix stmhal/,\
