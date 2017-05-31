@@ -114,6 +114,23 @@ STATIC mp_obj_t esp_badge_eink_init_() {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(esp_badge_eink_init_obj, esp_badge_eink_init_);
 
+#define NUM_PICTURES 5
+const uint8_t *pictures[NUM_PICTURES] = {
+	imgv2_sha,
+	imgv2_menu,
+	imgv2_nick,
+	imgv2_weather,
+	imgv2_test,
+};
+
+STATIC mp_obj_t
+esp_display_picture_(mp_obj_t picture_id, mp_obj_t selected_lut)
+{
+	badge_eink_display(pictures[mp_obj_get_int(picture_id)], (mp_obj_get_int(selected_lut)+1) << DISPLAY_FLAG_LUT_BIT);
+  return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_2(esp_display_picture_obj, esp_display_picture_);
+
 STATIC const mp_rom_map_elem_t esp_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_esp) },
 
@@ -124,7 +141,10 @@ STATIC const mp_rom_map_elem_t esp_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_flash_user_start), MP_ROM_PTR(&esp_flash_user_start_obj) },
 
     { MP_ROM_QSTR(MP_QSTR_neopixel_write), MP_ROM_PTR(&esp_neopixel_write_obj) },
+
     { MP_ROM_QSTR(MP_QSTR_badge_eink_init), MP_ROM_PTR(&esp_badge_eink_init_obj) },
+    { MP_ROM_QSTR(MP_QSTR_display_picture), MP_ROM_PTR(&esp_display_picture_obj) },
+
     { MP_ROM_QSTR(MP_QSTR_dht_readinto), MP_ROM_PTR(&dht_readinto_obj) },
 };
 
