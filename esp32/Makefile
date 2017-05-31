@@ -150,6 +150,7 @@ SRC_C = \
 	imgv2_sha.c \
 	imgv2_test.c \
 	imgv2_weather.c \
+	esprtcmem.c \
 	$(SRC_MOD)
 
 STM_SRC_C = $(addprefix stmhal/,\

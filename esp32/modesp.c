@@ -131,6 +131,20 @@ esp_display_picture_(mp_obj_t picture_id, mp_obj_t selected_lut)
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(esp_display_picture_obj, esp_display_picture_);
 
+STATIC mp_obj_t esp_rtcmem_write_(mp_obj_t pos, mp_obj_t val) {
+    esp_rtcmem_write(mp_obj_get_int(pos), mp_obj_get_int(val));
+    return mp_const_none;
+}
+
+STATIC MP_DEFINE_CONST_FUN_OBJ_2(esp_rtcmem_write_obj, esp_rtcmem_write_);
+
+STATIC mp_obj_t esp_rtcmem_read_(mp_obj_t pos) {
+    uint8_t val = esp_rtcmem_read(mp_obj_get_int(pos));    
+    return mp_obj_new_int(val);
+}
+
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(esp_rtcmem_read_obj, esp_rtcmem_read_);
+
 STATIC const mp_rom_map_elem_t esp_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_esp) },
 
@@ -144,6 +158,9 @@ STATIC const mp_rom_map_elem_t esp_module_globals_table[] = {
 
     { MP_ROM_QSTR(MP_QSTR_badge_eink_init), MP_ROM_PTR(&esp_badge_eink_init_obj) },
     { MP_ROM_QSTR(MP_QSTR_display_picture), MP_ROM_PTR(&esp_display_picture_obj) },
+    
+    { MP_ROM_QSTR(MP_QSTR_rtcmem_write), MP_ROM_PTR(&esp_rtcmem_write_obj) },
+    { MP_ROM_QSTR(MP_QSTR_rtcmem_read), MP_ROM_PTR(&esp_rtcmem_read_obj) },
 
     { MP_ROM_QSTR(MP_QSTR_dht_readinto), MP_ROM_PTR(&dht_readinto_obj) },
 };
