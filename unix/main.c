@@ -35,6 +35,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <errno.h>
+#include <signal.h>
 
 #include "py/mpstate.h"
 #include "py/nlr.h"
@@ -374,6 +375,10 @@ STATIC void pre_process_options(int argc, char **argv) {
                     if (word_adjust) {
                         heap_size = heap_size * BYTES_PER_WORD / 4;
                     }
+                    // If requested size too small, we'll crash anyway
+                    if (heap_size < 700) {
+                        goto invalid_arg;
+                    }
 #endif
                 } else {
 invalid_arg:
@@ -414,6 +419,20 @@ int main(int argc, char **argv) {
 }
 
 MP_NOINLINE int main_(int argc, char **argv) {
+    #ifdef SIGPIPE
+    // Do not raise SIGPIPE, instead return EPIPE. Otherwise, e.g. writing
+    // to peer-closed socket will lead to sudden termination of MicroPython
+    // process. SIGPIPE is particularly nasty, because unix shell doesn't
+    // print anything for it, so the above looks like completely sudden and
+    // silent termination for unknown reason. Ignoring SIGPIPE is also what
+    // CPython does. Note that this may lead to problems using MicroPython
+    // scripts as pipe filters, but again, that's what CPython does. So,
+    // scripts which want to follow unix shell pipe semantics (where SIGPIPE
+    // means "pipe was requested to terminate, it's not an error"), should
+    // catch EPIPE themselves.
+    signal(SIGPIPE, SIG_IGN);
+    #endif
+
     mp_stack_set_limit(40000 * (BYTES_PER_WORD / 4));
 
     pre_process_options(argc, argv);
@@ -534,6 +553,9 @@ MP_NOINLINE int main_(int argc, char **argv) {
 
                 mp_obj_t mod;
                 nlr_buf_t nlr;
+                bool subpkg_tried = false;
+
+            reimport:
                 if (nlr_push(&nlr) == 0) {
                     mod = mp_builtin___import__(MP_ARRAY_SIZE(import_args), import_args);
                     nlr_pop();
@@ -542,11 +564,17 @@ MP_NOINLINE int main_(int argc, char **argv) {
                     return handle_uncaught_exception(nlr.ret_val) & 0xff;
                 }
 
-                if (mp_obj_is_package(mod)) {
-                    // TODO
-                    mp_printf(&mp_stderr_print, "%s: -m for packages not yet implemented\n", argv[0]);
-                    exit(1);
+                if (mp_obj_is_package(mod) && !subpkg_tried) {
+                    subpkg_tried = true;
+                    vstr_t vstr;
+                    int len = strlen(argv[a + 1]);
+                    vstr_init(&vstr, len + sizeof(".__main__"));
+                    vstr_add_strn(&vstr, argv[a + 1], len);
+                    vstr_add_strn(&vstr, ".__main__", sizeof(".__main__") - 1);
+                    import_args[0] = mp_obj_new_str_from_vstr(&mp_type_str, &vstr);
+                    goto reimport;
                 }
+
                 ret = 0;
                 break;
             } else if (strcmp(argv[a], "-X") == 0) {

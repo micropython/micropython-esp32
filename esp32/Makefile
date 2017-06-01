@@ -123,10 +123,13 @@ SRC_C = \
 	machine_touchpad.c \
 	machine_adc.c \
 	machine_dac.c \
+	machine_pwm.c \
+	machine_uart.c \
 	modmachine.c \
 	modnetwork.c \
 	modsocket.c \
 	modesp.c \
+	moduhashlib.c \
 	espneopixel.c \
 	machine_rtc.c \
 	machine_hw_spi.c \
