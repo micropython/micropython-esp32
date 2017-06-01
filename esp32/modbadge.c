@@ -1,3 +1,4 @@
+
 #include <stdio.h>
 
 #include "badge_eink.h"
@@ -18,9 +19,14 @@
 #include "imgv2_test.h"
 #include "imgv2_weather.h"
 
+#include "board_framebuffer.h"
+#include "gfxconf.h"
+
 #include "py/runtime.h"
 #include "py/mperrno.h"
 #include "py/mphal.h"
+
+const char * font_list[] = {"Roboto-Black22","Roboto-BlackItalic24","Roboto-Regular12","Roboto-Regular18","Roboto-Regular22","PermanentMarker22"};
 
 STATIC mp_obj_t badge_eink_init_() {
   badge_eink_init();
