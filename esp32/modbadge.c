@@ -107,9 +107,9 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_0(ugfx_flush_obj, ugfx_flush);
 
 
 
-/// \method text(x, y, str, colour)
+/// \method text(x, y, str, font, colour)
 ///
-/// Draw the given text to the position `(x, y)` using the given colour.
+/// Draw the given text to the position `(x, y)` using the given font and colours.
 ///
 STATIC mp_obj_t ugfx_text(mp_uint_t n_args, const mp_obj_t *args) {
     // extract arguments
@@ -118,13 +118,14 @@ STATIC mp_obj_t ugfx_text(mp_uint_t n_args, const mp_obj_t *args) {
     const char *data = mp_obj_str_get_data(args[2], &len);
     int x0 = mp_obj_get_int(args[0]);
     int y0 = mp_obj_get_int(args[1]);
-    int col = mp_obj_get_int(args[3]);
+    int col = mp_obj_get_int(args[4]);
+    const char *font =  mp_obj_str_get_data(args[3], &len);
 
-    gdispDrawString(x0, y0, data, gdispOpenFont("Roboto-Regular12"), col);
+    gdispDrawString(x0, y0, data, gdispOpenFont(font), col);
 
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ugfx_text_obj, 4, 4, ugfx_text);
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ugfx_text_obj, 5, 5, ugfx_text);
 
 
 /// \method line(x1, y1, x2, y2, colour)
@@ -140,7 +141,7 @@ STATIC mp_obj_t ugfx_line(mp_uint_t n_args, const mp_obj_t *args) {
     int y1 = mp_obj_get_int(args[3]);
     int col = mp_obj_get_int(args[4]);
 
-	gdispDrawLine(x0, y0, x1, y1, col);
+	  gdispDrawLine(x0, y0, x1, y1, col);
 
     return mp_const_none;
 }
@@ -157,7 +158,7 @@ STATIC mp_obj_t ugfx_thickline(mp_uint_t n_args, const mp_obj_t *args) {
     //ugfx_obj_t *self = args[0];
     int x0 = mp_obj_get_int(args[0]);
     int y0 = mp_obj_get_int(args[1]);
-	int x1 = mp_obj_get_int(args[2]);
+	  int x1 = mp_obj_get_int(args[2]);
     int y1 = mp_obj_get_int(args[3]);
     int col = mp_obj_get_int(args[4]);
     int width = mp_obj_get_int(args[5]);
@@ -178,7 +179,7 @@ STATIC mp_obj_t ugfx_arc(mp_uint_t n_args, const mp_obj_t *args) {
     // extract arguments
     int x0 = mp_obj_get_int(args[0]);
     int y0 = mp_obj_get_int(args[1]);
-	int r = mp_obj_get_int(args[2]);
+	  int r = mp_obj_get_int(args[2]);
     int col = mp_obj_get_int(args[5]);
     int a1 = mp_obj_get_int(args[3]);
     int a2 = mp_obj_get_int(args[4]);
@@ -197,8 +198,8 @@ STATIC mp_obj_t ugfx_fill_arc(mp_uint_t n_args, const mp_obj_t *args) {
     // extract arguments
     int x0 = mp_obj_get_int(args[0]);
     int y0 = mp_obj_get_int(args[1]);
-	int r = mp_obj_get_int(args[2]);
-	int col = mp_obj_get_int(args[5]);
+  	int r = mp_obj_get_int(args[2]);
+  	int col = mp_obj_get_int(args[5]);
     int a1 = mp_obj_get_int(args[3]);
     int a2 = mp_obj_get_int(args[4]);
 
@@ -220,7 +221,7 @@ STATIC mp_obj_t ugfx_circle(mp_uint_t n_args, const mp_obj_t *args) {
     //ugfx_obj_t *self = args[0];
     int x0 = mp_obj_get_int(args[0]);
     int y0 = mp_obj_get_int(args[1]);
-	int r = mp_obj_get_int(args[2]);
+	  int r = mp_obj_get_int(args[2]);
     int col = mp_obj_get_int(args[3]);
 
 	gdispDrawCircle(x0, y0, r, col);
@@ -239,7 +240,7 @@ STATIC mp_obj_t ugfx_fill_circle(mp_uint_t n_args, const mp_obj_t *args) {
     //ugfx_obj_t *self = args[0];
     int x0 = mp_obj_get_int(args[0]);
     int y0 = mp_obj_get_int(args[1]);
-	int r = mp_obj_get_int(args[2]);
+	  int r = mp_obj_get_int(args[2]);
     int col = mp_obj_get_int(args[3]);
 
 	gdispFillCircle(x0, y0, r, col);
@@ -260,8 +261,8 @@ STATIC mp_obj_t ugfx_ellipse(mp_uint_t n_args, const mp_obj_t *args) {
     //ugfx_obj_t *self = args[0];
     int x0 = mp_obj_get_int(args[0]);
     int y0 = mp_obj_get_int(args[1]);
-	int a = mp_obj_get_int(args[2]);
-	int b = mp_obj_get_int(args[3]);
+  	int a = mp_obj_get_int(args[2]);
+  	int b = mp_obj_get_int(args[3]);
     int col = mp_obj_get_int(args[4]);
 
 	gdispDrawEllipse(x0, y0, a, b, col);
@@ -280,8 +281,8 @@ STATIC mp_obj_t ugfx_fill_ellipse(mp_uint_t n_args, const mp_obj_t *args) {
     //ugfx_obj_t *self = args[0];
     int x0 = mp_obj_get_int(args[0]);
     int y0 = mp_obj_get_int(args[1]);
-	int a = mp_obj_get_int(args[2]);
-	int b = mp_obj_get_int(args[3]);
+  	int a = mp_obj_get_int(args[2]);
+  	int b = mp_obj_get_int(args[3]);
     int col = mp_obj_get_int(args[4]);
 
 	gdispFillEllipse(x0, y0, a, b, col);
