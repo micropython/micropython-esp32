@@ -143,6 +143,24 @@ STATIC mp_obj_t ugfx_text(mp_uint_t n_args, const mp_obj_t *args) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ugfx_text_obj, 5, 5, ugfx_text);
 
+/// \method pixel(x1, y1, colour)
+///
+/// Draw a pixel at (x1,y1) using the given colour.
+///
+STATIC mp_obj_t ugfx_pixel(mp_uint_t n_args, const mp_obj_t *args) {
+    // extract arguments
+    //ugfx_obj_t *self = args[0];
+    int x0 = mp_obj_get_int(args[0]);
+    int y0 = mp_obj_get_int(args[1]);
+    int col = mp_obj_get_int(args[2]);
+
+	  gdispDrawPixel(x0, y0, col);
+
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ugfx_pixel_obj, 3, 3, ugfx_pixel);
+
+
 
 /// \method line(x1, y1, x2, y2, colour)
 ///
@@ -479,6 +497,7 @@ STATIC const mp_rom_map_elem_t badge_module_globals_table[] = {
 
     { MP_OBJ_NEW_QSTR(MP_QSTR_get_string_width), (mp_obj_t)&ugfx_get_string_width_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_text), (mp_obj_t)&ugfx_text_obj },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_pixel), (mp_obj_t)&ugfx_pixel_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_line), (mp_obj_t)&ugfx_line_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_box), (mp_obj_t)&ugfx_box_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_area), (mp_obj_t)&ugfx_area_obj },
