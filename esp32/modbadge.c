@@ -107,6 +107,22 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_0(ugfx_flush_obj, ugfx_flush);
 
 
 
+/// \method get_string_width(str, font)
+///
+/// Get length in pixels of given text font combination.
+///
+STATIC mp_obj_t ugfx_get_string_width(mp_uint_t n_args, const mp_obj_t *args) {
+    // extract arguments
+    //ugfx_obj_t *self = args[0];
+    mp_uint_t len;
+    const char *data = mp_obj_str_get_data(args[0], &len);
+    const char *font =  mp_obj_str_get_data(args[1], &len);
+
+    return mp_obj_new_int(gdispGetStringWidth(data, gdispOpenFont(font)));
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ugfx_get_string_width_obj, 2, 2, ugfx_get_string_width);
+
+
 /// \method text(x, y, str, font, colour)
 ///
 /// Draw the given text to the position `(x, y)` using the given font and colours.
@@ -461,6 +477,7 @@ STATIC const mp_rom_map_elem_t badge_module_globals_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR_clear), (mp_obj_t)&ugfx_clear_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_flush), (mp_obj_t)&ugfx_flush_obj },
 
+    { MP_OBJ_NEW_QSTR(MP_QSTR_get_string_width), (mp_obj_t)&ugfx_get_string_width_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_text), (mp_obj_t)&ugfx_text_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_line), (mp_obj_t)&ugfx_line_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_box), (mp_obj_t)&ugfx_box_obj },
