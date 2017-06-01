@@ -33,6 +33,10 @@ typedef struct _ugfx_obj_t {
     mp_obj_base_t base;
 } ugfx_obj_t;
 
+/**
+ *  Badge eink hooks
+ */
+
 STATIC mp_obj_t badge_eink_init_() {
   badge_eink_init();
   return mp_const_none;
@@ -58,7 +62,7 @@ badge_display_picture_(mp_obj_t picture_id, mp_obj_t selected_lut)
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(badge_display_picture_obj, badge_display_picture_);
 
 /**
- *  UGFX
+ *  uGFX
  */
 
 STATIC mp_obj_t ugfx_init(void) {
