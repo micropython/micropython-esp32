@@ -84,6 +84,29 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_0(ugfx_deinit_obj, ugfx_deinit);
 
 // PRIMITIVES
 
+/// \method clear(color=ugfx.WHITE)
+///
+/// Clear screen
+///
+STATIC mp_obj_t ugfx_clear(mp_uint_t n_args, const mp_obj_t *args) {
+    int color = n_args == 0 ? White : mp_obj_get_int(args[0]);
+    gdispFillArea(0, 0, gdispGetWidth(), gdispGetHeight(), color);
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ugfx_clear_obj, 0, 1, ugfx_clear);
+
+/// \method flush()
+///
+/// Flush the display buffer to the screen
+///
+STATIC mp_obj_t ugfx_flush() {
+    gdispFlush();
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(ugfx_flush_obj, ugfx_flush);
+
+
+
 /// \method text(x, y, str, colour)
 ///
 /// Draw the given text to the position `(x, y)` using the given colour.
@@ -369,16 +392,6 @@ STATIC mp_obj_t ugfx_area(mp_uint_t n_args, const mp_obj_t *args) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ugfx_area_obj, 5, 5, ugfx_area);
 
-/// \method clear(color=ugfx.WHITE)
-///
-/// Clear screen
-///
-STATIC mp_obj_t ugfx_clear(mp_uint_t n_args, const mp_obj_t *args) {
-    int color = n_args == 0 ? White : mp_obj_get_int(args[0]);
-    gdispFillArea(0, 0, gdispGetWidth(), gdispGetHeight(), color);
-    return mp_const_none;
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ugfx_clear_obj, 0, 1, ugfx_clear);
 
 /// \method box(x1, y1, a, b, colour)
 ///
@@ -444,11 +457,13 @@ STATIC const mp_rom_map_elem_t badge_module_globals_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR_BLACK),      MP_OBJ_NEW_SMALL_INT(Black) },
     { MP_OBJ_NEW_QSTR(MP_QSTR_WHITE),      MP_OBJ_NEW_SMALL_INT(White) },
 
+    { MP_OBJ_NEW_QSTR(MP_QSTR_clear), (mp_obj_t)&ugfx_clear_obj },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_flush), (mp_obj_t)&ugfx_flush_obj },
+
     { MP_OBJ_NEW_QSTR(MP_QSTR_text), (mp_obj_t)&ugfx_text_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_line), (mp_obj_t)&ugfx_line_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_box), (mp_obj_t)&ugfx_box_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_area), (mp_obj_t)&ugfx_area_obj },
-    { MP_OBJ_NEW_QSTR(MP_QSTR_clear), (mp_obj_t)&ugfx_clear_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_thickline), (mp_obj_t)&ugfx_thickline_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_circle), (mp_obj_t)&ugfx_circle_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_fill_circle), (mp_obj_t)&ugfx_fill_circle_obj },
