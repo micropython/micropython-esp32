@@ -1,5 +1,5 @@
-SHA2017 Bdge MicroPython
-========================
+SHA2017 Badge MicroPython
+=========================
 
 NOTE: This repository is part of the [SHA2017Badge Firmware](https://github.com/SHA2017-badge/Firmware) and will probably not work stand-alone as-is.
 
