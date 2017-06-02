@@ -561,7 +561,7 @@ STATIC const mp_rom_map_elem_t badge_module_globals_table[] = {
     {MP_OBJ_NEW_QSTR(MP_QSTR_justifyLeft), MP_OBJ_NEW_SMALL_INT(justifyLeft)},
     {MP_OBJ_NEW_QSTR(MP_QSTR_justifyCenter),
      MP_OBJ_NEW_SMALL_INT(justifyCenter)},
-    {MP_OBJ_NEW_QSTR(MP_QSTR_justifyCenter),
+    {MP_OBJ_NEW_QSTR(MP_QSTR_justifyRight),
      MP_OBJ_NEW_SMALL_INT(justifyRight)},
 
     {MP_OBJ_NEW_QSTR(MP_QSTR_clear), (mp_obj_t)&ugfx_clear_obj},
