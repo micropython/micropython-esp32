@@ -468,11 +468,11 @@ STATIC mp_obj_t ugfx_demo(mp_obj_t hacking) {
                 127 + 3 + gdispGetStringWidth(mp_obj_str_get_str(hacking), permanentMarker) + 10, 50 + 22 - 2,
                 Black);
   gdispDrawString(140, 75, "Anyway", robotoBlackItalic, Black);
-  gdispDrawCircle(60, 60, 50, Black);
-  gdispDrawCircle(60, 60, 40, Black);
-  gdispDrawCircle(60, 60, 30, Black);
-  gdispDrawCircle(60, 60, 20, Black);
-  gdispDrawCircle(60, 60, 10, Black);
+  gdispFillCircle(60, 60, 50, Black);
+  gdispFillCircle(60, 60, 40, White);
+  gdispFillCircle(60, 60, 30, Black);
+  gdispFillCircle(60, 60, 20, White);
+  gdispFillCircle(60, 60, 10, Black);
   gdispFlush();
 
   return mp_const_none;
