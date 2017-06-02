@@ -122,7 +122,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ugfx_get_string_width_obj, 2, 2,
 /// \method string(x, y, str, font, colour)
 ///
 /// Draw the given text to the position `(x, y)` using the given font and
-/// colours.
+/// colour.
 ///
 STATIC mp_obj_t ugfx_string(mp_uint_t n_args, const mp_obj_t *args) {
   // extract arguments
@@ -140,10 +140,10 @@ STATIC mp_obj_t ugfx_string(mp_uint_t n_args, const mp_obj_t *args) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ugfx_string_obj, 5, 5, ugfx_string);
 
-/// \method string_box(x0, y0, x1, y1, str, font, colour, justify)
+/// \method string_box(x, y, a, b, str, font, colour, justify)
 ///
-/// Draw the given text in a box at position `(x0, y0)` with lengths x1,y1
-/// using the given font and colours.
+/// Draw the given text in a box at position `(x, y)` with lengths a, b
+/// using the given font and colour.
 ///
 STATIC mp_obj_t ugfx_string_box(mp_uint_t n_args, const mp_obj_t *args) {
   // extract arguments
@@ -165,9 +165,9 @@ STATIC mp_obj_t ugfx_string_box(mp_uint_t n_args, const mp_obj_t *args) {
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ugfx_string_box_obj, 8, 8,
                                            ugfx_string_box);
 
-/// \method pixel(x1, y1, colour)
+/// \method pixel(x, y, colour)
 ///
-/// Draw a pixel at (x1,y1) using the given colour.
+/// Draw a pixel at (x,y) using the given colour.
 ///
 STATIC mp_obj_t ugfx_pixel(mp_uint_t n_args, const mp_obj_t *args) {
   // extract arguments
@@ -268,7 +268,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ugfx_fill_arc_obj, 6, 6,
 /// \method circle(x1, y1, r, colour)
 ///
 /// Draw a circle having a centre point at (x1,y1), radius r, using the given
-/// colour. Option to round the ends
+/// colour.
 ///
 STATIC mp_obj_t ugfx_circle(mp_uint_t n_args, const mp_obj_t *args) {
   // extract arguments
@@ -287,7 +287,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ugfx_circle_obj, 4, 4, ugfx_circle);
 /// \method fill_circle(x1, y1, r, colour)
 ///
 /// Fill a circle having a centre point at (x1,y1), radius r, using the given
-/// colour. Option to round the ends
+/// colour.
 ///
 STATIC mp_obj_t ugfx_fill_circle(mp_uint_t n_args, const mp_obj_t *args) {
   // extract arguments
@@ -307,7 +307,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ugfx_fill_circle_obj, 4, 4,
 /// \method ellipse(x1, y1, a, b, colour)
 ///
 /// Draw a ellipse having a centre point at (x1,y1), lengths a,b, using the
-/// given colour. Option to round the ends
+/// given colour.
 ///
 STATIC mp_obj_t ugfx_ellipse(mp_uint_t n_args, const mp_obj_t *args) {
   // extract arguments
@@ -328,7 +328,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ugfx_ellipse_obj, 5, 5,
 /// \method fill_ellipse(x1, y1, a, b, colour)
 ///
 /// Fill a ellipse having a centre point at (x1,y1), lengths a,b, using the
-/// given colour. Option to round the ends
+/// given colour.
 ///
 STATIC mp_obj_t ugfx_fill_ellipse(mp_uint_t n_args, const mp_obj_t *args) {
   // extract arguments
@@ -348,8 +348,8 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ugfx_fill_ellipse_obj, 5, 5,
 
 /// \method polygon(x1, y1, array, colour)
 ///
-/// Draw a polygon starting at (x1,y1), using the aarray of points, using the
-/// given colour. Option to round the ends
+/// Draw a polygon starting at (x1,y1), using the array of points, using the
+/// given colour.
 ///
 STATIC mp_obj_t ugfx_polygon(mp_uint_t n_args, const mp_obj_t *args) {
   // extract arguments
@@ -386,8 +386,8 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ugfx_polygon_obj, 4, 4,
 
 /// \method fill_polygon(x1, y1, array, colour)
 ///
-/// Draw a polygon starting at (x1,y1), using the aarray of points, using the
-/// given colour. Option to round the ends
+/// Fill a polygon starting at (x1,y1), using the array of points, using the
+/// given colour.
 ///
 STATIC mp_obj_t ugfx_fill_polygon(mp_uint_t n_args, const mp_obj_t *args) {
   // extract arguments
@@ -422,9 +422,9 @@ STATIC mp_obj_t ugfx_fill_polygon(mp_uint_t n_args, const mp_obj_t *args) {
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ugfx_fill_polygon_obj, 4, 4,
                                            ugfx_fill_polygon);
 
-/// \method area(x1, y1, a, b, colour)
+/// \method area(x, y, a, b, colour)
 ///
-/// Fill area from (x,y), with lengths x1,y1, using the given colour.
+/// Fill area from (x,y), with lengths a,b, using the given colour.
 ///
 STATIC mp_obj_t ugfx_area(mp_uint_t n_args, const mp_obj_t *args) {
   // extract arguments
@@ -441,9 +441,9 @@ STATIC mp_obj_t ugfx_area(mp_uint_t n_args, const mp_obj_t *args) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ugfx_area_obj, 5, 5, ugfx_area);
 
-/// \method box(x1, y1, a, b, colour)
+/// \method box(x, y, a, b, colour)
 ///
-/// Draw a box from (x,y), with lengths x1,y1, using the given colour.
+/// Draw a box from (x,y), with lengths a,b, using the given colour.
 ///
 STATIC mp_obj_t ugfx_box(mp_uint_t n_args, const mp_obj_t *args) {
   // extract arguments
@@ -460,9 +460,9 @@ STATIC mp_obj_t ugfx_box(mp_uint_t n_args, const mp_obj_t *args) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ugfx_box_obj, 5, 5, ugfx_box);
 
-/// \method rounded_box(x1, y1, a, b, colour)
+/// \method rounded_box(x, y, a, b, colour)
 ///
-/// Draw a box from (x,y), with lengths x1,y1, rounded corners with radius r,
+/// Draw a box from (x,y), with lengths a,b, rounded corners with radius r,
 /// using the given colour.
 ///
 STATIC mp_obj_t ugfx_rounded_box(mp_uint_t n_args, const mp_obj_t *args) {
@@ -482,9 +482,9 @@ STATIC mp_obj_t ugfx_rounded_box(mp_uint_t n_args, const mp_obj_t *args) {
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ugfx_rounded_box_obj, 6, 6,
                                            ugfx_rounded_box);
 
-/// \method rounded_box(x1, y1, a, b, colour)
+/// \method fill_rounded_box(x, y, a, b, colour)
 ///
-/// Draw a box from (x,y), with lengths x1,y1, rounded corners with radius r,
+/// Draw a box from (x,y), with lengths a,b, rounded corners with radius r,
 /// using the given colour.
 ///
 STATIC mp_obj_t ugfx_fill_rounded_box(mp_uint_t n_args, const mp_obj_t *args) {
