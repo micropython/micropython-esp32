@@ -389,7 +389,7 @@ STATIC mp_uint_t socket_stream_read(mp_obj_t self_in, void *buf, mp_uint_t size,
         if (r < 0 && errno != EWOULDBLOCK) { *errcode = errno; return MP_STREAM_ERROR; }
         check_for_exceptions();
     }
-    *errcode = sock->retries == 0 ? EWOULDBLOCK : ETIMEDOUT;
+    *errcode = sock->retries == 0 ? MP_EWOULDBLOCK : MP_ETIMEDOUT;
     return MP_STREAM_ERROR;
 }
 
@@ -403,7 +403,7 @@ STATIC mp_uint_t socket_stream_write(mp_obj_t self_in, const void *buf, mp_uint_
         if (r < 0 && errno != EWOULDBLOCK) { *errcode = errno; return MP_STREAM_ERROR; }
         check_for_exceptions();
     }
-    *errcode = sock->retries == 0 ? EWOULDBLOCK : ETIMEDOUT;
+    *errcode = sock->retries == 0 ? MP_EWOULDBLOCK : MP_ETIMEDOUT;
     return MP_STREAM_ERROR;
 }
 
