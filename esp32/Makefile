@@ -608,6 +608,12 @@ $(BUILD)/application.elf: $(OBJ) $(BUILD)/esp32_out.ld
 	$(Q)$(LD) $(LDFLAGS) -o $@ $(APP_LD_ARGS)
 	$(Q)$(SIZE) $@
 
+$(BUILD)/combined.bin: $(BUILD)/bootloader.bin $(BUILD)/partitions.bin $(BUILD)/application.bin
+	dd if=/dev/zero of=$@ bs=4096 count=1
+	dd if=$(BUILD)/bootloader.bin of=$@ bs=28672 count=1 conv=notrunc,sync oflag=append
+	dd if=$(BUILD)/partitions.bin of=$@ bs=32768 count=1 conv=notrunc,sync oflag=append
+	dd if=$(BUILD)/application.bin of=$@ conv=notrunc oflag=append
+
 define compile_cxx
 $(ECHO) "CXX $<"
 $(Q)$(CXX) $(CXXFLAGS) -c -MD -o $@ $<
