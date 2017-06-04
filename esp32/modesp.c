@@ -90,7 +90,6 @@ STATIC mp_obj_t esp_neopixel_write_(mp_obj_t pin, mp_obj_t buf, mp_obj_t timing)
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_3(esp_neopixel_write_obj, esp_neopixel_write_);
 
-<<<<<<< HEAD
 STATIC mp_obj_t esp_badge_eink_init_() {
   badge_eink_init();
   return mp_const_none;
