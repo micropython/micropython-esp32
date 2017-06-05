@@ -146,6 +146,7 @@ SRC_C = \
 	badge_mpr121.c \
 	badge_portexp.c \
 	badge_touch.c \
+	badge_power.c \
 	depg0290b1.c \
 	font.c \
 	font_16px.c \
@@ -233,6 +234,7 @@ ESPIDF_DRIVER_O = $(addprefix $(ESPCOMP)/driver/,\
 	periph_ctrl.o \
 	ledc.o \
 	gpio.o \
+	i2c.o \
 	timer.o \
 	spi_master.o \
 	spi_common.o \

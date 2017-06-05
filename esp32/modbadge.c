@@ -29,14 +29,16 @@
  */
 
 #include <stdio.h>
+#include <stdbool.h>
 
 #include "badge_eink.h"
-#include "badge_i2c.h"
-#include "badge_leds.h"
-#include "badge_mpr121.h"
-#include "badge_pins.h"
-#include "badge_portexp.h"
-#include "badge_touch.h"
+// #include "badge_i2c.h"
+// #include "badge_leds.h"
+// #include "badge_mpr121.h"
+// #include "badge_pins.h"
+// #include "badge_portexp.h"
+// #include "badge_touch.h"
+#include "badge_power.h"
 
 #include "font.h"
 #include "font_16px.h"
@@ -574,6 +576,25 @@ STATIC mp_obj_t ugfx_demo(mp_obj_t hacking) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(ugfx_demo_obj, ugfx_demo);
 
+// Power
+
+STATIC mp_obj_t battery_charge_status_() {
+  return mp_obj_new_bool(badge_battery_charge_status());
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(battery_charge_status_obj, battery_charge_status_);
+
+STATIC mp_obj_t battery_volt_sense_() {
+  return mp_obj_new_int(badge_battery_volt_sense());
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(battery_volt_sense_obj, battery_volt_sense_);
+
+STATIC mp_obj_t usb_volt_sense_() {
+  return mp_obj_new_int(badge_usb_volt_sense());
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(usb_volt_sense_obj, usb_volt_sense_);
+
+// Module globals
+
 STATIC const mp_rom_map_elem_t badge_module_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_badge)},
 
@@ -619,6 +640,10 @@ STATIC const mp_rom_map_elem_t badge_module_globals_table[] = {
     {MP_OBJ_NEW_QSTR(MP_QSTR_fill_polygon), (mp_obj_t)&ugfx_fill_polygon_obj},
 
     {MP_OBJ_NEW_QSTR(MP_QSTR_ugfx_demo), (mp_obj_t)&ugfx_demo_obj},
+
+    {MP_OBJ_NEW_QSTR(MP_QSTR_battery_charge_status), (mp_obj_t)&battery_charge_status_obj},
+    {MP_OBJ_NEW_QSTR(MP_QSTR_battery_volt_sense), (mp_obj_t)&battery_volt_sense_obj},
+    {MP_OBJ_NEW_QSTR(MP_QSTR_usb_volt_sense), (mp_obj_t)&usb_volt_sense_obj},
 };
 
 STATIC MP_DEFINE_CONST_DICT(badge_module_globals, badge_module_globals_table);
