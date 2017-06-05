@@ -157,6 +157,8 @@ SRC_C = \
 	imgv2_sha.c \
 	imgv2_test.c \
 	imgv2_weather.c \
+	esprtcmem.c \
+	espdeepsleep.c \
 	gdisp_lld_framebuffer.c \
 	gfx_mk.c \
 	$(SRC_MOD)
