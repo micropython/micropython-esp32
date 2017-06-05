@@ -28,7 +28,7 @@
 
 #define USER_RTC_MEM_SIZE 1024
 
-RTC_DATA_ATTR static uint8_t rtcmemcontents[USER_RTC_MEM_SIZE] = {0};
+static uint8_t RTC_DATA_ATTR rtcmemcontents[USER_RTC_MEM_SIZE] = {0};
 
 uint8_t esp_rtcmem_read(uint32_t location) {
     if (location<USER_RTC_MEM_SIZE) {
@@ -41,4 +41,3 @@ uint8_t esp_rtcmem_read(uint32_t location) {
 void esp_rtcmem_write(uint32_t location, uint8_t value) {
     if (location<USER_RTC_MEM_SIZE) rtcmemcontents[location] = value;
 }
-

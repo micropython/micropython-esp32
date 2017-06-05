@@ -94,15 +94,22 @@ STATIC mp_obj_t esp_rtcmem_write_(mp_obj_t pos, mp_obj_t val) {
     esp_rtcmem_write(mp_obj_get_int(pos), mp_obj_get_int(val));
     return mp_const_none;
 }
-
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(esp_rtcmem_write_obj, esp_rtcmem_write_);
 
 STATIC mp_obj_t esp_rtcmem_read_(mp_obj_t pos) {
     uint8_t val = esp_rtcmem_read(mp_obj_get_int(pos));
     return mp_obj_new_int(val);
 }
-
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(esp_rtcmem_read_obj, esp_rtcmem_read_);
+
+STATIC mp_obj_t esp_rtc_get_reset_reason_(mp_obj_t cpu) {
+    if (cpu > 1) {
+      return mp_obj_new_int(0);
+    }
+    uint8_t val = rtc_get_reset_reason(mp_obj_get_int(cpu));
+    return mp_obj_new_int(val);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(esp_rtc_get_reset_reason_obj, esp_rtc_get_reset_reason_);
 
 STATIC mp_obj_t esp_start_sleeping_(mp_obj_t time) {
     esp_start_sleeping(mp_obj_get_int(time));
@@ -124,6 +131,7 @@ STATIC const mp_rom_map_elem_t esp_module_globals_table[] = {
 
     { MP_ROM_QSTR(MP_QSTR_rtcmem_write), MP_ROM_PTR(&esp_rtcmem_write_obj) },
     { MP_ROM_QSTR(MP_QSTR_rtcmem_read), MP_ROM_PTR(&esp_rtcmem_read_obj) },
+    { MP_ROM_QSTR(MP_QSTR_rtc_get_reset_reason), MP_ROM_PTR(&esp_rtc_get_reset_reason_obj) },
 
     { MP_ROM_QSTR(MP_QSTR_start_sleeping), MP_ROM_PTR(&esp_start_sleeping_obj) },
 
