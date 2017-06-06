@@ -146,6 +146,7 @@ typedef struct {
             esp_bd_addr_t           bda;
             uint8_t*                adv_data; // Need to free this!
             uint8_t                 adv_data_len;
+            int                     rssi;
         } gattc_scan_res;
 
         struct {
@@ -1795,8 +1796,12 @@ STATIC mp_obj_t network_bluetooth_callback_queue_handler(mp_obj_t arg) {
                 if (bluetooth->callback != mp_const_none) {
                     mp_obj_t data = mp_const_none;
                     if (cbdata.event == NETWORK_BLUETOOTH_GATTC_SCAN_RES) {
-                        mp_obj_t scan_res_args[] = { MP_OBJ_NEW_BYTES(ESP_BD_ADDR_LEN, cbdata.gattc_scan_res.bda), MP_OBJ_NEW_BYTES(cbdata.gattc_scan_res.adv_data_len, cbdata.gattc_scan_res.adv_data) } ;
-                        data = mp_obj_new_tuple(2, scan_res_args);
+                        mp_obj_t scan_res_args[] = { 
+                            MP_OBJ_NEW_BYTES(ESP_BD_ADDR_LEN, cbdata.gattc_scan_res.bda), 
+                            MP_OBJ_NEW_BYTES(cbdata.gattc_scan_res.adv_data_len, cbdata.gattc_scan_res.adv_data),
+                            mp_obj_new_int(cbdata.gattc_scan_res.rssi)
+                        } ;
+                        data = mp_obj_new_tuple(3, scan_res_args);
                         FREE(cbdata.gattc_scan_res.adv_data);
                     }
 
@@ -2138,6 +2143,7 @@ STATIC void network_bluetooth_gap_event_handler(
                             adv_name = esp_ble_resolve_adv_data(param->scan_rst.ble_adv, ESP_BLE_AD_TYPE_NAME_CMPL, &adv_name_len);
 
                             memcpy(cbdata.gattc_scan_res.bda, param->scan_rst.bda, ESP_BD_ADDR_LEN);
+                            cbdata.gattc_scan_res.rssi = param->scan_rst.rssi;
                             cbdata.gattc_scan_res.adv_data = MALLOC(adv_name_len);
 
                             if (cbdata.gattc_scan_res.adv_data != NULL) {

@@ -119,7 +119,7 @@ bluetooth.ble_settings(int_min = 1280, int_max = 1280,
     * `bluetooth.SCAN_CMPL` when GATTC scan is complete
 3. Event data:
     * For `bluetooth.CONNECT`, `bluetooth.DISCONNECT` events, this will be a `bytes(6)` represeting the remote address.
-    * For `bluetooth.SCAN_RES` this will be a 2-tuple of `(<remote BDA>, <advertised name>)`
+    * For `bluetooth.SCAN_RES` this will be a 3-tuple of `(<remote BDA>, <advertised name>, <rssi>)`
     * For `bluetooth.SCAN_CMPL` this will be `None`.
 4. The `<callback_data` parameter from the `bluetooth.callback()` call.
 
