@@ -35,6 +35,7 @@
 #include "py/mperrno.h"
 #include "py/mphal.h"
 #include "drivers/dht/dht.h"
+#include "rom/rtc.h"
 #include "modesp.h"
 
 STATIC mp_obj_t esp_flash_read(mp_obj_t offset_in, mp_obj_t buf_in) {
@@ -103,10 +104,11 @@ STATIC mp_obj_t esp_rtcmem_read_(mp_obj_t pos) {
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(esp_rtcmem_read_obj, esp_rtcmem_read_);
 
 STATIC mp_obj_t esp_rtc_get_reset_reason_(mp_obj_t cpu) {
-    if (cpu > 1) {
+    uint8_t cpu_id = mp_obj_get_int(cpu);
+    if (cpu_id > 1) {
       return mp_obj_new_int(0);
     }
-    uint8_t val = rtc_get_reset_reason(mp_obj_get_int(cpu));
+    uint8_t val = rtc_get_reset_reason(cpu_id);
     return mp_obj_new_int(val);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(esp_rtc_get_reset_reason_obj, esp_rtc_get_reset_reason_);

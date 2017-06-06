@@ -28,8 +28,8 @@
  * THE SOFTWARE.
  */
 
-#include <stdio.h>
 #include <stdbool.h>
+#include <stdio.h>
 
 #include "badge_eink.h"
 // #include "badge_i2c.h"
@@ -134,6 +134,22 @@ STATIC mp_obj_t ugfx_flush() {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(ugfx_flush_obj, ugfx_flush);
 
+/// \method get_char_width(char, font)
+///
+/// Get length in pixels of given character font combination.
+///
+STATIC mp_obj_t ugfx_get_char_width(mp_uint_t n_args, const mp_obj_t *args) {
+  // extract arguments
+  // ugfx_obj_t *self = args[0];
+  mp_uint_t len;
+  const uint16_t data = mp_obj_get_int(args[0]);
+  const char *font = mp_obj_str_get_data(args[1], &len);
+
+  return mp_obj_new_int(gdispGetCharWidth(data, gdispOpenFont(font)));
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ugfx_get_char_width_obj, 2, 2,
+                                           ugfx_get_char_width);
+
 /// \method get_string_width(str, font)
 ///
 /// Get length in pixels of given text font combination.
@@ -150,6 +166,28 @@ STATIC mp_obj_t ugfx_get_string_width(mp_uint_t n_args, const mp_obj_t *args) {
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ugfx_get_string_width_obj, 2, 2,
                                            ugfx_get_string_width);
 
+/// \method char(x, y, char, font, colour)
+///
+/// Draw the given character to the position `(x, y)` using the given font and
+/// colour.
+///
+STATIC mp_obj_t ugfx_char(mp_uint_t n_args, const mp_obj_t *args) {
+ // extract arguments
+ // ugfx_obj_t *self = args[0];
+ mp_uint_t len;
+ const char *data = mp_obj_str_get_data(args[2], &len);
+ int x0 = mp_obj_get_int(args[0]);
+ int y0 = mp_obj_get_int(args[1]);
+ int col = mp_obj_get_int(args[4]);
+ const char *font = mp_obj_str_get_data(args[3], &len);
+
+ gdispDrawString(x0, y0, data, gdispOpenFont(font), col);
+
+ return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ugfx_char_obj, 5, 5, ugfx_char);
+
+
 /// \method string(x, y, str, font, colour)
 ///
 /// Draw the given text to the position `(x, y)` using the given font and
@@ -159,13 +197,13 @@ STATIC mp_obj_t ugfx_string(mp_uint_t n_args, const mp_obj_t *args) {
   // extract arguments
   // ugfx_obj_t *self = args[0];
   mp_uint_t len;
-  const char *data = mp_obj_str_get_data(args[2], &len);
+  const uint16_t data = mp_obj_get_int(args[2]);
   int x0 = mp_obj_get_int(args[0]);
   int y0 = mp_obj_get_int(args[1]);
   int col = mp_obj_get_int(args[4]);
   const char *font = mp_obj_str_get_data(args[3], &len);
 
-  gdispDrawString(x0, y0, data, gdispOpenFont(font), col);
+  gdispDrawChar(x0, y0, data, gdispOpenFont(font), col);
 
   return mp_const_none;
 }
@@ -581,7 +619,8 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(ugfx_demo_obj, ugfx_demo);
 STATIC mp_obj_t battery_charge_status_() {
   return mp_obj_new_bool(badge_battery_charge_status());
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(battery_charge_status_obj, battery_charge_status_);
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(battery_charge_status_obj,
+                                 battery_charge_status_);
 
 STATIC mp_obj_t battery_volt_sense_() {
   return mp_obj_new_int(badge_battery_volt_sense());
@@ -611,14 +650,16 @@ STATIC const mp_rom_map_elem_t badge_module_globals_table[] = {
     {MP_OBJ_NEW_QSTR(MP_QSTR_justifyLeft), MP_OBJ_NEW_SMALL_INT(justifyLeft)},
     {MP_OBJ_NEW_QSTR(MP_QSTR_justifyCenter),
      MP_OBJ_NEW_SMALL_INT(justifyCenter)},
-    {MP_OBJ_NEW_QSTR(MP_QSTR_justifyRight),
-     MP_OBJ_NEW_SMALL_INT(justifyRight)},
+    {MP_OBJ_NEW_QSTR(MP_QSTR_justifyRight), MP_OBJ_NEW_SMALL_INT(justifyRight)},
 
     {MP_OBJ_NEW_QSTR(MP_QSTR_clear), (mp_obj_t)&ugfx_clear_obj},
     {MP_OBJ_NEW_QSTR(MP_QSTR_flush), (mp_obj_t)&ugfx_flush_obj},
 
     {MP_OBJ_NEW_QSTR(MP_QSTR_get_string_width),
      (mp_obj_t)&ugfx_get_string_width_obj},
+    {MP_OBJ_NEW_QSTR(MP_QSTR_get_char_width),
+     (mp_obj_t)&ugfx_get_char_width_obj},
+    {MP_OBJ_NEW_QSTR(MP_QSTR_schar), (mp_obj_t)&ugfx_char_obj},
     {MP_OBJ_NEW_QSTR(MP_QSTR_string), (mp_obj_t)&ugfx_string_obj},
     {MP_OBJ_NEW_QSTR(MP_QSTR_string_box), (mp_obj_t)&ugfx_string_box_obj},
 
@@ -641,8 +682,10 @@ STATIC const mp_rom_map_elem_t badge_module_globals_table[] = {
 
     {MP_OBJ_NEW_QSTR(MP_QSTR_ugfx_demo), (mp_obj_t)&ugfx_demo_obj},
 
-    {MP_OBJ_NEW_QSTR(MP_QSTR_battery_charge_status), (mp_obj_t)&battery_charge_status_obj},
-    {MP_OBJ_NEW_QSTR(MP_QSTR_battery_volt_sense), (mp_obj_t)&battery_volt_sense_obj},
+    {MP_OBJ_NEW_QSTR(MP_QSTR_battery_charge_status),
+     (mp_obj_t)&battery_charge_status_obj},
+    {MP_OBJ_NEW_QSTR(MP_QSTR_battery_volt_sense),
+     (mp_obj_t)&battery_volt_sense_obj},
     {MP_OBJ_NEW_QSTR(MP_QSTR_usb_volt_sense), (mp_obj_t)&usb_volt_sense_obj},
 };
 
