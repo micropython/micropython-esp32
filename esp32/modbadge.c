@@ -172,21 +172,20 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ugfx_get_string_width_obj, 2, 2,
 /// colour.
 ///
 STATIC mp_obj_t ugfx_char(mp_uint_t n_args, const mp_obj_t *args) {
- // extract arguments
- // ugfx_obj_t *self = args[0];
- mp_uint_t len;
- const char *data = mp_obj_str_get_data(args[2], &len);
- int x0 = mp_obj_get_int(args[0]);
- int y0 = mp_obj_get_int(args[1]);
- int col = mp_obj_get_int(args[4]);
- const char *font = mp_obj_str_get_data(args[3], &len);
+  // extract arguments
+  // ugfx_obj_t *self = args[0];
+  mp_uint_t len;
+  const char *data = mp_obj_str_get_data(args[2], &len);
+  int x0 = mp_obj_get_int(args[0]);
+  int y0 = mp_obj_get_int(args[1]);
+  int col = mp_obj_get_int(args[4]);
+  const char *font = mp_obj_str_get_data(args[3], &len);
 
- gdispDrawString(x0, y0, data, gdispOpenFont(font), col);
+  gdispDrawString(x0, y0, data, gdispOpenFont(font), col);
 
- return mp_const_none;
+  return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ugfx_char_obj, 5, 5, ugfx_char);
-
 
 /// \method string(x, y, str, font, colour)
 ///
@@ -616,6 +615,12 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(ugfx_demo_obj, ugfx_demo);
 
 // Power
 
+STATIC mp_obj_t badge_power_init_() {
+  badge_power_init();
+  return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_power_init_obj, badge_power_init_);
+
 STATIC mp_obj_t battery_charge_status_() {
   return mp_obj_new_bool(badge_battery_charge_status());
 }
@@ -682,6 +687,7 @@ STATIC const mp_rom_map_elem_t badge_module_globals_table[] = {
 
     {MP_OBJ_NEW_QSTR(MP_QSTR_ugfx_demo), (mp_obj_t)&ugfx_demo_obj},
 
+    {MP_OBJ_NEW_QSTR(MP_QSTR_power_init), (mp_obj_t)&badge_power_init_obj},
     {MP_OBJ_NEW_QSTR(MP_QSTR_battery_charge_status),
      (mp_obj_t)&battery_charge_status_obj},
     {MP_OBJ_NEW_QSTR(MP_QSTR_battery_volt_sense),
