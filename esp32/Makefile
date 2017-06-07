@@ -145,8 +145,11 @@ SRC_C = \
 	badge_leds.c \
 	badge_mpr121.c \
 	badge_portexp.c \
+	badge_button.c \
 	badge_touch.c \
+	badge_input.c \
 	badge_power.c \
+	badge.c \
 	depg0290b1.c \
 	font.c \
 	font_16px.c \

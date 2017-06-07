@@ -31,14 +31,10 @@
 #include <stdbool.h>
 #include <stdio.h>
 
+#include "badge.h"
 #include "badge_eink.h"
-// #include "badge_i2c.h"
-// #include "badge_leds.h"
-// #include "badge_mpr121.h"
-// #include "badge_pins.h"
-// #include "badge_portexp.h"
-// #include "badge_touch.h"
 #include "badge_power.h"
+#include "badge_leds.h"
 
 #include "font.h"
 #include "font_16px.h"
@@ -67,9 +63,15 @@ const char *font_list[] = {"Roboto-Black22",   "Roboto-BlackItalic24",
 
 typedef struct _ugfx_obj_t { mp_obj_base_t base; } ugfx_obj_t;
 
-/**
- *  Badge eink hooks
- */
+// INIT
+
+STATIC mp_obj_t badge_init_() {
+  badge_init();
+  return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_init_obj, badge_init_);
+
+// EINK
 
 STATIC mp_obj_t badge_eink_init_() {
   badge_eink_init();
@@ -637,12 +639,24 @@ STATIC mp_obj_t usb_volt_sense_() {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(usb_volt_sense_obj, usb_volt_sense_);
 
+// LEDs
+
+STATIC mp_obj_t badge_leds_init_() {
+  badge_leds_init();
+  return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_leds_init_obj, badge_leds_init_);
+
 // Module globals
 
 STATIC const mp_rom_map_elem_t badge_module_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_badge)},
 
+    {MP_ROM_QSTR(MP_QSTR_init), MP_ROM_PTR(&badge_init_obj)},
     {MP_ROM_QSTR(MP_QSTR_eink_init), MP_ROM_PTR(&badge_eink_init_obj)},
+    {MP_OBJ_NEW_QSTR(MP_QSTR_power_init), (mp_obj_t)&badge_power_init_obj},
+    {MP_OBJ_NEW_QSTR(MP_QSTR_leds_init), (mp_obj_t)&badge_power_init_obj},
+
     {MP_ROM_QSTR(MP_QSTR_display_picture),
      MP_ROM_PTR(&badge_display_picture_obj)},
 
@@ -687,7 +701,6 @@ STATIC const mp_rom_map_elem_t badge_module_globals_table[] = {
 
     {MP_OBJ_NEW_QSTR(MP_QSTR_ugfx_demo), (mp_obj_t)&ugfx_demo_obj},
 
-    {MP_OBJ_NEW_QSTR(MP_QSTR_power_init), (mp_obj_t)&badge_power_init_obj},
     {MP_OBJ_NEW_QSTR(MP_QSTR_battery_charge_status),
      (mp_obj_t)&battery_charge_status_obj},
     {MP_OBJ_NEW_QSTR(MP_QSTR_battery_volt_sense),
