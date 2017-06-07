@@ -93,21 +93,27 @@ STATIC mp_obj_t badge_power_init_() {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_power_init_obj, badge_power_init_);
 
+#if defined(PORTEXP_PIN_NUM_CHRGSTAT) || defined(MPR121_PIN_NUM_CHRGSTAT)
 STATIC mp_obj_t battery_charge_status_() {
   return mp_obj_new_bool(badge_battery_charge_status());
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(battery_charge_status_obj,
                                  battery_charge_status_);
+#endif
 
+#ifdef ADC1_CHAN_VBAT_SENSE
 STATIC mp_obj_t battery_volt_sense_() {
   return mp_obj_new_int(badge_battery_volt_sense());
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(battery_volt_sense_obj, battery_volt_sense_);
+#endif
 
+#ifdef ADC1_CHAN_VUSB_SENSE
 STATIC mp_obj_t usb_volt_sense_() {
   return mp_obj_new_int(badge_usb_volt_sense());
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(usb_volt_sense_obj, usb_volt_sense_);
+#endif
 
 // LEDs
 
@@ -130,11 +136,17 @@ STATIC const mp_rom_map_elem_t badge_module_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR_display_picture),
      MP_ROM_PTR(&badge_display_picture_obj)},
 
+#if defined(PORTEXP_PIN_NUM_CHRGSTAT) || defined(MPR121_PIN_NUM_CHRGSTAT)
     {MP_OBJ_NEW_QSTR(MP_QSTR_battery_charge_status),
      (mp_obj_t)&battery_charge_status_obj},
+#endif
+#ifdef ADC1_CHAN_VBAT_SENSE
     {MP_OBJ_NEW_QSTR(MP_QSTR_battery_volt_sense),
      (mp_obj_t)&battery_volt_sense_obj},
+#endif
+#ifdef ADC1_CHAN_VUSB_SENSE
     {MP_OBJ_NEW_QSTR(MP_QSTR_usb_volt_sense), (mp_obj_t)&usb_volt_sense_obj},
+#endif
 };
 
 STATIC MP_DEFINE_CONST_DICT(badge_module_globals, badge_module_globals_table);
