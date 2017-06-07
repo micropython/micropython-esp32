@@ -34,6 +34,7 @@
 #include "freertos/task.h"
 #include "rom/ets_sys.h"
 #include "esp_system.h"
+#include "driver/touch_pad.h"
 
 #include "py/obj.h"
 #include "py/runtime.h"
@@ -42,8 +43,11 @@
 #include "extmod/machine_i2c.h"
 #include "extmod/machine_spi.h"
 #include "modmachine.h"
+#include "machine_rtc.h"
 
 #if MICROPY_PY_MACHINE
+
+extern machine_rtc_config_t machine_rtc_config;
 
 STATIC mp_obj_t machine_freq(size_t n_args, const mp_obj_t *args) {
     if (n_args == 0) {
@@ -54,7 +58,7 @@ STATIC mp_obj_t machine_freq(size_t n_args, const mp_obj_t *args) {
         mp_int_t freq = mp_obj_get_int(args[0]) / 1000000;
         if (freq != 80 && freq != 160 && freq != 240) {
             nlr_raise(mp_obj_new_exception_msg(&mp_type_ValueError,
-                "frequency can only be either 80Mhz, 160MHz or 240MHz"));
+                                               "frequency can only be either 80Mhz, 160MHz or 240MHz"));
         }
         /*
         system_update_cpu_freq(freq);
@@ -63,6 +67,43 @@ STATIC mp_obj_t machine_freq(size_t n_args, const mp_obj_t *args) {
     }
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(machine_freq_obj, 0, 1, machine_freq);
+
+STATIC mp_obj_t machine_deepsleep(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+
+    enum {ARG_sleep_ms};
+    const mp_arg_t allowed_args[] = {
+        { MP_QSTR_sleep_ms, MP_ARG_INT, { .u_int = 0 } },
+    };
+
+    mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
+    mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
+
+
+    mp_int_t expiry = args[ARG_sleep_ms].u_int;
+
+    if (expiry != 0) {
+        esp_deep_sleep_enable_timer_wakeup(expiry * 1000);
+    }
+
+    if (machine_rtc_config.ext0_pin != -1) {
+        esp_deep_sleep_enable_ext0_wakeup(machine_rtc_config.ext0_pin, machine_rtc_config.ext0_level ? 1 : 0);
+    }
+
+    if (machine_rtc_config.ext1_pins != 0) {
+        esp_deep_sleep_enable_ext1_wakeup(
+            machine_rtc_config.ext1_pins,
+            machine_rtc_config.ext1_level ? ESP_EXT1_WAKEUP_ANY_HIGH : ESP_EXT1_WAKEUP_ALL_LOW);
+    }
+
+    if (machine_rtc_config.wake_on_touch) {
+        esp_deep_sleep_enable_touchpad_wakeup();
+    }
+
+    esp_deep_sleep_start();
+    return mp_const_none;
+}
+
+STATIC MP_DEFINE_CONST_FUN_OBJ_KW(machine_deepsleep_obj, 0,  machine_deepsleep);
 
 STATIC mp_obj_t machine_reset(void) {
     esp_restart();
@@ -105,6 +146,7 @@ STATIC const mp_rom_map_elem_t machine_module_globals_table[] = {
 
     { MP_ROM_QSTR(MP_QSTR_freq), MP_ROM_PTR(&machine_freq_obj) },
     { MP_ROM_QSTR(MP_QSTR_reset), MP_ROM_PTR(&machine_reset_obj) },
+    { MP_ROM_QSTR(MP_QSTR_deepsleep), MP_ROM_PTR(&machine_deepsleep_obj) },
     { MP_ROM_QSTR(MP_QSTR_unique_id), MP_ROM_PTR(&machine_unique_id_obj) },
     { MP_ROM_QSTR(MP_QSTR_idle), MP_ROM_PTR(&machine_idle_obj) },
 
@@ -113,11 +155,13 @@ STATIC const mp_rom_map_elem_t machine_module_globals_table[] = {
 
     { MP_ROM_QSTR(MP_QSTR_time_pulse_us), MP_ROM_PTR(&machine_time_pulse_us_obj) },
 
+
     { MP_ROM_QSTR(MP_QSTR_Pin), MP_ROM_PTR(&machine_pin_type) },
     { MP_ROM_QSTR(MP_QSTR_TouchPad), MP_ROM_PTR(&machine_touchpad_type) },
     { MP_ROM_QSTR(MP_QSTR_ADC), MP_ROM_PTR(&machine_adc_type) },
     { MP_ROM_QSTR(MP_QSTR_DAC), MP_ROM_PTR(&machine_dac_type) },
     { MP_ROM_QSTR(MP_QSTR_I2C), MP_ROM_PTR(&machine_i2c_type) },
+    { MP_ROM_QSTR(MP_QSTR_RTC), MP_ROM_PTR(&machine_rtc_type) },
     { MP_ROM_QSTR(MP_QSTR_PWM), MP_ROM_PTR(&machine_pwm_type) },
     { MP_ROM_QSTR(MP_QSTR_SPI), MP_ROM_PTR(&mp_machine_soft_spi_type) },
     { MP_ROM_QSTR(MP_QSTR_UART), MP_ROM_PTR(&machine_uart_type) },
