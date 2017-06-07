@@ -136,6 +136,7 @@ SRC_C = \
 	modsocket.c \
 	modesp.c \
 	modbadge.c \
+	modugfx.c \
 	moduhashlib.c \
 	espneopixel.c \
 	machine_hw_spi.c \
