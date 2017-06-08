@@ -3,6 +3,9 @@
  *
  * SHA2017 Badge Firmware https://wiki.sha2017.org/w/Projects:Badge/MicroPython
  *
+ * Based on work by EMF for their TiLDA 3 badge
+ * https://github.com/emfcamp/micropython/tree/tilda-master/stmhal
+ *
  * The MIT License (MIT)
  *
  * Copyright (c) 2015 Paul Sokolovsky

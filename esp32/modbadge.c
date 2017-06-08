@@ -28,23 +28,7 @@
  * THE SOFTWARE.
  */
 
-#include <stdbool.h>
-#include <stdio.h>
-
-#include "badge.h"
-#include "badge_eink.h"
-#include "badge_power.h"
-#include "badge_leds.h"
-
-#include "font.h"
-#include "font_16px.h"
-#include "font_8px.h"
-
-#include "imgv2_menu.h"
-#include "imgv2_nick.h"
-#include "imgv2_sha.h"
-#include "imgv2_test.h"
-#include "imgv2_weather.h"
+#include "modbadge.h"
 
 #include "py/mperrno.h"
 #include "py/mphal.h"
@@ -120,6 +104,13 @@ STATIC mp_obj_t badge_leds_init_() {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_leds_init_obj, badge_leds_init_);
 
+STATIC mp_obj_t badge_leds_set_state_(mp_uint_t n_args, const mp_obj_t *args) {
+  mp_uint_t len;
+  uint8_t *leds = (uint8_t *)mp_obj_str_get_data(args[0], &len);
+  return mp_obj_new_int(badge_leds_set_state(leds));
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(badge_leds_set_state_obj, 1,1 ,badge_leds_set_state_);
+
 // Module globals
 
 STATIC const mp_rom_map_elem_t badge_module_globals_table[] = {
@@ -129,6 +120,7 @@ STATIC const mp_rom_map_elem_t badge_module_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR_eink_init), MP_ROM_PTR(&badge_eink_init_obj)},
     {MP_OBJ_NEW_QSTR(MP_QSTR_power_init), (mp_obj_t)&badge_power_init_obj},
     {MP_OBJ_NEW_QSTR(MP_QSTR_leds_init), (mp_obj_t)&badge_power_init_obj},
+    {MP_OBJ_NEW_QSTR(MP_QSTR_leds_set_state), (mp_obj_t)&badge_leds_set_state_obj},
 
     {MP_ROM_QSTR(MP_QSTR_display_picture),
      MP_ROM_PTR(&badge_display_picture_obj)},
