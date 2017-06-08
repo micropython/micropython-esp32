@@ -535,8 +535,8 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ugfx_fill_rounded_box_obj, 6, 6,
 /// tim.callback(lambda t:ugfx.poll())
 ///
 STATIC mp_obj_t ugfx_poll(void) {
-	gfxYield();
-    return mp_const_none;
+  gfxYield();
+  return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(ugfx_poll_obj, ugfx_poll);
 
