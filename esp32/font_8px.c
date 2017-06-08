@@ -1,1 +1,1 @@
-../../components/epd/font_8px.c
+../../components/graph/font_8px.c

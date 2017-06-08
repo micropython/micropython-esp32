@@ -151,13 +151,12 @@ SRC_C = \
 	badge_touch.c \
 	badge_input.c \
 	badge_power.c \
+	badge_eink_dev.c \
+	badge_eink_lut.c \
 	badge.c \
-	depg0290b1.c \
 	font.c \
 	font_16px.c \
 	font_8px.c \
-	gde.c \
-	gdeh029a1.c \
 	imgv2_menu.c \
 	imgv2_nick.c \
 	imgv2_sha.c \

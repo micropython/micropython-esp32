@@ -40,9 +40,6 @@
 #include "font_16px.h"
 #include "font_8px.h"
 
-#include "gde-driver.h"
-#include "gde.h"
-
 #include "imgv2_menu.h"
 #include "imgv2_nick.h"
 #include "imgv2_sha.h"
