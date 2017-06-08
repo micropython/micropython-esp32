@@ -63,6 +63,15 @@ STATIC mp_obj_t ugfx_deinit(void) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(ugfx_deinit_obj, ugfx_deinit);
 
+/// \method print_fonts()
+///
+/// Prints the list of installed fonts
+///
+STATIC mp_obj_t ugfx_print_fonts(void) {
+  return mp_obj_new_list(6, (void **)font_list);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(ugfx_print_fonts_obj, ugfx_print_fonts);
+
 // PRIMITIVES
 
 /// \method clear(color=ugfx.WHITE)
@@ -597,12 +606,12 @@ STATIC const mp_rom_map_elem_t ugfx_module_globals_table[] = {
      MP_OBJ_NEW_SMALL_INT(justifyCenter)},
     {MP_OBJ_NEW_QSTR(MP_QSTR_justifyRight), MP_OBJ_NEW_SMALL_INT(justifyRight)},
 
-    {MP_OBJ_NEW_QSTR(MP_QSTR_BUTTON_UP), MP_OBJ_NEW_SMALL_INT(BADGE_BUTTON_UP)},
-    {MP_OBJ_NEW_QSTR(MP_QSTR_BUTTON_DOWN),
+    {MP_OBJ_NEW_QSTR(MP_QSTR_JOY_UP), MP_OBJ_NEW_SMALL_INT(BADGE_BUTTON_UP)},
+    {MP_OBJ_NEW_QSTR(MP_QSTR_JOY_DOWN),
      MP_OBJ_NEW_SMALL_INT(BADGE_BUTTON_DOWN)},
-    {MP_OBJ_NEW_QSTR(MP_QSTR_BUTTON_LEFT),
+    {MP_OBJ_NEW_QSTR(MP_QSTR_JOY_LEFT),
      MP_OBJ_NEW_SMALL_INT(BADGE_BUTTON_LEFT)},
-    {MP_OBJ_NEW_QSTR(MP_QSTR_BUTTON_RIGHT),
+    {MP_OBJ_NEW_QSTR(MP_QSTR_JOY_RIGHT),
      MP_OBJ_NEW_SMALL_INT(BADGE_BUTTON_RIGHT)},
     {MP_OBJ_NEW_QSTR(MP_QSTR_BTN_MID), MP_OBJ_NEW_SMALL_INT(BADGE_BUTTON_MID)},
     {MP_OBJ_NEW_QSTR(MP_QSTR_BTN_A), MP_OBJ_NEW_SMALL_INT(BADGE_BUTTON_A)},
@@ -642,6 +651,8 @@ STATIC const mp_rom_map_elem_t ugfx_module_globals_table[] = {
     {MP_OBJ_NEW_QSTR(MP_QSTR_fill_arc), (mp_obj_t)&ugfx_fill_arc_obj},
     {MP_OBJ_NEW_QSTR(MP_QSTR_polygon), (mp_obj_t)&ugfx_polygon_obj},
     {MP_OBJ_NEW_QSTR(MP_QSTR_fill_polygon), (mp_obj_t)&ugfx_fill_polygon_obj},
+
+    {MP_OBJ_NEW_QSTR(MP_QSTR_print_fonts), (mp_obj_t)&ugfx_print_fonts_obj},
 
     {MP_OBJ_NEW_QSTR(MP_QSTR_demo), (mp_obj_t)&ugfx_demo_obj},
 };
