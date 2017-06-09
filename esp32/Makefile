@@ -29,7 +29,7 @@ ESPCOMP = $(ESPIDF)/components
 ESPTOOL ?= $(ESPCOMP)/esptool_py/esptool/esptool.py
 
 # verify the ESP IDF version
-ESPIDF_SUPHASH := 1e0710f1b24429a316c9c34732aa17bd3f189421
+ESPIDF_SUPHASH := e7db29b2a8355d3e63b1c28b47b3206988b15cf1
 ESPIDF_CURHASH := $(shell git -C $(ESPIDF) show -s --pretty=format:'%H')
 ifneq ($(ESPIDF_CURHASH),$(ESPIDF_SUPHASH))
 $(info ** WARNING **)
@@ -53,7 +53,7 @@ INC += -I$(ESPCOMP)/bootloader_support/include
 INC += -I$(ESPCOMP)/driver/include
 INC += -I$(ESPCOMP)/driver/include/driver
 INC += -I$(ESPCOMP)/nghttp/port/include
-INC += -I$(ESPCOMP)/nghttp/include
+INC += -I$(ESPCOMP)/nghttp/nghttp2/lib/includes
 INC += -I$(ESPCOMP)/esp32/include
 INC += -I$(ESPCOMP)/soc/esp32/include
 INC += -I$(ESPCOMP)/ethernet/include
@@ -331,27 +331,27 @@ ESPIDF_NEWLIB_O = $(addprefix $(ESPCOMP)/newlib/,\
 	)
 
 ESPIDF_NGHTTP_O = $(addprefix $(ESPCOMP)/nghttp/,\
-	library/nghttp2_http.o \
-	library/nghttp2_version.o \
-	library/nghttp2_mem.o \
-	library/nghttp2_hd_huffman.o \
-	library/nghttp2_rcbuf.o \
-	library/nghttp2_callbacks.o \
-	library/nghttp2_session.o \
-	library/nghttp2_stream.o \
-	library/nghttp2_hd.o \
-	library/nghttp2_priority_spec.o \
-	library/nghttp2_buf.o \
-	library/nghttp2_option.o \
-	library/nghttp2_npn.o \
-	library/nghttp2_helper.o \
-	library/nghttp2_frame.o \
-	library/nghttp2_outbound_item.o \
-	library/nghttp2_hd_huffman_data.o \
-	library/nghttp2_pq.o \
-	library/nghttp2_queue.o \
-	library/nghttp2_submit.o \
-	library/nghttp2_map.o \
+	nghttp2/lib/nghttp2_http.o \
+	nghttp2/lib/nghttp2_version.o \
+	nghttp2/lib/nghttp2_mem.o \
+	nghttp2/lib/nghttp2_hd_huffman.o \
+	nghttp2/lib/nghttp2_rcbuf.o \
+	nghttp2/lib/nghttp2_callbacks.o \
+	nghttp2/lib/nghttp2_session.o \
+	nghttp2/lib/nghttp2_stream.o \
+	nghttp2/lib/nghttp2_hd.o \
+	nghttp2/lib/nghttp2_priority_spec.o \
+	nghttp2/lib/nghttp2_buf.o \
+	nghttp2/lib/nghttp2_option.o \
+	nghttp2/lib/nghttp2_npn.o \
+	nghttp2/lib/nghttp2_helper.o \
+	nghttp2/lib/nghttp2_frame.o \
+	nghttp2/lib/nghttp2_outbound_item.o \
+	nghttp2/lib/nghttp2_hd_huffman_data.o \
+	nghttp2/lib/nghttp2_pq.o \
+	nghttp2/lib/nghttp2_queue.o \
+	nghttp2/lib/nghttp2_submit.o \
+	nghttp2/lib/nghttp2_map.o \
 	port/http_parser.o \
 	)
 
