@@ -157,7 +157,7 @@ STATIC mp_obj_t ugfx_string(mp_uint_t n_args, const mp_obj_t *args) {
   // extract arguments
   // ugfx_obj_t *self = args[0];
   mp_uint_t len;
-  const uint16_t data = mp_obj_get_int(args[2]);
+  const uint16_t data = mp_obj_str_get_data(args[2]);
   int x0 = mp_obj_get_int(args[0]);
   int y0 = mp_obj_get_int(args[1]);
   int col = mp_obj_get_int(args[4]);
@@ -631,7 +631,7 @@ STATIC const mp_rom_map_elem_t ugfx_module_globals_table[] = {
      (mp_obj_t)&ugfx_get_string_width_obj},
     {MP_OBJ_NEW_QSTR(MP_QSTR_get_char_width),
      (mp_obj_t)&ugfx_get_char_width_obj},
-    {MP_OBJ_NEW_QSTR(MP_QSTR_schar), (mp_obj_t)&ugfx_char_obj},
+    {MP_OBJ_NEW_QSTR(MP_QSTR_char), (mp_obj_t)&ugfx_char_obj},
     {MP_OBJ_NEW_QSTR(MP_QSTR_string), (mp_obj_t)&ugfx_string_obj},
     {MP_OBJ_NEW_QSTR(MP_QSTR_string_box), (mp_obj_t)&ugfx_string_box_obj},
 
