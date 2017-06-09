@@ -22,9 +22,10 @@ FLASH_SIZE ?= 4MB
 CROSS_COMPILE ?= xtensa-esp32-elf-
 
 # paths to ESP IDF and its components
-ifeq ($(ESPIDF),)
+ifeq ($(IDF_PATH),)
 $(error Please configure the ESPIDF variable)
 endif
+ESPIDF = $(IDF_PATH)
 ESPCOMP = $(ESPIDF)/components
 ESPTOOL ?= $(ESPCOMP)/esptool_py/esptool/esptool.py
 
