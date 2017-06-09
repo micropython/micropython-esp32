@@ -136,13 +136,13 @@ STATIC mp_obj_t ugfx_char(mp_uint_t n_args, const mp_obj_t *args) {
   // extract arguments
   // ugfx_obj_t *self = args[0];
   mp_uint_t len;
-  const char *data = mp_obj_str_get_data(args[2], &len);
+  const uint16_t data = mp_obj_get_int(args[2]);
   int x0 = mp_obj_get_int(args[0]);
   int y0 = mp_obj_get_int(args[1]);
   int col = mp_obj_get_int(args[4]);
   const char *font = mp_obj_str_get_data(args[3], &len);
 
-  gdispDrawString(x0, y0, data, gdispOpenFont(font), col);
+  gdispDrawChar(x0, y0, data, gdispOpenFont(font), col);
 
   return mp_const_none;
 }
@@ -157,13 +157,13 @@ STATIC mp_obj_t ugfx_string(mp_uint_t n_args, const mp_obj_t *args) {
   // extract arguments
   // ugfx_obj_t *self = args[0];
   mp_uint_t len;
-  const uint16_t data = mp_obj_str_get_data(args[2], &len);
+  const char *data = mp_obj_str_get_data(args[2], &len);
   int x0 = mp_obj_get_int(args[0]);
   int y0 = mp_obj_get_int(args[1]);
   int col = mp_obj_get_int(args[4]);
   const char *font = mp_obj_str_get_data(args[3], &len);
 
-  gdispDrawChar(x0, y0, data, gdispOpenFont(font), col);
+  gdispDrawString(x0, y0, data, gdispOpenFont(font), col);
 
   return mp_const_none;
 }
