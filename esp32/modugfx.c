@@ -157,7 +157,7 @@ STATIC mp_obj_t ugfx_string(mp_uint_t n_args, const mp_obj_t *args) {
   // extract arguments
   // ugfx_obj_t *self = args[0];
   mp_uint_t len;
-  const uint16_t data = mp_obj_str_get_data(args[2]);
+  const uint16_t data = mp_obj_str_get_data(args[2], &len);
   int x0 = mp_obj_get_int(args[0]);
   int y0 = mp_obj_get_int(args[1]);
   int col = mp_obj_get_int(args[4]);
