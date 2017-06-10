@@ -46,15 +46,9 @@
 #include "py/mphal.h"
 #include "py/runtime.h"
 
-const char *font_list[] = {"Roboto-Black22",   "Roboto-BlackItalic24",
-                           "Roboto-Regular12", "Roboto-Regular18",
-                           "Roboto-Regular22", "PermanentMarker22"};
-
 typedef struct _ugfx_obj_t { mp_obj_base_t base; } ugfx_obj_t;
 
 STATIC mp_obj_t ugfx_init(void) {
-  // gwinSetDefaultFont(gdispOpenFont(font_list[0]));
-  // gwinSetDefaultStyle(&WhiteWidgetStyle, FALSE);
   gfxInit();
   return mp_const_none;
 }
@@ -66,14 +60,6 @@ STATIC mp_obj_t ugfx_deinit(void) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(ugfx_deinit_obj, ugfx_deinit);
 
-/// \method print_fonts()
-///
-/// Prints the list of installed fonts
-///
-STATIC mp_obj_t ugfx_print_fonts(void) {
-  return mp_obj_new_list(6, (void **)font_list);
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(ugfx_print_fonts_obj, ugfx_print_fonts);
 
 // PRIMITIVES
 
@@ -651,8 +637,6 @@ STATIC const mp_rom_map_elem_t ugfx_module_globals_table[] = {
     {MP_OBJ_NEW_QSTR(MP_QSTR_fill_arc), (mp_obj_t)&ugfx_fill_arc_obj},
     {MP_OBJ_NEW_QSTR(MP_QSTR_polygon), (mp_obj_t)&ugfx_polygon_obj},
     {MP_OBJ_NEW_QSTR(MP_QSTR_fill_polygon), (mp_obj_t)&ugfx_fill_polygon_obj},
-
-    {MP_OBJ_NEW_QSTR(MP_QSTR_print_fonts), (mp_obj_t)&ugfx_print_fonts_obj},
 
     {MP_OBJ_NEW_QSTR(MP_QSTR_demo), (mp_obj_t)&ugfx_demo_obj},
 };
