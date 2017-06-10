@@ -3,7 +3,7 @@
  *
  * SHA2017 Badge Firmware https://wiki.sha2017.org/w/Projects:Badge/MicroPython
  *
- * Based on work by EMF for their TiLDA 3 badge
+ * Based on work by EMF for their TiLDA MK3 badge
  * https://github.com/emfcamp/micropython/tree/tilda-master/stmhal
  *
  * The MIT License (MIT)
@@ -40,6 +40,7 @@
 
 #include "gfx.h"
 #include "gfxconf.h"
+#include "ginput_lld_toggle_config.h"
 
 #include "py/mperrno.h"
 #include "py/mphal.h"
@@ -526,6 +527,22 @@ STATIC mp_obj_t ugfx_fill_rounded_box(mp_uint_t n_args, const mp_obj_t *args) {
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ugfx_fill_rounded_box_obj, 6, 6,
                                            ugfx_fill_rounded_box);
 
+// INPUT
+
+/// \method poll()
+///
+/// calls gfxYield, which will handle widget redrawing when for inputs.
+/// Register as follows:
+/// tim = pyb.Timer(3)
+/// tim.init(freq=60)
+/// tim.callback(lambda t:ugfx.poll())
+///
+STATIC mp_obj_t ugfx_poll(void) {
+  gfxYield();
+  return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(ugfx_poll_obj, ugfx_poll);
+
 // DEMO
 
 STATIC mp_obj_t ugfx_demo(mp_obj_t hacking) {
@@ -583,8 +600,26 @@ STATIC const mp_rom_map_elem_t ugfx_module_globals_table[] = {
      MP_OBJ_NEW_SMALL_INT(justifyCenter)},
     {MP_OBJ_NEW_QSTR(MP_QSTR_justifyRight), MP_OBJ_NEW_SMALL_INT(justifyRight)},
 
+    {MP_OBJ_NEW_QSTR(MP_QSTR_BUTTON_UP), MP_OBJ_NEW_SMALL_INT(BADGE_BUTTON_UP)},
+    {MP_OBJ_NEW_QSTR(MP_QSTR_BUTTON_DOWN),
+     MP_OBJ_NEW_SMALL_INT(BADGE_BUTTON_DOWN)},
+    {MP_OBJ_NEW_QSTR(MP_QSTR_BUTTON_LEFT),
+     MP_OBJ_NEW_SMALL_INT(BADGE_BUTTON_LEFT)},
+    {MP_OBJ_NEW_QSTR(MP_QSTR_BUTTON_RIGHT),
+     MP_OBJ_NEW_SMALL_INT(BADGE_BUTTON_RIGHT)},
+    {MP_OBJ_NEW_QSTR(MP_QSTR_BTN_MID), MP_OBJ_NEW_SMALL_INT(BADGE_BUTTON_MID)},
+    {MP_OBJ_NEW_QSTR(MP_QSTR_BTN_A), MP_OBJ_NEW_SMALL_INT(BADGE_BUTTON_A)},
+    {MP_OBJ_NEW_QSTR(MP_QSTR_BTN_B), MP_OBJ_NEW_SMALL_INT(BADGE_BUTTON_B)},
+    {MP_OBJ_NEW_QSTR(MP_QSTR_BTN_SELECT),
+     MP_OBJ_NEW_SMALL_INT(BADGE_BUTTON_SELECT)},
+    {MP_OBJ_NEW_QSTR(MP_QSTR_BTN_START),
+     MP_OBJ_NEW_SMALL_INT(BADGE_BUTTON_START)},
+    {MP_OBJ_NEW_QSTR(MP_QSTR_BTN_FLASH),
+     MP_OBJ_NEW_SMALL_INT(BADGE_BUTTON_FLASH)},
+
     {MP_OBJ_NEW_QSTR(MP_QSTR_clear), (mp_obj_t)&ugfx_clear_obj},
     {MP_OBJ_NEW_QSTR(MP_QSTR_flush), (mp_obj_t)&ugfx_flush_obj},
+    {MP_OBJ_NEW_QSTR(MP_QSTR_poll), (mp_obj_t)&ugfx_poll_obj},
 
     {MP_OBJ_NEW_QSTR(MP_QSTR_get_string_width),
      (mp_obj_t)&ugfx_get_string_width_obj},
@@ -617,6 +652,5 @@ STATIC const mp_rom_map_elem_t ugfx_module_globals_table[] = {
 STATIC MP_DEFINE_CONST_DICT(ugfx_module_globals, ugfx_module_globals_table);
 
 const mp_obj_module_t ugfx_module = {
-    .base = {&mp_type_module},
-    .globals = (mp_obj_dict_t *)&ugfx_module_globals,
+    .base = {&mp_type_module}, .globals = (mp_obj_dict_t *)&ugfx_module_globals,
 };
