@@ -164,8 +164,9 @@ def fatal(msg, exc=None):
 
 def install_pkg(pkg_spec, install_path):
     data = get_pkg_metadata(pkg_spec)
-
+    print("Not (yet) checking if %s already installed" % (pkg_spec))
     latest_ver = data["info"]["version"]
+    print("Not (yet) checking if version %s already installed" % (latest_ver))
     packages = data["releases"][latest_ver]
     del data
     gc.collect()
