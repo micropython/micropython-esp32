@@ -34,7 +34,10 @@
 #include <stdbool.h>
 #include <stdio.h>
 
+#ifndef UNIX
 #include "board_framebuffer.h"
+#endif
+
 #include "gfx.h"
 #include "gfxconf.h"
 
@@ -381,8 +384,8 @@ STATIC mp_obj_t ugfx_polygon(mp_uint_t n_args, const mp_obj_t *args) {
 
   mp_obj_t *mp_arr;
   mp_obj_t *mp_arr2;
-  uint len;
-  uint len2;
+  size_t len;
+  size_t len2;
   mp_obj_get_array(args[2], &len, &mp_arr);
 
   if (len <= 20) {
@@ -419,8 +422,8 @@ STATIC mp_obj_t ugfx_fill_polygon(mp_uint_t n_args, const mp_obj_t *args) {
 
   mp_obj_t *mp_arr;
   mp_obj_t *mp_arr2;
-  uint len;
-  uint len2;
+  size_t len;
+  size_t len2;
   mp_obj_get_array(args[2], &len, &mp_arr);
 
   if (len <= 20) {
