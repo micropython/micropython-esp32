@@ -165,8 +165,6 @@ OPT_OS					= linux
 OPT_LINK_OPTIMIZE		= yes
 OPT_CPU					= x64
 GFXLIB                  = ../../ugfx/
-GFXBOARD                = Linux-SDL
-OPT_MAKE_LIB = yes
 
 include $(GFXLIB)/boards/base/Linux-SDL/board.mk
 include $(GFXLIB)/tools/gmake_scripts/library_ugfx.mk
