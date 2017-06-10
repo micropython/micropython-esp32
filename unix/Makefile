@@ -16,13 +16,20 @@ UNAME_S := $(shell uname -s)
 # include py core make definitions
 include ../py/py.mk
 
+ESPIDF = $(IDF_PATH)
+ESPCOMP = $(ESPIDF)/components
+
 INC +=  -I.
 INC +=  -I..
 INC += -I$(BUILD)
 INC += -I../../components/ugfx
+INC += -I../../esp-idf/components/esp32/include/
 INC += -I../../ugfx/src/gdisp/mcufont
 INC += -I../../ugfx
 INC += -I../esp32
+INC += -I../lib/netutils
+INC += -I$(ESPCOMP)/lwip/include/
+INC += -I$(ESPCOMP)/lwip/include/lwip/
 INC += -I../../ugfx/src
 INC += -I../../ugfx/drivers/multiple/SDL/
 
@@ -149,6 +156,8 @@ SRC_C = \
 	file.c \
 	modmachine.c \
 	../esp32/modugfx.c \
+	modnetwork.c \
+	modbadge.c \
 	../../ugfx/drivers/multiple/SDL/gdisp_lld_SDL.c \
 	gfx_mk.c \
 	modos.c \
@@ -183,6 +192,11 @@ LIB_SRC_C = $(addprefix lib/,\
 LIB_SRC_C += $(addprefix lib/,\
 	oofatfs/ff.c \
 	oofatfs/option/unicode.c \
+	)
+
+LIB_SRC_C = $(addprefix lib/,\
+	mp-readline/readline.c \
+	netutils/netutils.c \
 	)
 
 OBJ = $(PY_O)
