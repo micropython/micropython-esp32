@@ -239,9 +239,9 @@ def cleanup():
 
 def help():
     print("""\
-shapip - Clone of the Simple PyPI package manager for MicroPython
-Usage: micropython -m shapip install [-p <path>] <package>... | -r <requirements.txt>
-import shapip; shapip.install(package_or_list, [<path>])
+woezel - Clone of the Simple PyPI package manager for MicroPython
+Usage: micropython -m woezel install [-p <path>] <package>... | -r <requirements.txt>
+import woezel; shapip.install(package_or_list, [<path>])
 
 If <path> is not given, packages will be installed into sys.path[1]
 (can be set from MICROPYPATH environment variable, if current system
@@ -250,7 +250,7 @@ supports that).""")
     print("""\
 
 Note: only MicroPython packages are supported for installation,
-shapip, like upip does not support arbitrary code in setup.py.
+woezel, like upip does not support arbitrary code in setup.py.
 """)
 
 def main():
