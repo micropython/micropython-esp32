@@ -36,11 +36,11 @@
 
 #ifndef UNIX
 #include "board_framebuffer.h"
+#include "ginput_lld_toggle_config.h"
 #endif
 
 #include "gfx.h"
 #include "gfxconf.h"
-#include "ginput_lld_toggle_config.h"
 
 #include "py/mperrno.h"
 #include "py/mphal.h"
@@ -561,27 +561,26 @@ STATIC mp_obj_t ugfx_demo(mp_obj_t hacking) {
   robotoBlackItalic = gdispOpenFont("Roboto_BlackItalic24");
   permanentMarker = gdispOpenFont("PermanentMarker22");
 
+  uint16_t hackingWidth = gdispGetStringWidth(mp_obj_str_get_str(hacking), permanentMarker);
+
   gdispClear(White);
-  gdispDrawString(150, 25, "STILL", robotoBlackItalic, Black);
-  gdispDrawString(130, 50, mp_obj_str_get_str(hacking), permanentMarker, Black);
+  gdispDrawString(165, 25, "STILL", robotoBlackItalic, Black);
+  gdispDrawStringBox(114 - 7, 50, 180, 22, mp_obj_str_get_str(hacking), permanentMarker, Black, justifyCenter);
   // underline:
   gdispDrawLine(
-      127 + 3, 50 + 22,
-      127 + 3 +
-          gdispGetStringWidth(mp_obj_str_get_str(hacking), permanentMarker) +
-          14,
-      50 + 22, Black);
+    114 + 180/2 - hackingWidth/2 - 14,
+    50 + 22,
+    114 + 180/2 + hackingWidth/2 + 7,
+    50 + 22,
+    Black);
   // cursor:
   gdispDrawLine(
-      127 + 3 +
-          gdispGetStringWidth(mp_obj_str_get_str(hacking), permanentMarker) +
-          10,
-      50 + 2,
-      127 + 3 +
-          gdispGetStringWidth(mp_obj_str_get_str(hacking), permanentMarker) +
-          10,
-      50 + 22 - 2, Black);
-  gdispDrawString(140, 75, "Anyway", robotoBlackItalic, Black);
+    114 + 180/2 + hackingWidth/2,
+    50 + 2,
+    114 + 180/2 + hackingWidth/2,
+    50 + 22 - 2,
+    Black);
+  gdispDrawString(155, 75, "Anyway", robotoBlackItalic, Black);
   gdispFillCircle(60, 60, 50, Black);
   gdispFillCircle(60, 60, 40, White);
   gdispFillCircle(60, 60, 30, Black);
@@ -609,22 +608,25 @@ STATIC const mp_rom_map_elem_t ugfx_module_globals_table[] = {
      MP_OBJ_NEW_SMALL_INT(justifyCenter)},
     {MP_OBJ_NEW_QSTR(MP_QSTR_justifyRight), MP_OBJ_NEW_SMALL_INT(justifyRight)},
 
-    {MP_OBJ_NEW_QSTR(MP_QSTR_JOY_UP), MP_OBJ_NEW_SMALL_INT(BADGE_BUTTON_UP)},
-    {MP_OBJ_NEW_QSTR(MP_QSTR_JOY_DOWN),
-     MP_OBJ_NEW_SMALL_INT(BADGE_BUTTON_DOWN)},
-    {MP_OBJ_NEW_QSTR(MP_QSTR_JOY_LEFT),
-     MP_OBJ_NEW_SMALL_INT(BADGE_BUTTON_LEFT)},
-    {MP_OBJ_NEW_QSTR(MP_QSTR_JOY_RIGHT),
-     MP_OBJ_NEW_SMALL_INT(BADGE_BUTTON_RIGHT)},
-    {MP_OBJ_NEW_QSTR(MP_QSTR_BTN_MID), MP_OBJ_NEW_SMALL_INT(BADGE_BUTTON_MID)},
-    {MP_OBJ_NEW_QSTR(MP_QSTR_BTN_A), MP_OBJ_NEW_SMALL_INT(BADGE_BUTTON_A)},
-    {MP_OBJ_NEW_QSTR(MP_QSTR_BTN_B), MP_OBJ_NEW_SMALL_INT(BADGE_BUTTON_B)},
-    {MP_OBJ_NEW_QSTR(MP_QSTR_BTN_SELECT),
-     MP_OBJ_NEW_SMALL_INT(BADGE_BUTTON_SELECT)},
-    {MP_OBJ_NEW_QSTR(MP_QSTR_BTN_START),
-     MP_OBJ_NEW_SMALL_INT(BADGE_BUTTON_START)},
-    {MP_OBJ_NEW_QSTR(MP_QSTR_BTN_FLASH),
-     MP_OBJ_NEW_SMALL_INT(BADGE_BUTTON_FLASH)},
+    #ifndef UNIX
+      {MP_OBJ_NEW_QSTR(MP_QSTR_JOY_UP), MP_OBJ_NEW_SMALL_INT(BADGE_BUTTON_UP)},
+      {MP_OBJ_NEW_QSTR(MP_QSTR_JOY_DOWN),
+       MP_OBJ_NEW_SMALL_INT(BADGE_BUTTON_DOWN)},
+      {MP_OBJ_NEW_QSTR(MP_QSTR_JOY_LEFT),
+       MP_OBJ_NEW_SMALL_INT(BADGE_BUTTON_LEFT)},
+      {MP_OBJ_NEW_QSTR(MP_QSTR_JOY_RIGHT),
+       MP_OBJ_NEW_SMALL_INT(BADGE_BUTTON_RIGHT)},
+      {MP_OBJ_NEW_QSTR(MP_QSTR_BTN_MID), MP_OBJ_NEW_SMALL_INT(BADGE_BUTTON_MID)},
+      {MP_OBJ_NEW_QSTR(MP_QSTR_BTN_A), MP_OBJ_NEW_SMALL_INT(BADGE_BUTTON_A)},
+      {MP_OBJ_NEW_QSTR(MP_QSTR_BTN_B), MP_OBJ_NEW_SMALL_INT(BADGE_BUTTON_B)},
+      {MP_OBJ_NEW_QSTR(MP_QSTR_BTN_SELECT),
+       MP_OBJ_NEW_SMALL_INT(BADGE_BUTTON_SELECT)},
+      {MP_OBJ_NEW_QSTR(MP_QSTR_BTN_START),
+       MP_OBJ_NEW_SMALL_INT(BADGE_BUTTON_START)},
+      {MP_OBJ_NEW_QSTR(MP_QSTR_BTN_FLASH),
+       MP_OBJ_NEW_SMALL_INT(BADGE_BUTTON_FLASH)},
+    #endif
+
 
     {MP_OBJ_NEW_QSTR(MP_QSTR_clear), (mp_obj_t)&ugfx_clear_obj},
     {MP_OBJ_NEW_QSTR(MP_QSTR_flush), (mp_obj_t)&ugfx_flush_obj},
