@@ -9,8 +9,9 @@ Satisfy axtls generating its version.h
     cd lib/axtls
     make menuconfig
 
-Build the binary
+Build axtls and the binary
 
     cd unix
+    make axtls
     make
 
