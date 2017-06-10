@@ -170,6 +170,8 @@ extern const struct _mp_obj_module_t mp_module_termios;
 extern const struct _mp_obj_module_t mp_module_socket;
 extern const struct _mp_obj_module_t mp_module_ffi;
 extern const struct _mp_obj_module_t mp_module_jni;
+extern const struct _mp_obj_module_t mock_esp_network_module;
+extern const struct _mp_obj_module_t mock_badge_module;
 extern const struct _mp_obj_module_t ugfx_module;
 
 #if MICROPY_PY_UOS_VFS
@@ -219,6 +221,8 @@ extern const struct _mp_obj_module_t ugfx_module;
     MICROPY_PY_USELECT_DEF \
     MICROPY_PY_TERMIOS_DEF \
     { MP_OBJ_NEW_QSTR(MP_QSTR_ugfx), (mp_obj_t)&ugfx_module }, \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_network), (mp_obj_t)&mock_esp_network_module }, \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_badge), (mp_obj_t)&mock_badge_module }, \
 
 // type definitions for the specific machine
 
