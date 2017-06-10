@@ -559,33 +559,28 @@ STATIC mp_obj_t ugfx_demo(mp_obj_t hacking) {
   font_t permanentMarker;
 
   robotoBlackItalic = gdispOpenFont("Roboto_BlackItalic24");
-  permanentMarker = gdispOpenFont("PermanentMarker22");
+  permanentMarker = gdispOpenFont("PermanentMarker36");
 
   uint16_t hackingWidth = gdispGetStringWidth(mp_obj_str_get_str(hacking), permanentMarker);
 
   gdispClear(White);
-  gdispDrawString(165, 25, "STILL", robotoBlackItalic, Black);
-  gdispDrawStringBox(114 - 7, 50, 180, 22, mp_obj_str_get_str(hacking), permanentMarker, Black, justifyCenter);
+  gdispDrawStringBox(0,  6, 296, 40, "STILL", robotoBlackItalic, Black, justifyCenter);
+  gdispDrawStringBox(0, 42, 276, 40, mp_obj_str_get_str(hacking), permanentMarker, Black, justifyCenter);
   // underline:
   gdispDrawLine(
-    114 + 180/2 - hackingWidth/2 - 14,
-    50 + 22,
-    114 + 180/2 + hackingWidth/2 + 7,
-    50 + 22,
+    296/2 - hackingWidth/2 - 14,
+    42 + 36 + 2,
+    296/2 + hackingWidth/2 + 14,
+    42 + 36 + 2,
     Black);
   // cursor:
   gdispDrawLine(
-    114 + 180/2 + hackingWidth/2,
-    50 + 2,
-    114 + 180/2 + hackingWidth/2,
-    50 + 22 - 2,
+    276/2 + hackingWidth/2 + 2 + 3,
+    42 + 4,
+    276/2 + hackingWidth/2 + 2,
+    42 + 36,
     Black);
-  gdispDrawString(155, 75, "Anyway", robotoBlackItalic, Black);
-  gdispFillCircle(60, 60, 50, Black);
-  gdispFillCircle(60, 60, 40, White);
-  gdispFillCircle(60, 60, 30, Black);
-  gdispFillCircle(60, 60, 20, White);
-  gdispFillCircle(60, 60, 10, Black);
+  gdispDrawStringBox(0, 82, 296, 40, "Anyway", robotoBlackItalic, Black, justifyCenter);
   gdispFlush();
 
   return mp_const_none;
