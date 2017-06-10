@@ -19,6 +19,12 @@ include ../py/py.mk
 INC +=  -I.
 INC +=  -I..
 INC += -I$(BUILD)
+INC += -I../../components/ugfx
+INC += -I../../ugfx/src/gdisp/mcufont
+INC += -I../../ugfx
+INC += -I../esp32
+INC += -I../../ugfx/src
+INC += -I../../ugfx/drivers/multiple/SDL/
 
 # compiler settings
 CWARN = -Wall -Werror
@@ -142,6 +148,9 @@ SRC_C = \
 	input.c \
 	file.c \
 	modmachine.c \
+	../esp32/modugfx.c \
+	../../ugfx/drivers/multiple/SDL/gdisp_lld_SDL.c \
+	gfx_mk.c \
 	modos.c \
 	moduos_vfs.c \
 	modtime.c \
@@ -150,6 +159,22 @@ SRC_C = \
 	coverage.c \
 	fatfs_port.c \
 	$(SRC_MOD)
+
+OPT_GFXDRIVER           = SDL
+OPT_OS					= linux
+OPT_LINK_OPTIMIZE		= yes
+OPT_CPU					= x64
+GFXLIB                  = ../../ugfx/
+GFXBOARD                = Linux-SDL
+OPT_MAKE_LIB = yes
+
+include $(GFXLIB)/boards/base/Linux-SDL/board.mk
+include $(GFXLIB)/tools/gmake_scripts/library_ugfx.mk
+include $(GFXLIB)/tools/gmake_scripts/os_$(OPT_OS).mk
+
+# expand all the uGFX definitions from DEFS into CPP defines
+SRCFLAGS += -I. $(patsubst %,-I%,$(INCPATH)) $(patsubst %,-D%,$(patsubst -D%,%,$(DEFS)))
+CFLAGS += $(SRCFLAGS)
 
 LIB_SRC_C = $(addprefix lib/,\
 	$(LIB_SRC_C_EXTRA) \
