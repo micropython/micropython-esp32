@@ -46,6 +46,8 @@
 #include "py/mphal.h"
 #include "py/runtime.h"
 
+#define EMU_EINK_SCREEN_DELAY_MS 500
+
 typedef struct _ugfx_obj_t { mp_obj_base_t base; } ugfx_obj_t;
 
 STATIC mp_obj_t ugfx_init(void) {
@@ -79,6 +81,9 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ugfx_clear_obj, 0, 1, ugfx_clear);
 /// Flush the display buffer to the screen
 ///
 STATIC mp_obj_t ugfx_flush() {
+#ifdef UNIX
+  mp_hal_delay_ms(EMU_EINK_SCREEN_DELAY_MS);
+#endif
   gdispFlush();
   return mp_const_none;
 }
@@ -567,6 +572,9 @@ STATIC mp_obj_t ugfx_demo(mp_obj_t hacking) {
     42 + 36,
     Black);
   gdispDrawStringBox(0, 82, 296, 40, "Anyway", robotoBlackItalic, Black, justifyCenter);
+#ifdef UNIX
+  mp_hal_delay_ms(EMU_EINK_SCREEN_DELAY_MS);
+#endif
   gdispFlush();
 
   return mp_const_none;
