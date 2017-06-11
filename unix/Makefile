@@ -159,6 +159,7 @@ SRC_C = \
 	modnetwork.c \
 	modbadge.c \
 	../../ugfx/drivers/multiple/SDL/gdisp_lld_SDL.c \
+	ginput_lld_toggle.c \
 	gfx_mk.c \
 	modos.c \
 	moduos_vfs.c \
