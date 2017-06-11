@@ -243,6 +243,8 @@ STATIC mp_obj_t esp_active(size_t n_args, const mp_obj_t *args) {
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(esp_active_obj, 1, 2, esp_active);
 
 STATIC mp_obj_t esp_connect(size_t n_args, const mp_obj_t *args) {
+    mp_uint_t len;
+    printf("Pretend like we connected to %s here\n", mp_obj_str_get_data(args[1], &len));
     /*
     mp_uint_t len;
     const char *p;
@@ -267,6 +269,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(esp_connect_obj, 1, 7, esp_connect);
 
 STATIC mp_obj_t esp_disconnect(mp_obj_t self_in) {
     wifi_sta_connected = false;
+    printf("Pretend like we disconnected here\n");
     /*
      ESP_EXCEPTIONS( esp_wifi_disconnect() );
     */
@@ -344,10 +347,10 @@ STATIC mp_obj_t esp_ifconfig(size_t n_args, const mp_obj_t *args) {
 		// get
         /*dns_addr = dns_getserver(0);*/
 		mp_obj_t tuple[4] = {
-            netutils_format_ipv4_addr((uint8_t*) "\x7f\x00\x00\x01", NETUTILS_BIG),
-            netutils_format_ipv4_addr((uint8_t*) "\xff\xff\xff\x01", NETUTILS_BIG),
-            netutils_format_ipv4_addr((uint8_t*) "\x7f\x00\x00\x01", NETUTILS_BIG),
-            netutils_format_ipv4_addr((uint8_t*) "\x7f\x00\x00\x01", NETUTILS_BIG),
+            netutils_format_ipv4_addr((uint8_t*) "\x7f\x00\x00\x01", NETUTILS_BIG), // IP:      127.0.0.1
+            netutils_format_ipv4_addr((uint8_t*) "\xff\xff\xff\x01", NETUTILS_BIG), // netmask: 255.255.255.0
+            netutils_format_ipv4_addr((uint8_t*) "\x7f\x00\x00\x01", NETUTILS_BIG), // gateway: 127.0.0.1
+            netutils_format_ipv4_addr((uint8_t*) "\x7f\x00\x00\x01", NETUTILS_BIG), // dns:     127.0.0.1
 		};
 		return mp_obj_new_tuple(4, tuple);
 	} else {
