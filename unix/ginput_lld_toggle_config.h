@@ -1,9 +1,6 @@
 #ifndef GINPUT_LLD_TOGGLE_CONFIG
 #define GINPUT_LLD_TOGGLE_CONFIG
 
-// re-export BADGE_BUTTON_* constants
-#include <badge_input.h>
-
 #define GINPUT_TOGGLE_NUM_PORTS       32
 #define GINPUT_TOGGLE_CONFIG_ENTRIES   1
 
