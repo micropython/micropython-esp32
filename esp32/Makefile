@@ -166,6 +166,7 @@ SRC_C = \
 	esprtcmem.c \
 	espdeepsleep.c \
 	gdisp_lld_framebuffer.c \
+	ginput_lld_toggle.c \
 	gfx_mk.c \
 	$(SRC_MOD)
 
