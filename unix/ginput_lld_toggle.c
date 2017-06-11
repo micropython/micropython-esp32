@@ -47,7 +47,6 @@ void keyboard_callback(void *param, GEvent *pe){
         }
       }
     }
-    printf("%02x\n", bits_set);
     ginputToggleWakeupI();
   }
 }
