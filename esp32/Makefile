@@ -151,6 +151,8 @@ SRC_C = \
 	badge_button.c \
 	badge_touch.c \
 	badge_input.c \
+	badge_sdcard.c \
+	badge_vibrator.c \
 	badge_power.c \
 	badge_eink_dev.c \
 	badge_eink_lut.c \
