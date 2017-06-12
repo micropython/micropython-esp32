@@ -1,7 +1,9 @@
 #include <stdbool.h>
 #include <stdio.h>
 
+#ifdef CONFIG_WIFI_USE
 #include "esp_wifi.h"
+#endif
 
 #include "badge.h"
 #include "badge_eink.h"
