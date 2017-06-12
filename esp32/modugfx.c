@@ -36,8 +36,11 @@
 
 #ifndef UNIX
 #include "board_framebuffer.h"
-#include "ginput_lld_toggle_config.h"
 #endif
+#include "ginput_lld_toggle_config.h"
+
+#include <stdint.h>
+#include <badge_button.h>
 
 #include "gfx.h"
 #include "gfxconf.h"
@@ -543,6 +546,45 @@ STATIC mp_obj_t ugfx_poll(void) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(ugfx_poll_obj, ugfx_poll);
 
+// callback system
+
+STATIC mp_obj_t button_callbacks[BADGE_BUTTONS];
+STATIC GListener button_listeners[BADGE_BUTTONS];
+
+void ugfx_ginput_callback_handler(void *param, GEvent *pe){
+  size_t button = (size_t) param;
+  if(button_callbacks[button] != mp_const_none){
+    GEventToggle *toggle = (GEventToggle*) pe;
+    mp_sched_schedule(button_callbacks[button], mp_obj_new_bool(toggle->on ? 1 : 0));
+  }
+}
+
+/// \method ugfx_input_init()
+///
+/// Enable callbacks for button events
+///
+STATIC mp_obj_t ugfx_input_init(void) {
+  for(size_t i = 0; i < BADGE_BUTTONS; i++){
+    geventListenerInit(&button_listeners[i]);
+    button_listeners[i].callback = ugfx_ginput_callback_handler;
+    button_listeners[i].param = (void*) i;
+    geventAttachSource(&button_listeners[i], ginputGetToggle(i), GLISTEN_TOGGLE_ON|GLISTEN_TOGGLE_OFF);
+  }
+  return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(ugfx_input_init_obj, ugfx_input_init);
+
+/// \method ugfx_input_attach(button, callback)
+///
+/// Register callbacks for button events
+///
+STATIC mp_obj_t ugfx_input_attach(mp_uint_t n_args, const mp_obj_t *args) {
+  uint8_t button = mp_obj_get_int(args[0]);
+  button_callbacks[button] = args[1];
+  return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ugfx_input_attach_obj, 2, 2, ugfx_input_attach);
+
 // DEMO
 
 STATIC mp_obj_t ugfx_demo(mp_obj_t hacking) {
@@ -597,24 +639,22 @@ STATIC const mp_rom_map_elem_t ugfx_module_globals_table[] = {
      MP_OBJ_NEW_SMALL_INT(justifyCenter)},
     {MP_OBJ_NEW_QSTR(MP_QSTR_justifyRight), MP_OBJ_NEW_SMALL_INT(justifyRight)},
 
-    #ifndef UNIX
-      {MP_OBJ_NEW_QSTR(MP_QSTR_JOY_UP), MP_OBJ_NEW_SMALL_INT(BADGE_BUTTON_UP)},
-      {MP_OBJ_NEW_QSTR(MP_QSTR_JOY_DOWN),
-       MP_OBJ_NEW_SMALL_INT(BADGE_BUTTON_DOWN)},
-      {MP_OBJ_NEW_QSTR(MP_QSTR_JOY_LEFT),
-       MP_OBJ_NEW_SMALL_INT(BADGE_BUTTON_LEFT)},
-      {MP_OBJ_NEW_QSTR(MP_QSTR_JOY_RIGHT),
-       MP_OBJ_NEW_SMALL_INT(BADGE_BUTTON_RIGHT)},
-      {MP_OBJ_NEW_QSTR(MP_QSTR_BTN_MID), MP_OBJ_NEW_SMALL_INT(BADGE_BUTTON_MID)},
-      {MP_OBJ_NEW_QSTR(MP_QSTR_BTN_A), MP_OBJ_NEW_SMALL_INT(BADGE_BUTTON_A)},
-      {MP_OBJ_NEW_QSTR(MP_QSTR_BTN_B), MP_OBJ_NEW_SMALL_INT(BADGE_BUTTON_B)},
-      {MP_OBJ_NEW_QSTR(MP_QSTR_BTN_SELECT),
-       MP_OBJ_NEW_SMALL_INT(BADGE_BUTTON_SELECT)},
-      {MP_OBJ_NEW_QSTR(MP_QSTR_BTN_START),
-       MP_OBJ_NEW_SMALL_INT(BADGE_BUTTON_START)},
-      {MP_OBJ_NEW_QSTR(MP_QSTR_BTN_FLASH),
-       MP_OBJ_NEW_SMALL_INT(BADGE_BUTTON_FLASH)},
-    #endif
+    {MP_OBJ_NEW_QSTR(MP_QSTR_JOY_UP), MP_OBJ_NEW_SMALL_INT(BADGE_BUTTON_UP)},
+    {MP_OBJ_NEW_QSTR(MP_QSTR_JOY_DOWN),
+     MP_OBJ_NEW_SMALL_INT(BADGE_BUTTON_DOWN)},
+    {MP_OBJ_NEW_QSTR(MP_QSTR_JOY_LEFT),
+     MP_OBJ_NEW_SMALL_INT(BADGE_BUTTON_LEFT)},
+    {MP_OBJ_NEW_QSTR(MP_QSTR_JOY_RIGHT),
+     MP_OBJ_NEW_SMALL_INT(BADGE_BUTTON_RIGHT)},
+    {MP_OBJ_NEW_QSTR(MP_QSTR_BTN_MID), MP_OBJ_NEW_SMALL_INT(BADGE_BUTTON_MID)},
+    {MP_OBJ_NEW_QSTR(MP_QSTR_BTN_A), MP_OBJ_NEW_SMALL_INT(BADGE_BUTTON_A)},
+    {MP_OBJ_NEW_QSTR(MP_QSTR_BTN_B), MP_OBJ_NEW_SMALL_INT(BADGE_BUTTON_B)},
+    {MP_OBJ_NEW_QSTR(MP_QSTR_BTN_SELECT),
+     MP_OBJ_NEW_SMALL_INT(BADGE_BUTTON_SELECT)},
+    {MP_OBJ_NEW_QSTR(MP_QSTR_BTN_START),
+     MP_OBJ_NEW_SMALL_INT(BADGE_BUTTON_START)},
+    {MP_OBJ_NEW_QSTR(MP_QSTR_BTN_FLASH),
+     MP_OBJ_NEW_SMALL_INT(BADGE_BUTTON_FLASH)},
 
 
     {MP_OBJ_NEW_QSTR(MP_QSTR_clear), (mp_obj_t)&ugfx_clear_obj},
@@ -646,6 +686,8 @@ STATIC const mp_rom_map_elem_t ugfx_module_globals_table[] = {
     {MP_OBJ_NEW_QSTR(MP_QSTR_polygon), (mp_obj_t)&ugfx_polygon_obj},
     {MP_OBJ_NEW_QSTR(MP_QSTR_fill_polygon), (mp_obj_t)&ugfx_fill_polygon_obj},
 
+    {MP_OBJ_NEW_QSTR(MP_QSTR_input_init), (mp_obj_t)&ugfx_input_init_obj},
+    {MP_OBJ_NEW_QSTR(MP_QSTR_input_attach), (mp_obj_t)&ugfx_input_attach_obj},
     {MP_OBJ_NEW_QSTR(MP_QSTR_demo), (mp_obj_t)&ugfx_demo_obj},
 };
 
