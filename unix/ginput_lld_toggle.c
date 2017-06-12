@@ -35,14 +35,13 @@ static uint8_t button_lookup[10] = {
 void keyboard_callback(void *param, GEvent *pe){
   if(pe){
     GEventKeyboard *ke = (GEventKeyboard *) pe;
-    bits_set = 0;
     uint8_t button = ke->c[0];
     uint8_t state = ke->keystate;
-    if(state & GKEYSTATE_KEYUP){
-      bits_set = 0;
-    } else {
-      for(uint8_t i = 0; i < 10; i++){
-        if(button == button_lookup[i]){
+    for(uint8_t i = 0; i < 10; i++){
+      if(button == button_lookup[i]){
+        if(state & GKEYSTATE_KEYUP){
+          bits_set &= ~(1<<i);
+        } else {
           bits_set |= (1<<i);
         }
       }
@@ -54,6 +53,7 @@ void keyboard_callback(void *param, GEvent *pe){
 void
 ginput_lld_toggle_init(const GToggleConfig *ptc)
 {
+  bits_set = 0;
   geventListenerInit(&_pl);
   geventAttachSource(&_pl, ginputGetKeyboard(0), GLISTEN_KEYUP);
   _pl.callback = keyboard_callback;
