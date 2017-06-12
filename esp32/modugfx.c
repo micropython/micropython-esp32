@@ -555,7 +555,7 @@ void ugfx_ginput_callback_handler(void *param, GEvent *pe){
   size_t button = (size_t) param;
   if(button_callbacks[button] != mp_const_none){
     GEventToggle *toggle = (GEventToggle*) pe;
-    mp_sched_schedule(button_callbacks[button], mp_obj_new_bool(toggle->on));
+    mp_sched_schedule(button_callbacks[button], mp_obj_new_bool(toggle->on ? 1 : 0));
   }
 }
 
