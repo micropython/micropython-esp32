@@ -552,9 +552,10 @@ STATIC mp_obj_t button_callbacks[BADGE_BUTTONS];
 STATIC GListener button_listeners[BADGE_BUTTONS];
 
 void ugfx_ginput_callback_handler(void *param, GEvent *pe){
-  uint8_t button = (size_t) param;
-  if(button_callbacks[button]){
-    mp_sched_schedule(button_callbacks[button], mp_obj_new_int(button));
+  size_t button = (size_t) param;
+  if(button_callbacks[button] != mp_const_none){
+    GEventToggle *toggle = (GEventToggle*) pe;
+    mp_sched_schedule(button_callbacks[button], mp_obj_new_bool(toggle->on));
   }
 }
 
