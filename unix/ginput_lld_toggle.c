@@ -24,10 +24,10 @@ static uint8_t button_lookup[10] = {
                                                 GKEY_LEFT,
                                                 GKEY_RIGHT,
                                                 GKEY_ENTER,
-                                                'a',
-                                                's',
-                                                'z',
-                                                'x',
+                                                GKEY_PAGEUP,
+                                                GKEY_PAGEDOWN,
+                                                GKEY_HOME,
+                                                GKEY_END,
                                                 GKEY_DEL,
                                                };
 
@@ -55,7 +55,7 @@ ginput_lld_toggle_init(const GToggleConfig *ptc)
 {
   bits_set = 0;
   geventListenerInit(&_pl);
-  geventAttachSource(&_pl, ginputGetKeyboard(0), GLISTEN_KEYUP);
+  geventAttachSource(&_pl, ginputGetKeyboard(0), GLISTEN_KEYUP|GLISTEN_KEYREPEATSOFF);
   _pl.callback = keyboard_callback;
 }
 
