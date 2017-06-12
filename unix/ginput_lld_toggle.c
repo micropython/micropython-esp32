@@ -46,7 +46,7 @@ void keyboard_callback(void *param, GEvent *pe){
         }
       }
     }
-    ginputToggleWakeupI();
+    ginputToggleWakeup();
   }
 }
 
