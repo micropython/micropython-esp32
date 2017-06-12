@@ -112,11 +112,10 @@ STATIC mp_obj_t badge_leds_set_state_(mp_uint_t n_args, const mp_obj_t *args) {
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(badge_leds_set_state_obj, 1,1 ,badge_leds_set_state_);
 
 // Wifi
-
+#ifdef CONFIG_WIFI_USE
 STATIC mp_obj_t badge_wifi_init_() {
   tcpip_adapter_init();
 
-  #ifdef CONFIG_WIFI_USE
   wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
   ESP_ERROR_CHECK(esp_wifi_init(&cfg));
   ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
@@ -126,11 +125,11 @@ STATIC mp_obj_t badge_wifi_init_() {
   ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &sta_config));
   ESP_ERROR_CHECK(esp_wifi_start());
   ESP_ERROR_CHECK(esp_wifi_connect());
-  #endif // CONFIG_WIFI_USE
 
   return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_wifi_init_obj, badge_wifi_init_);
+#endif // CONFIG_WIFI_USE
 
 // Module globals
 
