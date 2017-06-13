@@ -230,6 +230,9 @@ STATIC mp_obj_t machine_uart_make_new(const mp_obj_type_t *type, size_t n_args, 
             break;
     }
 
+    // Remove any existing configuration
+    uart_driver_delete(self->uart_num);
+
     // init the peripheral
     // Setup
     uart_param_config(self->uart_num, &uartcfg);
@@ -253,9 +256,18 @@ STATIC mp_obj_t machine_uart_init(size_t n_args, const mp_obj_t *args, mp_map_t 
 }
 MP_DEFINE_CONST_FUN_OBJ_KW(machine_uart_init_obj, 1, machine_uart_init);
 
+STATIC mp_obj_t machine_uart_any(mp_obj_t self_in) {
+    machine_uart_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    size_t rxbufsize;
+    uart_get_buffered_data_len(self->uart_num, &rxbufsize);
+    return MP_OBJ_NEW_SMALL_INT(rxbufsize);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(machine_uart_any_obj, machine_uart_any);
+
 STATIC const mp_rom_map_elem_t machine_uart_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_init), MP_ROM_PTR(&machine_uart_init_obj) },
 
+    { MP_ROM_QSTR(MP_QSTR_any), MP_ROM_PTR(&machine_uart_any_obj) },
     { MP_ROM_QSTR(MP_QSTR_read), MP_ROM_PTR(&mp_stream_read_obj) },
     { MP_ROM_QSTR(MP_QSTR_readline), MP_ROM_PTR(&mp_stream_unbuffered_readline_obj) },
     { MP_ROM_QSTR(MP_QSTR_readinto), MP_ROM_PTR(&mp_stream_readinto_obj) },
