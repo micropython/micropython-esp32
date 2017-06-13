@@ -230,6 +230,9 @@ STATIC mp_obj_t machine_uart_make_new(const mp_obj_type_t *type, size_t n_args, 
             break;
     }
 
+    // Remove any existing configuration
+    uart_driver_delete(self->uart_num);
+
     // init the peripheral
     // Setup
     uart_param_config(self->uart_num, &uartcfg);
