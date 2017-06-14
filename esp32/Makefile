@@ -172,11 +172,6 @@ SRC_C = \
 	gfx_mk.c \
 	$(SRC_MOD)
 
-STM_SRC_C = $(addprefix stmhal/,\
-	pybstdio.c \
-	input.c \
-	)
-
 ESP8266_SRC_C = $(addprefix esp8266/,\
 	modonewire.c \
 	)
