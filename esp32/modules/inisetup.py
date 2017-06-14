@@ -34,8 +34,8 @@ def setup():
     with open("boot.py", "w") as f:
         f.write("""\
 # This file is executed on every boot (including wake-boot from deepsleep)
-import esp
-if esp.rtc_get_reset_reason(0) == 16:
+import machine
+if machine.reset_cause() == machine.DEEPSLEEP_RESET:
     import badge
     badge.eink_init()
     badge.display_picture(0,-1)
