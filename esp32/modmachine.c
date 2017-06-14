@@ -54,6 +54,7 @@ uint32_t reset_cause;
 
 void machine_init() {
     reset_cause = rtc_get_reset_reason(0);
+    // TODO do we need CPU_1 info too ??
 }
 
 STATIC mp_obj_t machine_freq(size_t n_args, const mp_obj_t *args) {
