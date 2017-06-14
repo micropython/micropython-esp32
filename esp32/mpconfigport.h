@@ -56,6 +56,7 @@
 #define MICROPY_VFS_FAT                     (1)
 
 // control over Python builtins
+#define MICROPY_PY_BUILTINS_INPUT           (1)
 #define MICROPY_PY_FUNCTION_ATTRS           (1)
 #define MICROPY_PY_STR_BYTES_CMP_WARN       (1)
 #define MICROPY_PY_BUILTINS_STR_UNICODE     (1)
