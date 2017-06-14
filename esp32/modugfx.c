@@ -548,8 +548,8 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_0(ugfx_poll_obj, ugfx_poll);
 
 // callback system
 
-STATIC mp_obj_t button_callbacks[BADGE_BUTTONS];
-STATIC GListener button_listeners[BADGE_BUTTONS];
+STATIC mp_obj_t button_callbacks[1+BADGE_BUTTONS];
+STATIC GListener button_listeners[1+BADGE_BUTTONS];
 
 void ugfx_ginput_callback_handler(void *param, GEvent *pe){
   size_t button = (size_t) param;
@@ -564,7 +564,7 @@ void ugfx_ginput_callback_handler(void *param, GEvent *pe){
 /// Enable callbacks for button events
 ///
 STATIC mp_obj_t ugfx_input_init(void) {
-  for(size_t i = 0; i < BADGE_BUTTONS; i++){
+  for(size_t i = 1; i <= BADGE_BUTTONS; i++){
     geventListenerInit(&button_listeners[i]);
     button_listeners[i].callback = ugfx_ginput_callback_handler;
     button_listeners[i].param = (void*) i;

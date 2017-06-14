@@ -40,9 +40,9 @@ void keyboard_callback(void *param, GEvent *pe){
     for(uint8_t i = 0; i < 10; i++){
       if(button == button_lookup[i]){
         if(state & GKEYSTATE_KEYUP){
-          bits_set &= ~(1<<i);
+          bits_set &= ~(1<<(i+1));
         } else {
-          bits_set |= (1<<i);
+          bits_set |= (1<<(i+1));
         }
       }
     }
