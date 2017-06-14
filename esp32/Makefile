@@ -148,7 +148,7 @@ SRC_C = \
 	badge_leds.c \
 	badge_mpr121.c \
 	badge_portexp.c \
-	badge_button.c \
+	badge_gpiobutton.c \
 	badge_touch.c \
 	badge_input.c \
 	badge_sdcard.c \
