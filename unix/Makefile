@@ -165,6 +165,7 @@ SRC_C = \
 	moduos_vfs.c \
 	modtime.c \
 	moduselect.c \
+	help.c \
 	alloc.c \
 	coverage.c \
 	fatfs_port.c \
