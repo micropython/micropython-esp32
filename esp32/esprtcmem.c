@@ -1,9 +1,9 @@
 /*
- * This file is part of the Micro Python project, http://micropython.org/
+ * This file is part of the MicroPython project, http://micropython.org/
  *
  * The MIT License (MIT)
  *
- * Copyright (c) 2013, 2014 Damien P. George
+ * Copyright (c) 2017 Renze Nicolai
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,21 +24,20 @@
  * THE SOFTWARE.
  */
 
-#include "py/nlr.h"
-#include "py/obj.h"
-#include "lib/mp-readline/readline.h"
+#include "py/mphal.h"
 
-STATIC mp_obj_t mp_builtin_input(uint n_args, const mp_obj_t *args) {
-    if (n_args == 1) {
-        mp_obj_print(args[0], PRINT_STR);
+#define USER_RTC_MEM_SIZE 1024
+
+static uint8_t RTC_DATA_ATTR rtcmemcontents[USER_RTC_MEM_SIZE] = {0};
+
+uint8_t esp_rtcmem_read(uint32_t location) {
+    if (location<USER_RTC_MEM_SIZE) {
+      return rtcmemcontents[location];
+    } else {
+      return 0;
     }
-    vstr_t line;
-    vstr_init(&line, 16);
-    int ret = readline(&line, "");
-    if (line.len == 0 && ret == CHAR_CTRL_D) {
-        nlr_raise(mp_obj_new_exception(&mp_type_EOFError));
-    }
-    return mp_obj_new_str_from_vstr(&mp_type_str, &line);
 }
 
-MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mp_builtin_input_obj, 0, 1, mp_builtin_input);
+void esp_rtcmem_write(uint32_t location, uint8_t value) {
+    if (location<USER_RTC_MEM_SIZE) rtcmemcontents[location] = value;
+}

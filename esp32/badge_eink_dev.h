@@ -1,0 +1,1 @@
+../../components/badge/badge_eink_dev.h

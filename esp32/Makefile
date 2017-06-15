@@ -22,9 +22,10 @@ FLASH_SIZE ?= 4MB
 CROSS_COMPILE ?= xtensa-esp32-elf-
 
 # paths to ESP IDF and its components
-ifeq ($(ESPIDF),)
+ifeq ($(IDF_PATH),)
 $(error Please configure the ESPIDF variable)
 endif
+ESPIDF = $(IDF_PATH)
 ESPCOMP = $(ESPIDF)/components
 ESPTOOL ?= $(ESPCOMP)/esptool_py/esptool/esptool.py
 
@@ -48,6 +49,12 @@ INC += -I..
 INC += -I../lib/mp-readline
 INC += -I../lib/netutils
 INC += -I../lib/timeutils
+INC += -I../../components/ugfx
+INC += -I../../ugfx/src/gdisp/mcufont
+INC += -I../../ugfx
+INC += -I../../ugfx/src
+INC += -I../../ugfx/drivers/gdisp/framebuffer
+INC += -I../../esp-idf/components/freertos/include/freertos
 INC += -I$(BUILD)
 INC += -I$(ESPCOMP)/bootloader_support/include
 INC += -I$(ESPCOMP)/driver/include
@@ -80,12 +87,12 @@ INC += -I$(ESPCOMP)/wpa_supplicant/port/include
 INC += -I$(ESPCOMP)/ethernet/include
 INC += -I$(ESPCOMP)/tcpip_adapter/include
 
-CFLAGS = -std=gnu99 -Os -ffunction-sections -fdata-sections -fstrict-volatile-bitfields -mlongcalls -nostdlib -Wall -Werror -Wno-error=unused-function -Wno-error=unused-but-set-variable -Wno-error=unused-variable -Wno-error=deprecated-declarations -DMBEDTLS_CONFIG_FILE='"mbedtls/esp_config.h"' -DHAVE_CONFIG_H -DESP_PLATFORM  $(INC)
+CFLAGS = -std=gnu99 -Os -ffunction-sections -fdata-sections -fstrict-volatile-bitfields -mlongcalls -nostdlib -Wall -Wno-error=unused-function -Wno-error=unused-but-set-variable -Wno-error=unused-variable -Wno-error=deprecated-declarations -DMBEDTLS_CONFIG_FILE='"mbedtls/esp_config.h"' -DHAVE_CONFIG_H -DESP_PLATFORM  $(INC)
 CFLAGS += -DIDF_VER=\"$(IDF_VER)\"
 CFLAGS += $(CFLAGS_MOD)
 
 # this is what ESPIDF uses for c++ compilation
-CXXFLAGS = -std=gnu++11 -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -fstrict-volatile-bitfields -mlongcalls -nostdlib -Wall -Werror -Wno-error=unused-function -Wno-error=unused-but-set-variable -Wno-error=unused-variable -Wno-error=deprecated-declarations -DESP_PLATFORM $(INC)
+CXXFLAGS = -std=gnu++11 -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -fstrict-volatile-bitfields -mlongcalls -nostdlib -Wall -Wno-error=unused-function -Wno-error=unused-but-set-variable -Wno-error=unused-variable -Wno-error=deprecated-declarations -DESP_PLATFORM $(INC)
 
 LDFLAGS = -nostdlib -Map=$(@:.elf=.map) --cref
 LDFLAGS += --gc-sections -static -EL
@@ -129,15 +136,44 @@ SRC_C = \
 	modnetwork.c \
 	modsocket.c \
 	modesp.c \
+	modbadge.c \
+	modugfx.c \
 	moduhashlib.c \
 	espneopixel.c \
+	machine_rtc.c \
 	machine_hw_spi.c \
 	mpthreadport.c \
+	badge_eink.c \
+	badge_i2c.c \
+	badge_leds.c \
+	badge_mpr121.c \
+	badge_portexp.c \
+	badge_gpiobutton.c \
+	badge_touch.c \
+	badge_input.c \
+	badge_sdcard.c \
+	badge_vibrator.c \
+	badge_power.c \
+	badge_eink_dev.c \
+	badge_eink_lut.c \
+	badge.c \
+	font.c \
+	font_16px.c \
+	font_8px.c \
+	imgv2_menu.c \
+	imgv2_nick.c \
+	imgv2_sha.c \
+	imgv2_test.c \
+	imgv2_weather.c \
+	esprtcmem.c \
+	espdeepsleep.c \
+	gdisp_lld_framebuffer.c \
+	ginput_lld_toggle.c \
+	gfx_mk.c \
 	$(SRC_MOD)
 
 STM_SRC_C = $(addprefix stmhal/,\
-	pybstdio.c \
-	input.c \
+ 	pybstdio.c \
 	)
 
 ESP8266_SRC_C = $(addprefix esp8266/,\
@@ -205,6 +241,7 @@ ESPIDF_DRIVER_O = $(addprefix $(ESPCOMP)/driver/,\
 	periph_ctrl.o \
 	ledc.o \
 	gpio.o \
+	i2c.o \
 	timer.o \
 	spi_master.o \
 	spi_common.o \
