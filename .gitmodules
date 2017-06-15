@@ -11,6 +11,3 @@
 [submodule "lib/berkeley-db-1.xx"]
 	path = lib/berkeley-db-1.xx
 	url = https://github.com/pfalcon/berkeley-db-1.xx
-[submodule "lib/mbedtls"]
-	path = lib/mbedtls
-	url = https://github.com/ARMmbed/mbedtls.git
