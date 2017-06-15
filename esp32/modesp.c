@@ -29,6 +29,7 @@
 
 #include <stdio.h>
 
+#include "esp_log.h"
 #include "esp_spi_flash.h"
 
 #include "py/runtime.h"
@@ -36,6 +37,47 @@
 #include "py/mphal.h"
 #include "drivers/dht/dht.h"
 #include "modesp.h"
+
+#define MODESP_INCLUDE_CONSTANTS (1)
+
+STATIC mp_obj_t esp_osdebug(size_t n_args, const mp_obj_t *args) {
+    switch (n_args) {
+    case 1:
+        if (args[0] == mp_const_none) {
+            esp_log_level_set("*", ESP_LOG_ERROR);
+        } else {
+            esp_log_level_set("*", LOG_LOCAL_LEVEL);
+        }
+        break;
+
+    case 2:
+        esp_log_level_set("*", mp_obj_get_int(args[1]));
+        break;
+    }
+
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(esp_osdebug_obj, 1, 2, esp_osdebug);
+
+STATIC mp_obj_t esp_oslog(mp_obj_t level_t, mp_obj_t tag_o, mp_obj_t message_o) {
+    size_t tag_l, message_l;
+    const char *tag = mp_obj_str_get_data(tag_o, &tag_l);
+    const char *message = mp_obj_str_get_data(message_o, &message_l);
+    mp_uint_t level = mp_obj_get_int(level_t);
+
+    switch (level) {
+    case ESP_LOG_ERROR:     ; ESP_LOGE(tag, "%s\n", message); break;
+    case ESP_LOG_WARN:      ; ESP_LOGW(tag, "%s\n", message); break;
+    case ESP_LOG_INFO:      ; ESP_LOGI(tag, "%s\n", message); break;
+    case ESP_LOG_DEBUG:     ; ESP_LOGD(tag, "%s\n", message); break;
+    case ESP_LOG_VERBOSE:   ; ESP_LOGV(tag, "%s\n", message); break;
+    default:
+        mp_raise_msg(&mp_type_ValueError, "oslog: Invalid log level");
+    }
+
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_3(esp_oslog_obj, esp_oslog);
 
 STATIC mp_obj_t esp_flash_read(mp_obj_t offset_in, mp_obj_t buf_in) {
     mp_int_t offset = mp_obj_get_int(offset_in);
@@ -93,6 +135,9 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_3(esp_neopixel_write_obj, esp_neopixel_write_);
 STATIC const mp_rom_map_elem_t esp_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_esp) },
 
+    { MP_ROM_QSTR(MP_QSTR_osdebug), MP_ROM_PTR(&esp_osdebug_obj) },
+    { MP_ROM_QSTR(MP_QSTR_oslog), MP_ROM_PTR(&esp_oslog_obj) },
+
     { MP_ROM_QSTR(MP_QSTR_flash_read), MP_ROM_PTR(&esp_flash_read_obj) },
     { MP_ROM_QSTR(MP_QSTR_flash_write), MP_ROM_PTR(&esp_flash_write_obj) },
     { MP_ROM_QSTR(MP_QSTR_flash_erase), MP_ROM_PTR(&esp_flash_erase_obj) },
@@ -101,6 +146,17 @@ STATIC const mp_rom_map_elem_t esp_module_globals_table[] = {
 
     { MP_ROM_QSTR(MP_QSTR_neopixel_write), MP_ROM_PTR(&esp_neopixel_write_obj) },
     { MP_ROM_QSTR(MP_QSTR_dht_readinto), MP_ROM_PTR(&dht_readinto_obj) },
+
+#if MODESP_INCLUDE_CONSTANTS
+    { MP_OBJ_NEW_QSTR(MP_QSTR_LOG_NONE), MP_OBJ_NEW_SMALL_INT((mp_uint_t)ESP_LOG_NONE)},
+    { MP_OBJ_NEW_QSTR(MP_QSTR_LOG_CRITICAL), MP_OBJ_NEW_SMALL_INT((mp_uint_t)ESP_LOG_ERROR)},
+    { MP_OBJ_NEW_QSTR(MP_QSTR_LOG_ERROR), MP_OBJ_NEW_SMALL_INT((mp_uint_t)ESP_LOG_ERROR)},
+    { MP_OBJ_NEW_QSTR(MP_QSTR_LOG_WARNING), MP_OBJ_NEW_SMALL_INT((mp_uint_t)ESP_LOG_WARN)},
+    { MP_OBJ_NEW_QSTR(MP_QSTR_LOG_INFO), MP_OBJ_NEW_SMALL_INT((mp_uint_t)ESP_LOG_INFO)},
+    { MP_OBJ_NEW_QSTR(MP_QSTR_LOG_DEBUG), MP_OBJ_NEW_SMALL_INT((mp_uint_t)ESP_LOG_DEBUG)},
+    { MP_OBJ_NEW_QSTR(MP_QSTR_LOG_VERBOSE), MP_OBJ_NEW_SMALL_INT((mp_uint_t)ESP_LOG_VERBOSE)},
+    { MP_OBJ_NEW_QSTR(MP_QSTR_LOG_DEFAULT), MP_OBJ_NEW_SMALL_INT((mp_uint_t)LOG_LOCAL_LEVEL)},
+#endif
 };
 
 STATIC MP_DEFINE_CONST_DICT(esp_module_globals, esp_module_globals_table);
