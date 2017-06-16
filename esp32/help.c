@@ -54,6 +54,7 @@ const char *esp32_help_text =
 "Interfacing with the buttons:\n"
 "\n"
 "import ugfx\n"
+"ugfx.init()                                                      # Initialize ugfx subsystem\n"
 "ugfx.input_init()                                                # Initialize button callbacks\n"
 "ugfx.input_attach(ugfx.JOY_UP, lambda pressed: print(pressed))   # Connect button callback function\n"
 "while True: pass                                                 # Stay in python loop to get events\n"

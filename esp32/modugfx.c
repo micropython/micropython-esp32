@@ -565,6 +565,7 @@ void ugfx_ginput_callback_handler(void *param, GEvent *pe){
 ///
 STATIC mp_obj_t ugfx_input_init(void) {
   for(size_t i = 1; i <= BADGE_BUTTONS; i++){
+    button_callbacks[i] = mp_const_none;
     geventListenerInit(&button_listeners[i]);
     button_listeners[i].callback = ugfx_ginput_callback_handler;
     button_listeners[i].param = (void*) i;
