@@ -1,17 +1,18 @@
-get all the submodules for micropython if you haven't already
+Get all the submodules for micropython if you haven't already
 
     cd micropython
 
     git submodule update --init --recursive
 
-Satisfy axtls generating its version.h
+If you are missing mbedtls
 
-    cd lib/axtls
-    make menuconfig
+    git clone https://github.com/ARMmbed/mbedtls.git lib/mbedtls
 
-Build axtls and the binary
+Build binary
 
     cd unix
-    make axtls
     make
 
+Run
+
+    ./micropython
