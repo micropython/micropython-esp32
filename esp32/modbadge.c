@@ -98,6 +98,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_0(usb_volt_sense_obj, usb_volt_sense_);
 
 // LEDs
 
+#ifdef PIN_NUM_LED
 STATIC mp_obj_t badge_leds_init_() {
   badge_leds_init();
   return mp_const_none;
@@ -110,6 +111,7 @@ STATIC mp_obj_t badge_leds_set_state_(mp_uint_t n_args, const mp_obj_t *args) {
   return mp_obj_new_int(badge_leds_set_state(leds));
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(badge_leds_set_state_obj, 1,1 ,badge_leds_set_state_);
+#endif
 
 // Module globals
 
@@ -122,8 +124,10 @@ STATIC const mp_rom_map_elem_t badge_module_globals_table[] = {
     {MP_OBJ_NEW_QSTR(MP_QSTR_leds_init), (mp_obj_t)&badge_leds_init_obj},
     {MP_OBJ_NEW_QSTR(MP_QSTR_leds_set_state), (mp_obj_t)&badge_leds_set_state_obj},
 
+#ifdef PIN_NUM_LED
     {MP_ROM_QSTR(MP_QSTR_display_picture),
      MP_ROM_PTR(&badge_display_picture_obj)},
+#endif
 
 #if defined(PORTEXP_PIN_NUM_CHRGSTAT) || defined(MPR121_PIN_NUM_CHRGSTAT)
     {MP_OBJ_NEW_QSTR(MP_QSTR_battery_charge_status),
