@@ -59,12 +59,15 @@ STATIC StaticTask_t mp_task_tcb;
 STATIC StackType_t mp_task_stack[MP_TASK_STACK_LEN] __attribute__((aligned (8)));
 STATIC uint8_t mp_task_heap[MP_TASK_HEAP_SIZE];
 
+extern uint32_t reset_cause;
+
 void mp_task(void *pvParameter) {
     volatile uint32_t sp = (uint32_t)get_sp();
     #if MICROPY_PY_THREAD
     mp_thread_init(&mp_task_stack[0], MP_TASK_STACK_LEN);
     #endif
     uart_init();
+    machine_init();
 
 soft_reset:
     // initialise the stack pointer for the main thread
@@ -111,6 +114,7 @@ soft_reset:
 
     mp_deinit();
     fflush(stdout);
+    reset_cause = MACHINE_SOFT_RESET;
     goto soft_reset;
 }
 

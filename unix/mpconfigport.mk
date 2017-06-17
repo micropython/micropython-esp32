@@ -21,12 +21,12 @@ MICROPY_PY_TERMIOS = 1
 MICROPY_PY_SOCKET = 1
 
 # ffi module requires libffi (libffi-dev Debian package)
-MICROPY_PY_FFI = 1
+MICROPY_PY_FFI = 0
 
 # ussl module requires axtls
 MICROPY_PY_USSL = 1
-MICROPY_SSL_AXTLS = 1
-MICROPY_SSL_MBEDTLS = 0
+MICROPY_SSL_AXTLS = 0
+MICROPY_SSL_MBEDTLS = 1
 
 # jni module requires JVM/JNI
 MICROPY_PY_JNI = 0

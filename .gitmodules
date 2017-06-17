@@ -1,7 +1,7 @@
 [submodule "lib/axtls"]
 	path = lib/axtls
 	url = https://github.com/pfalcon/axtls
-	branch = micropython
+	branch = micropython-2.1.3
 [submodule "lib/libffi"]
 	path = lib/libffi
 	url = https://github.com/atgreen/libffi

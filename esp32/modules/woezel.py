@@ -122,7 +122,7 @@ def url_open(url):
         s.connect(addr)
 
         if proto == "https:":
-            s = ussl.wrap_socket(s)
+            s = ussl.wrap_socket(s, server_hostname=host)
             if warn_ussl:
                 print("Warning: %s SSL certificate is not validated" % host)
                 warn_ussl = False
@@ -149,7 +149,7 @@ def url_open(url):
 
 
 def get_pkg_metadata(name):
-    f = url_open("https://annejan.com/shabadge/%s/json" % name)
+    f = url_open("https://badge.sha2017.org/eggs/%s/json" % name)
     try:
         return json.load(f)
     finally:
