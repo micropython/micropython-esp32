@@ -36,6 +36,9 @@
 
 #ifndef UNIX
 #include "board_framebuffer.h"
+#else
+#include "badge_eink.h"
+uint8_t target_lut;
 #endif
 #include "ginput_lld_toggle_config.h"
 
@@ -64,6 +67,19 @@ STATIC mp_obj_t ugfx_deinit(void) {
   return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(ugfx_deinit_obj, ugfx_deinit);
+
+
+// LUT stettings
+
+STATIC mp_obj_t ugfx_set_lut(mp_obj_t selected_lut) {
+  uint8_t lut = mp_obj_get_int(selected_lut) + 1;
+  if (lut < 1 || lut > 4) {
+    mp_raise_msg(&mp_type_ValueError, "invalid LUT");
+  }
+  target_lut = lut;
+  return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(ugfx_set_lut_obj, ugfx_set_lut);
 
 
 // PRIMITIVES
@@ -656,6 +672,12 @@ STATIC const mp_rom_map_elem_t ugfx_module_globals_table[] = {
     {MP_OBJ_NEW_QSTR(MP_QSTR_BTN_FLASH),
      MP_OBJ_NEW_SMALL_INT(BADGE_BUTTON_FLASH)},
 
+     {MP_OBJ_NEW_QSTR(MP_QSTR_LUT_FULL), MP_OBJ_NEW_SMALL_INT(BADGE_EINK_LUT_FULL)},
+     {MP_OBJ_NEW_QSTR(MP_QSTR_LUT_NORMAL), MP_OBJ_NEW_SMALL_INT(BADGE_EINK_LUT_NORMAL)},
+     {MP_OBJ_NEW_QSTR(MP_QSTR_LUT_FASTER), MP_OBJ_NEW_SMALL_INT(BADGE_EINK_LUT_FASTER)},
+     {MP_OBJ_NEW_QSTR(MP_QSTR_LUT_FASTEST), MP_OBJ_NEW_SMALL_INT(BADGE_EINK_LUT_FASTEST)},
+
+     {MP_OBJ_NEW_QSTR(MP_QSTR_set_lut), (mp_obj_t)&ugfx_set_lut_obj},
 
     {MP_OBJ_NEW_QSTR(MP_QSTR_clear), (mp_obj_t)&ugfx_clear_obj},
     {MP_OBJ_NEW_QSTR(MP_QSTR_flush), (mp_obj_t)&ugfx_flush_obj},
