@@ -121,13 +121,14 @@ STATIC const mp_rom_map_elem_t badge_module_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR_init), MP_ROM_PTR(&badge_init_obj)},
     {MP_ROM_QSTR(MP_QSTR_eink_init), MP_ROM_PTR(&badge_eink_init_obj)},
     {MP_OBJ_NEW_QSTR(MP_QSTR_power_init), (mp_obj_t)&badge_power_init_obj},
-    {MP_OBJ_NEW_QSTR(MP_QSTR_leds_init), (mp_obj_t)&badge_leds_init_obj},
-    {MP_OBJ_NEW_QSTR(MP_QSTR_leds_set_state), (mp_obj_t)&badge_leds_set_state_obj},
 
 #ifdef PIN_NUM_LED
+    {MP_OBJ_NEW_QSTR(MP_QSTR_leds_init), (mp_obj_t)&badge_leds_init_obj},
+    {MP_OBJ_NEW_QSTR(MP_QSTR_leds_set_state), (mp_obj_t)&badge_leds_set_state_obj},
+#endif
+
     {MP_ROM_QSTR(MP_QSTR_display_picture),
      MP_ROM_PTR(&badge_display_picture_obj)},
-#endif
 
 #if defined(PORTEXP_PIN_NUM_CHRGSTAT) || defined(MPR121_PIN_NUM_CHRGSTAT)
     {MP_OBJ_NEW_QSTR(MP_QSTR_battery_charge_status),
