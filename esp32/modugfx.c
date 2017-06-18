@@ -546,6 +546,31 @@ STATIC mp_obj_t ugfx_fill_rounded_box(mp_uint_t n_args, const mp_obj_t *args) {
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ugfx_fill_rounded_box_obj, 6, 6,
                                            ugfx_fill_rounded_box);
 
+// Helper
+
+
+/// \method get_fonts()
+///
+/// Prints the list of installed fonts
+///
+STATIC mp_obj_t ugfx_get_fonts(void) {
+  mp_obj_t tuple[10] = {
+      mp_obj_new_str("Roboto_Regular12", 16, false),
+      mp_obj_new_str("Roboto_Regular18", 16, false),
+      mp_obj_new_str("Roboto_Regular22", 16, false),
+      mp_obj_new_str("Roboto_Black22", 14, false),
+      mp_obj_new_str("Roboto_BlackItalic24", 20, false),
+      mp_obj_new_str("PermanentMarker22", 17, false),
+      mp_obj_new_str("PermanentMarker36", 17, false),
+      mp_obj_new_str("pixelade13", 10, false),
+      mp_obj_new_str("DejaVuSans20", 12, false),
+      mp_obj_new_str("weather42", 9, false),
+  };
+  return mp_obj_new_tuple(10, tuple);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(ugfx_get_fonts_obj, ugfx_get_fonts);
+
+
 // INPUT
 
 /// \method poll()
@@ -707,6 +732,8 @@ STATIC const mp_rom_map_elem_t ugfx_module_globals_table[] = {
     {MP_OBJ_NEW_QSTR(MP_QSTR_fill_arc), (mp_obj_t)&ugfx_fill_arc_obj},
     {MP_OBJ_NEW_QSTR(MP_QSTR_polygon), (mp_obj_t)&ugfx_polygon_obj},
     {MP_OBJ_NEW_QSTR(MP_QSTR_fill_polygon), (mp_obj_t)&ugfx_fill_polygon_obj},
+
+    {MP_OBJ_NEW_QSTR(MP_QSTR_get_fonts), (mp_obj_t)&ugfx_get_fonts_obj},
 
     {MP_OBJ_NEW_QSTR(MP_QSTR_input_init), (mp_obj_t)&ugfx_input_init_obj},
     {MP_OBJ_NEW_QSTR(MP_QSTR_input_attach), (mp_obj_t)&ugfx_input_attach_obj},
