@@ -1,1 +1,1 @@
-../../components/ugfx/Roboto-Regular12.c
+../../components/ugfx/fonts/Roboto-Regular12.c

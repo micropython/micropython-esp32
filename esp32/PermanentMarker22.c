@@ -1,1 +1,1 @@
-../../components/ugfx/PermanentMarker22.c
+../../components/ugfx/fonts/PermanentMarker22.c
