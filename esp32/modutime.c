@@ -36,10 +36,10 @@
 #include "py/nlr.h"
 
 /// \function localtime([secs])
-/// Convert a time expressed in seconds since Jan 1, 2000 into an 8-tuple which
+/// Convert a time expressed in seconds since unix epoch into an 8-tuple which
 /// contains: (year, month, mday, hour, minute, second, weekday, yearday)
 /// If secs is not provided or None, then the current time from the RTC is used.
-/// year includes the century (for example 2014)
+/// year includes the century (for example 2017)
 /// month   is 1-12
 /// mday    is 1-31
 /// hour    is 0-23
@@ -73,7 +73,7 @@ MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(time_localtime_obj, 0, 1, time_localtime);
 /// \function mktime()
 /// This is inverse function of localtime. It's argument is a full 8-tuple
 /// which expresses a time as per localtime. It returns an integer which is
-/// the number of seconds since Jan 1, 2000.
+/// the number of seconds since the unix epoch.
 STATIC mp_obj_t time_mktime(mp_obj_t tuple) {
     size_t len;
     mp_obj_t *elem;
@@ -84,7 +84,7 @@ STATIC mp_obj_t time_mktime(mp_obj_t tuple) {
         nlr_raise(mp_obj_new_exception_msg_varg(&mp_type_TypeError, "mktime needs a tuple of length 8 or 9 (%d given)", len));
     }
 
-    return mp_obj_new_int_from_uint(timeutils_mktime(mp_obj_get_int(elem[0]),
+    return mp_obj_new_int_from_uint(timeutils_mktime_epoch(mp_obj_get_int(elem[0]),
             mp_obj_get_int(elem[1]), mp_obj_get_int(elem[2]), mp_obj_get_int(elem[3]),
             mp_obj_get_int(elem[4]), mp_obj_get_int(elem[5])));
 }
