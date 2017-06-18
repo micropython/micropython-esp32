@@ -404,6 +404,19 @@ mp_obj_t mp_builtin___import__(size_t n_args, const mp_obj_t *args) {
                     }
                     // found weak linked module
                     module_obj = el->value;
+                    if (MICROPY_MODULE_BUILTIN_INIT) {
+                        // look for __init__ and call it if it exists
+                        // Note: this code doesn't work fully correctly because it allows the
+                        // __init__ function to be called twice if the module is imported by its
+                        // non-weak-link name.  Also, this code is duplicated in objmodule.c.
+                        mp_obj_t dest[2];
+                        mp_load_method_maybe(el->value, MP_QSTR___init__, dest);
+                        if (dest[0] != MP_OBJ_NULL) {
+                            mp_call_method_n_kw(0, 0, dest);
+                            // register module so __init__ is not called again
+                            mp_module_register(mod_name, el->value);
+                        }
+                    }
                 } else {
                     no_exist:
                 #else
@@ -429,8 +442,13 @@ mp_obj_t mp_builtin___import__(size_t n_args, const mp_obj_t *args) {
 
                 // if args[3] (fromtuple) has magic value False, set up
                 // this module for command-line "-m" option (set module's
-                // name to __main__ instead of real name).
-                if (i == mod_len && fromtuple == mp_const_false) {
+                // name to __main__ instead of real name). Do this only
+                // for *modules* however - packages never have their names
+                // replaced, instead they're -m'ed using a special __main__
+                // submodule in them. (This all apparently is done to not
+                // touch package name itself, which is important for future
+                // imports).
+                if (i == mod_len && fromtuple == mp_const_false && stat != MP_IMPORT_STAT_DIR) {
                     mp_obj_module_t *o = MP_OBJ_TO_PTR(module_obj);
                     mp_obj_dict_store(MP_OBJ_FROM_PTR(o->globals), MP_OBJ_NEW_QSTR(MP_QSTR___name__), MP_OBJ_NEW_QSTR(MP_QSTR___main__));
                     #if MICROPY_CPYTHON_COMPAT
