@@ -1,1 +1,1 @@
-../../components/ugfx/Roboto-BlackItalic24.c
+../../components/ugfx/fonts/Roboto-BlackItalic24.c
