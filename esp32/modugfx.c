@@ -47,6 +47,9 @@ uint8_t target_lut;
 
 #include "gfx.h"
 #include "gfxconf.h"
+#define MF_RLEFONT_INTERNALS
+#include <mcufont.h>
+#include <string.h>
 
 #include "py/mperrno.h"
 #include "py/mphal.h"
@@ -546,31 +549,6 @@ STATIC mp_obj_t ugfx_fill_rounded_box(mp_uint_t n_args, const mp_obj_t *args) {
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ugfx_fill_rounded_box_obj, 6, 6,
                                            ugfx_fill_rounded_box);
 
-// Helper
-
-
-/// \method get_fonts()
-///
-/// Prints the list of installed fonts
-///
-STATIC mp_obj_t ugfx_get_fonts(void) {
-  mp_obj_t tuple[10] = {
-      mp_obj_new_str("Roboto_Regular12", 16, false),
-      mp_obj_new_str("Roboto_Regular18", 16, false),
-      mp_obj_new_str("Roboto_Regular22", 16, false),
-      mp_obj_new_str("Roboto_Black22", 14, false),
-      mp_obj_new_str("Roboto_BlackItalic24", 20, false),
-      mp_obj_new_str("PermanentMarker22", 17, false),
-      mp_obj_new_str("PermanentMarker36", 17, false),
-      mp_obj_new_str("pixelade13", 10, false),
-      mp_obj_new_str("DejaVuSans20", 12, false),
-      mp_obj_new_str("weather42", 9, false),
-  };
-  return mp_obj_new_tuple(10, tuple);
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(ugfx_get_fonts_obj, ugfx_get_fonts);
-
-
 // INPUT
 
 /// \method poll()
@@ -665,6 +643,182 @@ STATIC mp_obj_t ugfx_demo(mp_obj_t hacking) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(ugfx_demo_obj, ugfx_demo);
 
+STATIC mp_obj_t ugfx_fonts_list(void) {
+  mp_obj_t list = mp_obj_new_list(0, NULL);;
+  const struct mf_font_list_s *f = gdispListFonts();
+
+  while (f){
+    mp_obj_list_append(list, mp_obj_new_str(f->font->short_name, strlen(f->font->short_name), false));
+    f = f->next;
+  }
+
+  return list;
+
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(ugfx_fonts_list_obj, ugfx_fonts_list);
+
+#define store_dict_str(dict, field, contents) mp_obj_dict_store(dict, mp_obj_new_str(field, strlen(field), false), mp_obj_new_str(contents, strlen(contents), false))
+#define store_dict_int(dict, field, contents) mp_obj_dict_store(dict, mp_obj_new_str(field, strlen(field), false), mp_obj_new_int(contents));
+#define store_dict_foo(dict, field, contents) mp_obj_dict_store(dict, mp_obj_new_str(field, strlen(field), false), contents);
+
+STATIC mp_obj_t ugfx_fonts_dump(mp_uint_t n_args, const mp_obj_t *args) {
+  mp_uint_t len;
+  const char *font = mp_obj_str_get_data(args[0], &len);
+  struct mf_rlefont_s* f = (struct mf_rlefont_s*) gdispOpenFont(font);
+  if(strcmp(f->font.short_name, font)){
+    return mp_const_none;
+  }
+
+  mp_obj_t dict_out   = mp_obj_new_dict(0);
+  mp_obj_dict_t *dict = MP_OBJ_TO_PTR(dict_out);
+
+  mp_obj_dict_init(dict, 21);
+  store_dict_str(dict, "short_name", f->font.short_name);
+  store_dict_str(dict, "full_name", f->font.full_name);
+  store_dict_int(dict, "width", f->font.width);
+  store_dict_int(dict, "height", f->font.height);
+  store_dict_int(dict, "min_x_advance", f->font.min_x_advance);
+  store_dict_int(dict, "max_x_advance", f->font.max_x_advance);
+  store_dict_int(dict, "baseline_x", f->font.baseline_x);
+  store_dict_int(dict, "baseline_y", f->font.baseline_y);
+  store_dict_int(dict, "line_height", f->font.line_height);
+  store_dict_int(dict, "flags", f->font.flags);
+  store_dict_int(dict, "fallback_character", f->font.fallback_character);
+
+  mp_obj_t ranges = mp_obj_new_list(0, NULL);;
+
+  for (size_t i = 0; i < f->char_range_count; i++){
+	const struct mf_rlefont_char_range_s *range = &f->char_ranges[i];
+	mp_obj_t range_dict_out   = mp_obj_new_dict(0);
+	mp_obj_dict_t *range_dict = MP_OBJ_TO_PTR(range_dict_out);
+	store_dict_int(range_dict, "first_char", range->first_char);
+	store_dict_int(range_dict, "char_count", range->char_count);
+	store_dict_foo(range_dict, "glyph_offsets", mp_obj_new_bytes((uint8_t*) range->glyph_offsets, 2*range->char_count+2));
+	store_dict_foo(range_dict, "glyph_data", mp_obj_new_bytes(range->glyph_data, (range->glyph_offsets[range->char_count])));
+    mp_obj_list_append(ranges, range_dict_out);
+  }
+
+  store_dict_foo(dict, "dictionary_offsets", mp_obj_new_bytes((uint8_t*) f->dictionary_offsets, 2*(f->dict_entry_count)+2));
+  store_dict_foo(dict, "dictionary_data",    mp_obj_new_bytes(f->dictionary_data, f->dictionary_offsets[f->dict_entry_count]));
+
+  store_dict_int(dict, "rle_entry_count", f->rle_entry_count);
+  store_dict_int(dict, "dict_entry_count", f->dict_entry_count);
+  store_dict_int(dict, "char_range_count", f->char_range_count);
+
+  store_dict_foo(dict, "char_ranges", ranges);
+
+  return dict_out;
+
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ugfx_fonts_dump_obj, 1, 1, ugfx_fonts_dump);
+
+STATIC mp_obj_t ugfx_fonts_load(mp_uint_t n_args, const mp_obj_t *args) {
+
+  struct dynamic_mf_rlefont_char_range_s{
+    uint16_t first_char;
+    uint16_t char_count;
+    uint16_t *glyph_offsets;
+    uint8_t *glyph_data;
+  };
+
+  struct dynamic_mf_font_s{
+    const char *full_name;
+    const char *short_name;
+    uint8_t width;
+    uint8_t height;
+    uint8_t min_x_advance;
+    uint8_t max_x_advance;
+    uint8_t baseline_x;
+    uint8_t baseline_y;
+    uint8_t line_height;
+    uint8_t flags;
+    uint16_t fallback_character;
+    uint8_t (*character_width)(const struct mf_font_s *font, uint16_t character);
+    uint8_t (*render_character)(const struct mf_font_s *font,
+                                int16_t x0, int16_t y0,
+                                uint16_t character,
+                                mf_pixel_callback_t callback,
+                                void *state);
+  };
+
+  struct dynamic_mf_rlefont_s{
+    struct dynamic_mf_font_s font;
+    uint8_t version;
+    uint8_t *dictionary_data;
+    uint16_t *dictionary_offsets;
+    uint8_t rle_entry_count;
+    uint8_t dict_entry_count;
+    uint16_t char_range_count;
+    struct dynamic_mf_rlefont_char_range_s *char_ranges;
+  };
+
+  mp_obj_dict_t *dict = MP_OBJ_TO_PTR(args[0]);
+
+  struct dynamic_mf_rlefont_s* f = gfxAlloc(sizeof(struct mf_rlefont_s));
+  if(f){
+    f->font.short_name         = mp_obj_str_get_str(mp_obj_dict_get(dict, MP_OBJ_NEW_QSTR(MP_QSTR_short_name)));
+    if(gdispOpenFont(f->font.short_name)->short_name == f->font.short_name){
+      // font already loaded
+      return mp_obj_new_bool(0);
+    }
+    f->font.full_name          = mp_obj_str_get_str(mp_obj_dict_get(dict, MP_OBJ_NEW_QSTR(MP_QSTR_full_name)));
+    f->font.width              = mp_obj_get_int(mp_obj_dict_get(dict, MP_OBJ_NEW_QSTR(MP_QSTR_width)));
+    f->font.height             = mp_obj_get_int(mp_obj_dict_get(dict, MP_OBJ_NEW_QSTR(MP_QSTR_height)));
+    f->font.min_x_advance      = mp_obj_get_int(mp_obj_dict_get(dict, MP_OBJ_NEW_QSTR(MP_QSTR_min_x_advance)));
+    f->font.max_x_advance      = mp_obj_get_int(mp_obj_dict_get(dict, MP_OBJ_NEW_QSTR(MP_QSTR_max_x_advance)));
+    f->font.baseline_x         = mp_obj_get_int(mp_obj_dict_get(dict, MP_OBJ_NEW_QSTR(MP_QSTR_baseline_x)));
+    f->font.baseline_y         = mp_obj_get_int(mp_obj_dict_get(dict, MP_OBJ_NEW_QSTR(MP_QSTR_baseline_y)));
+    f->font.line_height        = mp_obj_get_int(mp_obj_dict_get(dict, MP_OBJ_NEW_QSTR(MP_QSTR_line_height)));
+    f->font.flags              = mp_obj_get_int(mp_obj_dict_get(dict, MP_OBJ_NEW_QSTR(MP_QSTR_flags))) | 0xc0; // FONT_FLAG_DYNAMIC|FONT_FLAG_UNLISTED
+    f->font.fallback_character = mp_obj_get_int(mp_obj_dict_get(dict, MP_OBJ_NEW_QSTR(MP_QSTR_fallback_character)));
+
+    f->rle_entry_count         = mp_obj_get_int(mp_obj_dict_get(dict, MP_OBJ_NEW_QSTR(MP_QSTR_rle_entry_count)));
+    f->dict_entry_count        = mp_obj_get_int(mp_obj_dict_get(dict, MP_OBJ_NEW_QSTR(MP_QSTR_dict_entry_count)));
+    f->char_range_count        = mp_obj_get_int(mp_obj_dict_get(dict, MP_OBJ_NEW_QSTR(MP_QSTR_char_range_count)));
+
+    f->char_ranges = gfxAlloc(f->char_range_count * sizeof(struct mf_rlefont_s));
+    mp_obj_t ranges = mp_obj_dict_get(dict, MP_OBJ_NEW_QSTR(MP_QSTR_char_ranges));
+    size_t len;
+    uint8_t * data;
+    for (size_t i = 0; i < f->char_range_count; i++){
+      mp_obj_t * items;
+      size_t idx;
+      mp_obj_list_get(ranges, &idx, &items);
+      mp_obj_t range = items[0];
+      f->char_ranges[i].first_char = mp_obj_get_int(mp_obj_dict_get(range, MP_OBJ_NEW_QSTR(MP_QSTR_first_char)));
+      f->char_ranges[i].char_count = mp_obj_get_int(mp_obj_dict_get(range, MP_OBJ_NEW_QSTR(MP_QSTR_char_count)));
+
+      data                            = (uint8_t*) mp_obj_str_get_data(mp_obj_dict_get(range, MP_OBJ_NEW_QSTR(MP_QSTR_glyph_offsets)), &len);
+      f->char_ranges[i].glyph_offsets = gfxAlloc(len);
+      memcpy(f->char_ranges[i].glyph_offsets, data, len-2);
+
+      data                            = (uint8_t*) mp_obj_str_get_data(mp_obj_dict_get(range, MP_OBJ_NEW_QSTR(MP_QSTR_glyph_data)), &len);
+      f->char_ranges[i].glyph_offsets[f->char_ranges[i].char_count] = len;
+
+      f->char_ranges[i].glyph_data    = gfxAlloc(len);
+      memcpy(f->char_ranges[i].glyph_data, data, len);
+    }
+
+    data                            = (uint8_t*) mp_obj_str_get_data(mp_obj_dict_get(dict, MP_OBJ_NEW_QSTR(MP_QSTR_dictionary_offsets)), &len);
+    f->dictionary_offsets           = gfxAlloc(len);
+    memcpy(f->dictionary_offsets, data, len-2);
+
+    size_t dict_len;
+    data                             = (uint8_t*) mp_obj_str_get_data(mp_obj_dict_get(dict, MP_OBJ_NEW_QSTR(MP_QSTR_dictionary_data)), &dict_len);
+    f->dictionary_offsets[(len/2)-1] = dict_len;
+    f->dictionary_data               = gfxAlloc(dict_len);
+    memcpy(f->dictionary_data, data, dict_len);
+
+    f->font.character_width  = &mf_rlefont_character_width;
+    f->font.render_character = &mf_rlefont_render_character;
+
+    gdispAddFont((font_t)f);
+  }
+
+  return mp_obj_new_bool(1);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ugfx_fonts_load_obj, 1, 1, ugfx_fonts_load);
+
 // Module globals
 
 STATIC const mp_rom_map_elem_t ugfx_module_globals_table[] = {
@@ -733,7 +887,9 @@ STATIC const mp_rom_map_elem_t ugfx_module_globals_table[] = {
     {MP_OBJ_NEW_QSTR(MP_QSTR_polygon), (mp_obj_t)&ugfx_polygon_obj},
     {MP_OBJ_NEW_QSTR(MP_QSTR_fill_polygon), (mp_obj_t)&ugfx_fill_polygon_obj},
 
-    {MP_OBJ_NEW_QSTR(MP_QSTR_get_fonts), (mp_obj_t)&ugfx_get_fonts_obj},
+    {MP_OBJ_NEW_QSTR(MP_QSTR_fonts_list), (mp_obj_t)&ugfx_fonts_list_obj},
+    {MP_OBJ_NEW_QSTR(MP_QSTR_fonts_dump), (mp_obj_t)&ugfx_fonts_dump_obj},
+    {MP_OBJ_NEW_QSTR(MP_QSTR_fonts_load), (mp_obj_t)&ugfx_fonts_load_obj},
 
     {MP_OBJ_NEW_QSTR(MP_QSTR_input_init), (mp_obj_t)&ugfx_input_init_obj},
     {MP_OBJ_NEW_QSTR(MP_QSTR_input_attach), (mp_obj_t)&ugfx_input_attach_obj},
