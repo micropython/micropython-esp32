@@ -82,7 +82,7 @@
 
 #define GDISP_NEED_CIRCLE                            TRUE
 //#define GDISP_NEED_DUALCIRCLE                        FALSE
-#define GDISP_NEED_ELLIPSE                           TRUE	
+#define GDISP_NEED_ELLIPSE                           TRUE
 #define GDISP_NEED_ARC                               TRUE
 //#define GDISP_NEED_ARCSECTORS                        FALSE
 #define GDISP_NEED_CONVEX_POLYGON                    TRUE
@@ -216,26 +216,26 @@
 
 #define GWIN_NEED_WIDGET                             TRUE
 //#define GWIN_FOCUS_HIGHLIGHT_WIDTH                   1
-//    #define GWIN_NEED_LABEL                          FALSE
-//        #define GWIN_LABEL_ATTRIBUTE                 FALSE
+#define GWIN_NEED_LABEL                          TRUE
+#define GWIN_LABEL_ATTRIBUTE                 TRUE
 #define GWIN_NEED_BUTTON                         TRUE
 //        #define GWIN_BUTTON_LAZY_RELEASE             FALSE
 //    #define GWIN_NEED_SLIDER                         FALSE
 //        #define GWIN_SLIDER_NOSNAP                   FALSE
 //        #define GWIN_SLIDER_DEAD_BAND                5
 //        #define GWIN_SLIDER_TOGGLE_INC               20
-//    #define GWIN_NEED_CHECKBOX                       FALSE
+#define GWIN_NEED_CHECKBOX                       TRUE
 #define GWIN_NEED_IMAGE                          TRUE
 //        #define GWIN_NEED_IMAGE_ANIMATION            FALSE
-//    #define GWIN_NEED_RADIO                          FALSE
-//    #define GWIN_NEED_LIST                           FALSE
-//        #define GWIN_NEED_LIST_IMAGES                FALSE
+#define GWIN_NEED_RADIO                          TRUE
+#define GWIN_NEED_LIST                           TRUE
+#define GWIN_NEED_LIST_IMAGES                TRUE
 //    #define GWIN_NEED_PROGRESSBAR                    FALSE
 //        #define GWIN_PROGRESSBAR_AUTO                FALSE
 #define GWIN_NEED_KEYBOARD                       TRUE
 #define GWIN_KEYBOARD_DEFAULT_LAYOUT         VirtualKeyboard_English1
 #define GWIN_NEED_KEYBOARD_ENGLISH1          TRUE
-//    #define GWIN_NEED_TEXTEDIT                       FALSE
+#define GWIN_NEED_TEXTEDIT                       TRUE
 //    #define GWIN_FLAT_STYLING                        FALSE
 //    #define GWIN_WIDGET_TAGS                         FALSE
 
