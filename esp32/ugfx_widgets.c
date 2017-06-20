@@ -27,6 +27,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+#include <stdint.h>
+#include <badge_button.h>
+#include "ginput_lld_toggle_config.h"
 
 #include "py/mperrno.h"
 #include "py/mphal.h"
@@ -471,8 +474,8 @@ STATIC const mp_arg_t ugfx_list_make_new_args[] = {
     { MP_QSTR_a, MP_ARG_REQUIRED | MP_ARG_INT, {.u_int = 0} },
     { MP_QSTR_b, MP_ARG_REQUIRED | MP_ARG_INT, {.u_int = 0} },
     { MP_QSTR_parent, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
-    { MP_QSTR_up, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = GINPUT_TOGGLE_UP} },
-    { MP_QSTR_down, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = GINPUT_TOGGLE_DOWN} },
+    { MP_QSTR_up, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = BADGE_BUTTON_UP} },
+    { MP_QSTR_down, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = BADGE_BUTTON_DOWN} },
 	{ MP_QSTR_style, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
 };
 #define UGFX_LIST_MAKE_NEW_NUM_ARGS MP_ARRAY_SIZE(ugfx_list_make_new_args)
@@ -707,11 +710,11 @@ STATIC const mp_arg_t ugfx_keyboard_make_new_args[] = {
     { MP_QSTR_a, MP_ARG_REQUIRED | MP_ARG_INT, {.u_int = 0} },
     { MP_QSTR_b, MP_ARG_REQUIRED | MP_ARG_INT, {.u_int = 0} },
     { MP_QSTR_parent, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
-    { MP_QSTR_up, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = GINPUT_TOGGLE_UP} },
-    { MP_QSTR_down, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = GINPUT_TOGGLE_DOWN} },
-    { MP_QSTR_right, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = GINPUT_TOGGLE_RIGHT} },
-    { MP_QSTR_left, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = GINPUT_TOGGLE_LEFT} },
-    { MP_QSTR_select, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = GINPUT_TOGGLE_A} },
+    { MP_QSTR_up, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = BADGE_BUTTON_UP} },
+    { MP_QSTR_down, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = BADGE_BUTTON_DOWN} },
+    { MP_QSTR_right, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = BADGE_BUTTON_RIGHT} },
+    { MP_QSTR_left, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = BADGE_BUTTON_LEFT} },
+    { MP_QSTR_select, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = BADGE_BUTTON_A} },
 	{ MP_QSTR_style, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
 };
 #define UGFX_KEYBOARD_MAKE_NEW_NUM_ARGS MP_ARRAY_SIZE(ugfx_keyboard_make_new_args)
