@@ -79,6 +79,7 @@
 #define MICROPY_PY_BUILTINS_FILTER          (1)
 #define MICROPY_PY_BUILTINS_REVERSED        (1)
 #define MICROPY_PY_BUILTINS_NOTIMPLEMENTED  (1)
+#define MICROPY_PY_BUILTINS_INPUT           (1)
 #define MICROPY_PY_BUILTINS_MIN_MAX         (1)
 #define MICROPY_PY_BUILTINS_POW3            (1)
 #define MICROPY_PY_BUILTINS_HELP            (1)
