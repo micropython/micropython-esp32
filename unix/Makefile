@@ -155,6 +155,9 @@ SRC_C = \
 	input.c \
 	file.c \
 	modmachine.c \
+	ugfx_containers.c \
+	ugfx_widgets.c \
+        ugfx_styles.c \
 	modugfx.c \
 	modnetwork.c \
 	modbadge.c \

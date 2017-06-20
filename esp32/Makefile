@@ -167,6 +167,9 @@ SRC_C = \
 	imgv2_weather.c \
 	esprtcmem.c \
 	espdeepsleep.c \
+	ugfx_containers.c \
+	ugfx_widgets.c \
+	ugfx_styles.c \
 	gdisp_lld_framebuffer.c \
 	ginput_lld_toggle.c \
 	gfx_mk.c \
