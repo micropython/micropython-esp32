@@ -105,6 +105,23 @@ STATIC mp_obj_t badge_leds_init_() {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_leds_init_obj, badge_leds_init_);
 
+STATIC mp_obj_t badge_leds_enable_() {
+  return mp_obj_new_int(badge_leds_enable());
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_leds_enable_obj, badge_leds_enable_);
+
+STATIC mp_obj_t badge_leds_disable_() {
+  return mp_obj_new_int(badge_leds_disable());
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_leds_disable_obj, badge_leds_disable);
+
+STATIC mp_obj_t badge_leds_send_data_(mp_uint_t n_args, const mp_obj_t *args) {
+  mp_uint_t len = mp_obj_int_from_uint(args[1]);
+  uint8_t *leds = (uint8_t *)mp_obj_str_get_data(args[0], &len);
+  return mp_obj_new_int(badge_leds_send_data(leds, len));
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(badge_leds_send_data_obj, 2,2 ,badge_leds_send_data_);
+
 STATIC mp_obj_t badge_leds_set_state_(mp_uint_t n_args, const mp_obj_t *args) {
   mp_uint_t len;
   uint8_t *leds = (uint8_t *)mp_obj_str_get_data(args[0], &len);
@@ -124,6 +141,9 @@ STATIC const mp_rom_map_elem_t badge_module_globals_table[] = {
 
 #ifdef PIN_NUM_LED
     {MP_OBJ_NEW_QSTR(MP_QSTR_leds_init), (mp_obj_t)&badge_leds_init_obj},
+    {MP_OBJ_NEW_QSTR(MP_QSTR_leds_enable), (mp_obj_t)&badge_leds_enable_obj},
+    {MP_OBJ_NEW_QSTR(MP_QSTR_leds_disable), (mp_obj_t)&badge_leds_disable_obj},
+    {MP_OBJ_NEW_QSTR(MP_QSTR_leds_send_data), (mp_obj_t)&badge_leds_send_data_obj},
     {MP_OBJ_NEW_QSTR(MP_QSTR_leds_set_state), (mp_obj_t)&badge_leds_set_state_obj},
 #endif
 
