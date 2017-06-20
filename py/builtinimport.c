@@ -230,8 +230,7 @@ STATIC void do_load(mp_obj_t module_obj, vstr_t *file) {
     #endif
 
     // If we get here then the file was not frozen and we can't compile scripts.
-    nlr_raise(mp_obj_new_exception_msg_varg(&mp_type_ImportError,
-        "script compilation not supported"));
+    mp_raise_msg(&mp_type_ImportError, "script compilation not supported");
 }
 
 STATIC void chop_component(const char *start, const char **end) {
@@ -271,7 +270,7 @@ mp_obj_t mp_builtin___import__(size_t n_args, const mp_obj_t *args) {
     if (level != 0) {
         // What we want to do here is to take name of current module,
         // chop <level> trailing components, and concatenate with passed-in
-        // module name, thus resolving relative import name into absolue.
+        // module name, thus resolving relative import name into absolute.
         // This even appears to be correct per
         // http://legacy.python.org/dev/peps/pep-0328/#relative-imports-and-name
         // "Relative imports use a module's __name__ attribute to determine that
@@ -454,7 +453,7 @@ mp_obj_t mp_builtin___import__(size_t n_args, const mp_obj_t *args) {
                     #if MICROPY_CPYTHON_COMPAT
                     // Store module as "__main__" in the dictionary of loaded modules (returned by sys.modules).
                     mp_obj_dict_store(MP_OBJ_FROM_PTR(&MP_STATE_VM(mp_loaded_modules_dict)), MP_OBJ_NEW_QSTR(MP_QSTR___main__), module_obj);
-                    // Store real name in "__main__" attribute. Choosen semi-randonly, to reuse existing qstr's.
+                    // Store real name in "__main__" attribute. Chosen semi-randonly, to reuse existing qstr's.
                     mp_obj_dict_store(MP_OBJ_FROM_PTR(o->globals), MP_OBJ_NEW_QSTR(MP_QSTR___main__), MP_OBJ_NEW_QSTR(mod_name));
                     #endif
                 }
