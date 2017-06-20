@@ -571,7 +571,7 @@ STATIC mp_obj_t ugfx_list_add_item(mp_obj_t self_in, mp_obj_t str) {
 
 	const char *s = mp_obj_str_get_str(str);
 
-	gwinListAddItemFlags(self->ghList,s,TRUE,GLIST_FLG_NOWRAP);
+	gwinListAddItem(self->ghList,s,TRUE);
 
     return mp_const_none;
 }
@@ -1156,7 +1156,7 @@ STATIC mp_obj_t ugfx_label_make_new(const mp_obj_type_t *type, mp_uint_t n_args,
 
 	btn->justification = vals[7].u_int;
 	wi.customParam = &(btn->justification);
-	wi.customDraw = gwinLabelDrawJustifiedCustom;
+	wi.customDraw = gwinLabelDrawJustifiedCenter;
 
 	// Create the actual label
 	btn->ghLabel = gwinLabelCreate(NULL, &wi);
