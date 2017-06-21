@@ -125,36 +125,36 @@
 #define GDISP_NEED_IMAGE_NATIVE                  TRUE
 //    #define GDISP_NEED_IMAGE_GIF                     FALSE
 //        #define GDISP_IMAGE_GIF_BLIT_BUFFER_SIZE     32
-//    #define GDISP_NEED_IMAGE_BMP                     FALSE
-//        #define GDISP_NEED_IMAGE_BMP_1               TRUE
-//        #define GDISP_NEED_IMAGE_BMP_4               TRUE
-//        #define GDISP_NEED_IMAGE_BMP_4_RLE           TRUE
-//        #define GDISP_NEED_IMAGE_BMP_8               TRUE
-//        #define GDISP_NEED_IMAGE_BMP_8_RLE           TRUE
-//        #define GDISP_NEED_IMAGE_BMP_16              TRUE
-//        #define GDISP_NEED_IMAGE_BMP_24              TRUE
-//        #define GDISP_NEED_IMAGE_BMP_32              TRUE
-//        #define GDISP_IMAGE_BMP_BLIT_BUFFER_SIZE     32
-//    #define GDISP_NEED_IMAGE_JPG                     FALSE
-//    #define GDISP_NEED_IMAGE_PNG                     FALSE
-//        #define GDISP_NEED_IMAGE_PNG_INTERLACED      FALSE
-//        #define GDISP_NEED_IMAGE_PNG_TRANSPARENCY    TRUE
-//        #define GDISP_NEED_IMAGE_PNG_BACKGROUND      TRUE
-//        #define GDISP_NEED_IMAGE_PNG_ALPHACLIFF      32
-//        #define GDISP_NEED_IMAGE_PNG_PALETTE_124     TRUE
-//        #define GDISP_NEED_IMAGE_PNG_PALETTE_8       TRUE
-//        #define GDISP_NEED_IMAGE_PNG_GRAYSCALE_124   TRUE
-//        #define GDISP_NEED_IMAGE_PNG_GRAYSCALE_8     TRUE
-//        #define GDISP_NEED_IMAGE_PNG_GRAYSCALE_16    TRUE
-//        #define GDISP_NEED_IMAGE_PNG_GRAYALPHA_8     TRUE
-//        #define GDISP_NEED_IMAGE_PNG_GRAYALPHA_16    TRUE
-//        #define GDISP_NEED_IMAGE_PNG_RGB_8           TRUE
-//        #define GDISP_NEED_IMAGE_PNG_RGB_16          TRUE
-//        #define GDISP_NEED_IMAGE_PNG_RGBALPHA_8      TRUE
-//        #define GDISP_NEED_IMAGE_PNG_RGBALPHA_16     TRUE
-//        #define GDISP_IMAGE_PNG_BLIT_BUFFER_SIZE     32
-//        #define GDISP_IMAGE_PNG_FILE_BUFFER_SIZE     8
-//        #define GDISP_IMAGE_PNG_Z_BUFFER_SIZE        32768
+#define GDISP_NEED_IMAGE_BMP                     TRUE
+        #define GDISP_NEED_IMAGE_BMP_1               TRUE
+        #define GDISP_NEED_IMAGE_BMP_4               TRUE
+        #define GDISP_NEED_IMAGE_BMP_4_RLE           TRUE
+        #define GDISP_NEED_IMAGE_BMP_8               TRUE
+        #define GDISP_NEED_IMAGE_BMP_8_RLE           TRUE
+        #define GDISP_NEED_IMAGE_BMP_16              TRUE
+        #define GDISP_NEED_IMAGE_BMP_24              TRUE
+        #define GDISP_NEED_IMAGE_BMP_32              TRUE
+        #define GDISP_IMAGE_BMP_BLIT_BUFFER_SIZE     32
+//#define GDISP_NEED_IMAGE_JPG                     TRUE
+#define GDISP_NEED_IMAGE_PNG                     TRUE
+        #define GDISP_NEED_IMAGE_PNG_INTERLACED      FALSE
+        #define GDISP_NEED_IMAGE_PNG_TRANSPARENCY    TRUE
+        #define GDISP_NEED_IMAGE_PNG_BACKGROUND      TRUE
+        #define GDISP_NEED_IMAGE_PNG_ALPHACLIFF      32
+        #define GDISP_NEED_IMAGE_PNG_PALETTE_124     TRUE
+        #define GDISP_NEED_IMAGE_PNG_PALETTE_8       TRUE
+        #define GDISP_NEED_IMAGE_PNG_GRAYSCALE_124   TRUE
+        #define GDISP_NEED_IMAGE_PNG_GRAYSCALE_8     TRUE
+        #define GDISP_NEED_IMAGE_PNG_GRAYSCALE_16    TRUE
+        #define GDISP_NEED_IMAGE_PNG_GRAYALPHA_8     TRUE
+        #define GDISP_NEED_IMAGE_PNG_GRAYALPHA_16    TRUE
+        #define GDISP_NEED_IMAGE_PNG_RGB_8           TRUE
+        #define GDISP_NEED_IMAGE_PNG_RGB_16          TRUE
+        #define GDISP_NEED_IMAGE_PNG_RGBALPHA_8      TRUE
+        #define GDISP_NEED_IMAGE_PNG_RGBALPHA_16     TRUE
+        #define GDISP_IMAGE_PNG_BLIT_BUFFER_SIZE     32
+        #define GDISP_IMAGE_PNG_FILE_BUFFER_SIZE     8
+        #define GDISP_IMAGE_PNG_Z_BUFFER_SIZE        32768
 //    #define GDISP_NEED_IMAGE_ACCOUNTING              FALSE
 
 //#define GDISP_NEED_PIXMAP                            FALSE
@@ -316,13 +316,14 @@
 //#define GFILE_NEED_STRINGS                           FALSE
 //#define GFILE_NEED_FILELISTS                         FALSE
 //#define GFILE_NEED_STDIO                             FALSE
-//#define GFILE_NEED_NOAUTOMOUNT                       FALSE
+//#define GFILE_NEED_NOAUTOMOUNT                       TRUE
 //#define GFILE_NEED_NOAUTOSYNC                        FALSE
 
 //#define GFILE_NEED_MEMFS                             FALSE
-//#define GFILE_NEED_ROMFS                             FALSE
+#define GFILE_NEED_ROMFS                             TRUE
 //#define GFILE_NEED_RAMFS                             FALSE
-//#define GFILE_NEED_FATFS                             FALSE
+//#define GFILE_NEED_FATFS                             TRUE
+//#define GFILE_FATFS_EXTERNAL_LIB                     TRUE
 //#define GFILE_NEED_NATIVEFS                          FALSE
 //#define GFILE_NEED_CHBIOSFS                          FALSE
 //#define GFILE_NEED_USERFS                            FALSE
@@ -330,6 +331,7 @@
 //#define GFILE_ALLOW_FLOATS                           FALSE
 //#define GFILE_ALLOW_DEVICESPECIFIC                   FALSE
 //#define GFILE_MAX_GFILES                             3
+#define GFILE_MAX_GFILES                             10
 
 ///////////////////////////////////////////////////////////////////////////
 // GADC                                                                  //
