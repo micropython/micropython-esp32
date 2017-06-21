@@ -82,13 +82,13 @@
 
 #define GDISP_NEED_CIRCLE                            TRUE
 //#define GDISP_NEED_DUALCIRCLE                        FALSE
-#define GDISP_NEED_ELLIPSE                           TRUE	
+#define GDISP_NEED_ELLIPSE                           TRUE
 #define GDISP_NEED_ARC                               TRUE
 //#define GDISP_NEED_ARCSECTORS                        FALSE
 #define GDISP_NEED_CONVEX_POLYGON                    TRUE
 //#define GDISP_NEED_SCROLL                            FALSE
 //#define GDISP_NEED_PIXELREAD                         FALSE
-//#define GDISP_NEED_CONTROL                           FALSE
+#define GDISP_NEED_CONTROL                           TRUE
 //#define GDISP_NEED_QUERY                             FALSE
 //#define GDISP_NEED_MULTITHREAD                       FALSE
 #define GDISP_NEED_MULTITHREAD                       TRUE
@@ -121,8 +121,8 @@
 //    #define GDISP_INCLUDE_FONT_DEJAVUSANSBOLD12_AA   FALSE
 #define GDISP_INCLUDE_USER_FONTS                 TRUE
 
-//#define GDISP_NEED_IMAGE                             FALSE
-//    #define GDISP_NEED_IMAGE_NATIVE                  FALSE
+#define GDISP_NEED_IMAGE                         TRUE
+#define GDISP_NEED_IMAGE_NATIVE                  TRUE
 //    #define GDISP_NEED_IMAGE_GIF                     FALSE
 //        #define GDISP_IMAGE_GIF_BLIT_BUFFER_SIZE     32
 //    #define GDISP_NEED_IMAGE_BMP                     FALSE
@@ -160,7 +160,7 @@
 //#define GDISP_NEED_PIXMAP                            FALSE
 //    #define GDISP_NEED_PIXMAP_IMAGE                  FALSE
 
-//#define GDISP_DEFAULT_ORIENTATION                    GDISP_ROTATE_LANDSCAPE    // If not defined the native hardware orientation is used.
+#define GDISP_DEFAULT_ORIENTATION                    GDISP_ROTATE_LANDSCAPE    // If not defined the native hardware orientation is used.
 //#define GDISP_LINEBUF_SIZE                           128
 #define GDISP_STARTUP_COLOR                          White
 //#define GDISP_NEED_STARTUP_LOGO                      TRUE
@@ -196,9 +196,9 @@
 ///////////////////////////////////////////////////////////////////////////
 // GWIN                                                                  //
 ///////////////////////////////////////////////////////////////////////////
-//#define GFX_USE_GWIN                                 FALSE
+#define GFX_USE_GWIN                                 TRUE
 
-//#define GWIN_NEED_WINDOWMANAGER                      FALSE
+#define GWIN_NEED_WINDOWMANAGER                      TRUE
 //    #define GWIN_REDRAW_IMMEDIATE                    FALSE
 //    #define GWIN_REDRAW_SINGLEOP                     FALSE
 //    #define GWIN_NEED_FLASHING                       FALSE
@@ -214,33 +214,33 @@
 //#define GWIN_NEED_GRAPH                              FALSE
 //#define GWIN_NEED_GL3D                               FALSE
 
-//#define GWIN_NEED_WIDGET                             FALSE
+#define GWIN_NEED_WIDGET                             TRUE
 //#define GWIN_FOCUS_HIGHLIGHT_WIDTH                   1
-//    #define GWIN_NEED_LABEL                          FALSE
-//        #define GWIN_LABEL_ATTRIBUTE                 FALSE
-//    #define GWIN_NEED_BUTTON                         FALSE
+#define GWIN_NEED_LABEL                          TRUE
+#define GWIN_LABEL_ATTRIBUTE                 TRUE
+#define GWIN_NEED_BUTTON                         TRUE
 //        #define GWIN_BUTTON_LAZY_RELEASE             FALSE
 //    #define GWIN_NEED_SLIDER                         FALSE
 //        #define GWIN_SLIDER_NOSNAP                   FALSE
 //        #define GWIN_SLIDER_DEAD_BAND                5
 //        #define GWIN_SLIDER_TOGGLE_INC               20
-//    #define GWIN_NEED_CHECKBOX                       FALSE
-//    #define GWIN_NEED_IMAGE                          FALSE
+#define GWIN_NEED_CHECKBOX                       TRUE
+#define GWIN_NEED_IMAGE                          TRUE
 //        #define GWIN_NEED_IMAGE_ANIMATION            FALSE
-//    #define GWIN_NEED_RADIO                          FALSE
-//    #define GWIN_NEED_LIST                           FALSE
-//        #define GWIN_NEED_LIST_IMAGES                FALSE
+#define GWIN_NEED_RADIO                          TRUE
+#define GWIN_NEED_LIST                           TRUE
+#define GWIN_NEED_LIST_IMAGES                TRUE
 //    #define GWIN_NEED_PROGRESSBAR                    FALSE
 //        #define GWIN_PROGRESSBAR_AUTO                FALSE
-//    #define GWIN_NEED_KEYBOARD                       FALSE
-//        #define GWIN_KEYBOARD_DEFAULT_LAYOUT         VirtualKeyboard_English1
-//        #define GWIN_NEED_KEYBOARD_ENGLISH1          TRUE
-//    #define GWIN_NEED_TEXTEDIT                       FALSE
+#define GWIN_NEED_KEYBOARD                       TRUE
+#define GWIN_KEYBOARD_DEFAULT_LAYOUT         VirtualKeyboard_English1
+#define GWIN_NEED_KEYBOARD_ENGLISH1          TRUE
+#define GWIN_NEED_TEXTEDIT                       TRUE
 //    #define GWIN_FLAT_STYLING                        FALSE
 //    #define GWIN_WIDGET_TAGS                         FALSE
 
-//#define GWIN_NEED_CONTAINERS                         FALSE
-//    #define GWIN_NEED_CONTAINER                      FALSE
+#define GWIN_NEED_CONTAINERS                         TRUE
+#define GWIN_NEED_CONTAINER                      TRUE
 //    #define GWIN_NEED_FRAME                          FALSE
 //    #define GWIN_NEED_TABSET                         FALSE
 //        #define GWIN_TABSET_TABHEIGHT                18
@@ -274,9 +274,9 @@
 ///////////////////////////////////////////////////////////////////////////
 // GQUEUE                                                                //
 ///////////////////////////////////////////////////////////////////////////
-//#define GFX_USE_GQUEUE                               FALSE
+#define GFX_USE_GQUEUE                               TRUE
 
-//#define GQUEUE_NEED_ASYNC                            FALSE
+#define GQUEUE_NEED_ASYNC                            TRUE
 //#define GQUEUE_NEED_GSYNC                            FALSE
 //#define GQUEUE_NEED_FSYNC                            FALSE
 //#define GQUEUE_NEED_BUFFERS                          FALSE
@@ -309,7 +309,7 @@
 ///////////////////////////////////////////////////////////////////////////
 // GFILE                                                                 //
 ///////////////////////////////////////////////////////////////////////////
-//#define GFX_USE_GFILE                                FALSE
+#define GFX_USE_GFILE                                TRUE
 
 //#define GFILE_NEED_PRINTG                            FALSE
 //#define GFILE_NEED_SCANG                             FALSE
