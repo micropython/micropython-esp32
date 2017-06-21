@@ -149,7 +149,7 @@ def url_open(url):
 
 
 def get_pkg_metadata(name):
-    f = url_open("https://badge.sha2017.org/eggs/%s/json" % name)
+    f = url_open("https://badge.sha2017.org/eggs/get/%s/json" % name)
     try:
         return json.load(f)
     finally:
