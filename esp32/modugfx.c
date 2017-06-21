@@ -75,31 +75,31 @@ static orientation_t get_orientation(int a){
 
 // Our default style - a white background theme
 const GWidgetStyle BWWhiteWidgetStyle = {
-    HTML2COLOR(0xFFFFFF),           // window background
-    HTML2COLOR(0x000000),           // focused
+    White,           // window background
+    Black,           // focused
 
     // enabled color set
     {
-        HTML2COLOR(0x000000),       // text
-        HTML2COLOR(0x000000),       // edge
-        HTML2COLOR(0xFFFFFF),       // fill
-        HTML2COLOR(0x000000)        // progress - active area
+        Black,       // text
+        Black,       // edge
+        White,       // fill
+        Black        // progress - active area
     },
 
     // disabled color set
     {
-        HTML2COLOR(0xC0C0C0),       // text
-        HTML2COLOR(0x808080),       // edge
-        HTML2COLOR(0xE0E0E0),       // fill
-        HTML2COLOR(0xC0E0C0)        // progress - active area
+        Black,       // text
+        White,       // edge
+        White,       // fill
+        White        // progress - active area
     },
 
     // pressed color set
     {
-        HTML2COLOR(0xFF0000),       // text
-        HTML2COLOR(0x404040),       // edge
-        HTML2COLOR(0x808080),       // fill
-        HTML2COLOR(0x00E000)        // progress - active area
+        White,       // text
+        White,       // edge
+        Black,       // fill
+        Black        // progress - active area
     }
 };
 

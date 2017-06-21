@@ -527,12 +527,12 @@ void BWgwinListDefaultDraw(GWidgetObject* gw, void* param) {
 		gdispGFillArea(gw->g.display, gw->g.x+iwidth+2, gw->g.y+1, LST_SCROLLWIDTH, gw->g.height-2, gdispBlendColor(ps->fill, gw->pstyle->background, 128));
 		gdispGDrawLine(gw->g.display, gw->g.x+iwidth+1, gw->g.y+1, gw->g.x+iwidth+1, gw->g.y+gw->g.height-2, ps->edge);
 		#if GDISP_NEED_CONVEX_POLYGON
-			gdispGFillConvexPoly(gw->g.display, gw->g.x+iwidth+((LST_SCROLLWIDTH-LST_ARROW_SZ)/2+2), gw->g.y+(LST_ARROW_SZ/2+1), upArrow, 3, ~ps->fill);
-			gdispGFillConvexPoly(gw->g.display, gw->g.x+iwidth+((LST_SCROLLWIDTH-LST_ARROW_SZ)/2+2), gw->g.y+gw->g.height-(LST_ARROW_SZ+LST_ARROW_SZ/2+1), downArrow, 3, ~ps->fill);
+			gdispGFillConvexPoly(gw->g.display, gw->g.x+iwidth+((LST_SCROLLWIDTH-LST_ARROW_SZ)/2+2), gw->g.y+(LST_ARROW_SZ/2+1), upArrow, 3, !ps->fill);
+			gdispGFillConvexPoly(gw->g.display, gw->g.x+iwidth+((LST_SCROLLWIDTH-LST_ARROW_SZ)/2+2), gw->g.y+gw->g.height-(LST_ARROW_SZ+LST_ARROW_SZ/2+1), downArrow, 3, !ps->fill);
 		#else
 			#warning "GWIN: Lists display better when GDISP_NEED_CONVEX_POLYGON is turned on"
-			gdispGFillArea(gw->g.display, gw->g.x+iwidth+((LST_SCROLLWIDTH-LST_ARROW_SZ)/2+2), gw->g.y+(LST_ARROW_SZ/2+1), LST_ARROW_SZ, LST_ARROW_SZ, ~ps->fill);
-			gdispGFillArea(gw->g.display, gw->g.x+iwidth+((LST_SCROLLWIDTH-LST_ARROW_SZ)/2+2), gw->g.y+gw->g.height-(LST_ARROW_SZ+LST_ARROW_SZ/2+1), LST_ARROW_SZ, LST_ARROW_SZ, ~ps->fill);
+			gdispGFillArea(gw->g.display, gw->g.x+iwidth+((LST_SCROLLWIDTH-LST_ARROW_SZ)/2+2), gw->g.y+(LST_ARROW_SZ/2+1), LST_ARROW_SZ, LST_ARROW_SZ, !ps->fill);
+			gdispGFillArea(gw->g.display, gw->g.x+iwidth+((LST_SCROLLWIDTH-LST_ARROW_SZ)/2+2), gw->g.y+gw->g.height-(LST_ARROW_SZ+LST_ARROW_SZ/2+1), LST_ARROW_SZ, LST_ARROW_SZ, !ps->fill);
 		#endif
 	} else
 		iwidth = gw->g.width - 2;
@@ -559,8 +559,10 @@ void BWgwinListDefaultDraw(GWidgetObject* gw, void* param) {
 	// Draw until we run out of room or items
 	for (y = 1-(gw2obj->top%iheight); y < gw->g.height-2 && qi; qi = gfxQueueASyncNext(qi), y += iheight) {
         /*fill = (qi2li->flags & GLIST_FLG_SELECTED) ? ps->fill : gw->pstyle->background;*/
-		fill = (qi2li->flags & GLIST_FLG_SELECTED) ? ~ps->fill : ps->fill;
-		color_t text = (qi2li->flags & GLIST_FLG_SELECTED) ? ps->fill : ~ps->fill;
+		fill = (qi2li->flags & GLIST_FLG_SELECTED) ? !ps->fill : ps->fill;
+		printf("fill %d\n", fill);
+		color_t text = (qi2li->flags & GLIST_FLG_SELECTED) ? ps->fill : !ps->fill;
+		printf("text %d\n", text);
 		gdispGFillArea(gw->g.display, gw->g.x+1, gw->g.y+y, iwidth, iheight, fill);
 		#if GWIN_NEED_LIST_IMAGES
 			if ((gw->g.flags & GLIST_FLG_HASIMAGES)) {
