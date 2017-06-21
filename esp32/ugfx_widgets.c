@@ -560,9 +560,7 @@ void BWgwinListDefaultDraw(GWidgetObject* gw, void* param) {
 	for (y = 1-(gw2obj->top%iheight); y < gw->g.height-2 && qi; qi = gfxQueueASyncNext(qi), y += iheight) {
         /*fill = (qi2li->flags & GLIST_FLG_SELECTED) ? ps->fill : gw->pstyle->background;*/
 		fill = (qi2li->flags & GLIST_FLG_SELECTED) ? !ps->fill : ps->fill;
-		printf("fill %d\n", fill);
 		color_t text = (qi2li->flags & GLIST_FLG_SELECTED) ? ps->fill : !ps->fill;
-		printf("text %d\n", text);
 		gdispGFillArea(gw->g.display, gw->g.x+1, gw->g.y+y, iwidth, iheight, fill);
 		#if GWIN_NEED_LIST_IMAGES
 			if ((gw->g.flags & GLIST_FLG_HASIMAGES)) {
