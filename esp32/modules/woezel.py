@@ -244,12 +244,11 @@ def display_pkg(packages):
         print("  Description: " + package["description"])
 
 
-def list():
-    packages = get_pkg_list()
-    display_pkg(packages)
-
-def search(query):
-    packages = search_pkg_list(query)
+def search(query="*"):
+    if query == "*":
+        packages = get_pkg_list()
+    else:
+        packages = search_pkg_list(query)
     display_pkg(packages)
 
 def get_install_path():
