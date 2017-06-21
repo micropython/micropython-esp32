@@ -1139,8 +1139,6 @@ STATIC const mp_rom_map_elem_t ugfx_module_globals_table[] = {
 
     { MP_OBJ_NEW_QSTR(MP_QSTR_send_tab), (mp_obj_t)&ugfx_send_tab_obj },
 
-    { MP_OBJ_NEW_QSTR(MP_QSTR_display_image), (mp_obj_t)&ugfx_display_image_obj },
-
     { MP_OBJ_NEW_QSTR(MP_QSTR_Button), (mp_obj_t)&ugfx_button_type },
     { MP_OBJ_NEW_QSTR(MP_QSTR_Container), (mp_obj_t)&ugfx_container_type },
     // { MP_OBJ_NEW_QSTR(MP_QSTR_Graph), (mp_obj_t)&ugfx_graph_type },
