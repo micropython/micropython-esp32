@@ -236,6 +236,7 @@ STATIC mp_obj_t ugfx_button_make_new(const mp_obj_type_t *type, mp_uint_t n_args
     wi.g.x = vals[0].u_int;
 	wi.text = 0;
 
+    if(n_args > 7)
 	switch (vals[7].u_int){
 		case BUTTON_ROUNDED:
 			wi.customDraw = gwinButtonDraw_Rounded;
@@ -261,14 +262,14 @@ STATIC mp_obj_t ugfx_button_make_new(const mp_obj_type_t *type, mp_uint_t n_args
 
 	// Apply parent
     wi.g.parent = NULL;
-    if (MP_OBJ_IS_TYPE(vals[5].u_obj, &ugfx_container_type)) {
+    if (n_args > 5 && MP_OBJ_IS_TYPE(vals[5].u_obj, &ugfx_container_type)) {
         ugfx_container_obj_t *container = vals[5].u_obj;
         wi.g.parent = container->ghContainer;
         wi.customStyle = container->style;
     }
 
 	// Apply style
-    if (MP_OBJ_IS_TYPE(vals[8].u_obj, &ugfx_style_type)) {
+    if (n_args > 8 && MP_OBJ_IS_TYPE(vals[8].u_obj, &ugfx_style_type)) {
         ugfx_style_obj_t *sty = vals[8].u_obj;
         wi.customStyle = &(sty->style);
     }
@@ -280,7 +281,7 @@ STATIC mp_obj_t ugfx_button_make_new(const mp_obj_type_t *type, mp_uint_t n_args
 	gwinSetText(btn->ghButton,mp_obj_str_get_str(vals[4].u_obj),TRUE);
 
     // input
-    if (MP_OBJ_IS_INT(vals[6].u_obj)) {
+    if (n_args > 6 && MP_OBJ_IS_INT(vals[6].u_obj)) {
         gwinAttachToggle(btn->ghButton, 0, mp_obj_get_int(vals[6].u_obj));
     }
 
@@ -385,19 +386,19 @@ STATIC mp_obj_t ugfx_textbox_make_new(const mp_obj_type_t *type, mp_uint_t n_arg
     wi.g.x = vals[0].u_int;
     wi.text = 0;
 	// text
-    if (MP_OBJ_IS_STR(vals[4].u_obj))
+    if (n_args > 4 && MP_OBJ_IS_STR(vals[4].u_obj))
         wi.text =  mp_obj_str_get_str(vals[4].u_obj);
 
 	// Apply parent
     wi.g.parent = NULL;
-    if (MP_OBJ_IS_TYPE(vals[5].u_obj, &ugfx_container_type)) {
+    if (n_args > 5 && MP_OBJ_IS_TYPE(vals[5].u_obj, &ugfx_container_type)) {
         ugfx_container_obj_t *container = vals[5].u_obj;
         wi.g.parent = container->ghContainer;
         wi.customStyle = container->style;
     }
 
 	// Apply style
-    if (MP_OBJ_IS_TYPE(vals[7].u_obj, &ugfx_style_type)) {
+    if (n_args > 7 && MP_OBJ_IS_TYPE(vals[7].u_obj, &ugfx_style_type)) {
         ugfx_style_obj_t *sty = vals[7].u_obj;
         wi.customStyle = &(sty->style);
     }
@@ -480,6 +481,111 @@ STATIC const mp_arg_t ugfx_list_make_new_args[] = {
 };
 #define UGFX_LIST_MAKE_NEW_NUM_ARGS MP_ARRAY_SIZE(ugfx_list_make_new_args)
 
+#define LST_SCROLLWIDTH		12	// the border from the scroll buttons to the frame
+#define LST_ARROW_SZ		8	// arrow side length
+#define LST_HORIZ_PAD		5	// extra horizontal padding for text
+#define LST_VERT_PAD		2	// extra vertical padding for text
+// Macro's to assist in data type conversions
+#define gh2obj		((GListObject *)gh)
+#define gw2obj		((GListObject *)gw)
+#define qi2li		((ListItem *)qi)
+#define qix2li		((ListItem *)qix)
+#define ple			((GEventGWinList *)pe)
+void BWgwinListDefaultDraw(GWidgetObject* gw, void* param) {
+	const gfxQueueASyncItem*	qi;
+	int							i;
+	coord_t						x, y, iheight, iwidth;
+	color_t						fill;
+	const GColorSet *			ps;
+	#if GWIN_NEED_LIST_IMAGES
+		coord_t					sy;
+	#endif
+	#if GDISP_NEED_CONVEX_POLYGON
+		static const point upArrow[] = { {0, LST_ARROW_SZ}, {LST_ARROW_SZ, LST_ARROW_SZ}, {LST_ARROW_SZ/2, 0} };
+		static const point downArrow[] = { {0, 0}, {LST_ARROW_SZ, 0}, {LST_ARROW_SZ/2, LST_ARROW_SZ} };
+	#endif
+
+	(void)param;
+
+	ps = (gw->g.flags & GWIN_FLG_SYSENABLED) ? &gw->pstyle->enabled : &gw->pstyle->disabled;
+	iheight = gdispGetFontMetric(gw->g.font, fontHeight) + LST_VERT_PAD;
+	x = 1;
+
+	// the scroll area
+	if (gw->g.flags & GLIST_FLG_SCROLLSMOOTH) {
+		iwidth = gw->g.width - 2 - 4;
+		if (gw2obj->cnt > 0) {
+			int max_scroll_value = gw2obj->cnt * iheight - gw->g.height-2;
+			if (max_scroll_value > 0) {
+				int bar_height = (gw->g.height-2) * (gw->g.height-2) / (gw2obj->cnt * iheight);
+				gdispGFillArea(gw->g.display, gw->g.x + gw->g.width-4, gw->g.y + 1, 2, gw->g.height-1, gw->pstyle->background);
+				gdispGFillArea(gw->g.display, gw->g.x + gw->g.width-4, gw->g.y + gw2obj->top * ((gw->g.height-2)-bar_height) / max_scroll_value, 2, bar_height, ps->edge);
+			}
+		}
+	} else if ((gw2obj->cnt > (gw->g.height-2) / iheight) || (gw->g.flags & GLIST_FLG_SCROLLALWAYS)) {
+		iwidth = gw->g.width - (LST_SCROLLWIDTH+3);
+		gdispGFillArea(gw->g.display, gw->g.x+iwidth+2, gw->g.y+1, LST_SCROLLWIDTH, gw->g.height-2, gdispBlendColor(ps->fill, gw->pstyle->background, 128));
+		gdispGDrawLine(gw->g.display, gw->g.x+iwidth+1, gw->g.y+1, gw->g.x+iwidth+1, gw->g.y+gw->g.height-2, ps->edge);
+		#if GDISP_NEED_CONVEX_POLYGON
+			gdispGFillConvexPoly(gw->g.display, gw->g.x+iwidth+((LST_SCROLLWIDTH-LST_ARROW_SZ)/2+2), gw->g.y+(LST_ARROW_SZ/2+1), upArrow, 3, ~ps->fill);
+			gdispGFillConvexPoly(gw->g.display, gw->g.x+iwidth+((LST_SCROLLWIDTH-LST_ARROW_SZ)/2+2), gw->g.y+gw->g.height-(LST_ARROW_SZ+LST_ARROW_SZ/2+1), downArrow, 3, ~ps->fill);
+		#else
+			#warning "GWIN: Lists display better when GDISP_NEED_CONVEX_POLYGON is turned on"
+			gdispGFillArea(gw->g.display, gw->g.x+iwidth+((LST_SCROLLWIDTH-LST_ARROW_SZ)/2+2), gw->g.y+(LST_ARROW_SZ/2+1), LST_ARROW_SZ, LST_ARROW_SZ, ~ps->fill);
+			gdispGFillArea(gw->g.display, gw->g.x+iwidth+((LST_SCROLLWIDTH-LST_ARROW_SZ)/2+2), gw->g.y+gw->g.height-(LST_ARROW_SZ+LST_ARROW_SZ/2+1), LST_ARROW_SZ, LST_ARROW_SZ, ~ps->fill);
+		#endif
+	} else
+		iwidth = gw->g.width - 2;
+
+	#if GWIN_NEED_LIST_IMAGES
+		if ((gw->g.flags & GLIST_FLG_HASIMAGES)) {
+			x += iheight;
+			iwidth -= iheight;
+		}
+	#endif
+
+
+	// Find the top item
+	for (qi = gfxQueueASyncPeek(&gw2obj->list_head), i = iheight - 1; i < gw2obj->top && qi; qi = gfxQueueASyncNext(qi), i+=iheight);
+
+	// the list frame
+	gdispGDrawBox(gw->g.display, gw->g.x, gw->g.y, gw->g.width, gw->g.height, ps->edge);
+
+	// Set the clipping region so we do not override the frame.
+	#if GDISP_NEED_CLIP
+		gdispGSetClip(gw->g.display, gw->g.x+1, gw->g.y+1, gw->g.width-2, gw->g.height-2);
+	#endif
+
+	// Draw until we run out of room or items
+	for (y = 1-(gw2obj->top%iheight); y < gw->g.height-2 && qi; qi = gfxQueueASyncNext(qi), y += iheight) {
+        /*fill = (qi2li->flags & GLIST_FLG_SELECTED) ? ps->fill : gw->pstyle->background;*/
+		fill = (qi2li->flags & GLIST_FLG_SELECTED) ? ~ps->fill : ps->fill;
+		color_t text = (qi2li->flags & GLIST_FLG_SELECTED) ? ps->fill : ~ps->fill;
+		gdispGFillArea(gw->g.display, gw->g.x+1, gw->g.y+y, iwidth, iheight, fill);
+		#if GWIN_NEED_LIST_IMAGES
+			if ((gw->g.flags & GLIST_FLG_HASIMAGES)) {
+				// Clear the image area
+				if (qi2li->pimg && gdispImageIsOpen(qi2li->pimg)) {
+					// Calculate which image
+					sy = (qi2li->flags & GLIST_FLG_SELECTED) ? 0 : (iheight-LST_VERT_PAD);
+					if (!(gw->g.flags & GWIN_FLG_SYSENABLED))
+						sy += 2*(iheight-LST_VERT_PAD);
+					while (sy > qi2li->pimg->height)
+						sy -= iheight-LST_VERT_PAD;
+					// Draw the image
+					gdispImageSetBgColor(qi2li->pimg, fill);
+					gdispGImageDraw(gw->g.display, qi2li->pimg, gw->g.x+1, gw->g.y+y, iheight-LST_VERT_PAD, iheight-LST_VERT_PAD, 0, sy);
+				}
+			}
+		#endif
+		gdispGFillStringBox(gw->g.display, gw->g.x+x+LST_HORIZ_PAD, gw->g.y+y, iwidth-LST_HORIZ_PAD, iheight, qi2li->text, gw->g.font, text, fill, justifyLeft);
+	}
+
+	// Fill any remaining item space
+	if (y < gw->g.height-1)
+		gdispGFillArea(gw->g.display, gw->g.x+1, gw->g.y+y, iwidth, gw->g.height-1-y, gw->pstyle->background);
+}
+
 STATIC mp_obj_t ugfx_list_make_new(const mp_obj_type_t *type, mp_uint_t n_args, mp_uint_t n_kw, const mp_obj_t *args) {
     // check arguments
     mp_arg_val_t vals[UGFX_LIST_MAKE_NEW_NUM_ARGS];
@@ -505,22 +611,25 @@ STATIC mp_obj_t ugfx_list_make_new(const mp_obj_type_t *type, mp_uint_t n_args, 
 
     // Apply parent
     wi.g.parent = NULL;
-	if (MP_OBJ_IS_TYPE(vals[4].u_obj, &ugfx_container_type)) {
-        ugfx_container_obj_t *container = vals[4].u_obj;
-		wi.g.parent = container->ghContainer;
-		wi.customStyle = container->style;
-	}
 
-	// Apply style
-    if (MP_OBJ_IS_TYPE(vals[7].u_obj, &ugfx_style_type)) {
+    if (n_args > 4 && MP_OBJ_IS_TYPE(vals[4].u_obj, &ugfx_container_type)) {
+        ugfx_container_obj_t *container = vals[4].u_obj;
+        wi.g.parent = container->ghContainer;
+        wi.customStyle = container->style;
+    }
+
+    // Apply style
+    if (n_args > 7 && MP_OBJ_IS_TYPE(vals[7].u_obj, &ugfx_style_type)) {
         ugfx_style_obj_t *sty = vals[7].u_obj;
         wi.customStyle = &(sty->style);
     }
 
+    wi.customDraw = BWgwinListDefaultDraw;
+
 	// Create the actual list
 	lst->ghList = gwinListCreate(NULL, &wi, FALSE);   //FALSE - no multiselect
 
-	//gwinListSetScroll(lst->ghList,scrollAlways);
+    //gwinListSetScroll(lst->ghList,scrollAlways);
 
     // attach default inputs
     gwinAttachToggle(lst->ghList, 1, vals[5].u_int);
@@ -665,6 +774,7 @@ STATIC const mp_map_elem_t ugfx_list_locals_dict_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR_text), (mp_obj_t)&ugfx_widget_text_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_disable_draw), (mp_obj_t)&ugfx_list_disable_draw_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_enable_draw), (mp_obj_t)&ugfx_list_enable_draw_obj },
+	{ MP_OBJ_NEW_QSTR(MP_QSTR_set_focus), (mp_obj_t)&ugfx_widget_set_focus_obj },
 	{ MP_OBJ_NEW_QSTR(MP_QSTR_style), (mp_obj_t)&ugfx_widget_style_obj },
 	{ MP_OBJ_NEW_QSTR(MP_QSTR_enabled), (mp_obj_t)&ugfx_widget_enabled_obj },
 
@@ -744,14 +854,14 @@ STATIC mp_obj_t ugfx_keyboard_make_new(const mp_obj_type_t *type, mp_uint_t n_ar
 
 	// Apply parent
     wi.g.parent = NULL;
-    if (MP_OBJ_IS_TYPE(vals[4].u_obj, &ugfx_container_type)) {
+    if (n_args > 4 && MP_OBJ_IS_TYPE(vals[4].u_obj, &ugfx_container_type)) {
         ugfx_container_obj_t *container = vals[4].u_obj;
         wi.g.parent = container->ghContainer;
         wi.customStyle = container->style;
     }
 
 	// Apply style
-    if (MP_OBJ_IS_TYPE(vals[10].u_obj, &ugfx_style_type)) {
+    if (n_args > 10 && MP_OBJ_IS_TYPE(vals[10].u_obj, &ugfx_style_type)) {
         ugfx_style_obj_t *sty = vals[10].u_obj;
         wi.customStyle = &(sty->style);
     }
@@ -987,14 +1097,14 @@ STATIC mp_obj_t ugfx_imagebox_make_new(const mp_obj_type_t *type, mp_uint_t n_ar
 	wi.g.x = vals[0].u_int;
 
 	wi.g.parent = NULL;
-    if (MP_OBJ_IS_TYPE(vals[5].u_obj, &ugfx_container_type)) {
+    if (n_args > 5 && MP_OBJ_IS_TYPE(vals[5].u_obj, &ugfx_container_type)) {
         ugfx_container_obj_t *container = vals[5].u_obj;
         wi.g.parent = container->ghContainer;
         wi.customStyle = container->style;
     }
 
 	// Apply style
-    if (MP_OBJ_IS_TYPE(vals[7].u_obj, &ugfx_style_type)) {
+    if (n_args > 7 && MP_OBJ_IS_TYPE(vals[7].u_obj, &ugfx_style_type)) {
         ugfx_style_obj_t *sty = vals[7].u_obj;
         wi.customStyle = &(sty->style);
     }
@@ -1141,14 +1251,14 @@ STATIC mp_obj_t ugfx_label_make_new(const mp_obj_type_t *type, mp_uint_t n_args,
 
 	// Apply parent
     wi.g.parent = NULL;
-    if (MP_OBJ_IS_TYPE(vals[5].u_obj, &ugfx_container_type)) {
+    if (n_args > 6 && MP_OBJ_IS_TYPE(vals[5].u_obj, &ugfx_container_type)) {
         ugfx_container_obj_t *container = vals[5].u_obj;
         wi.g.parent = container->ghContainer;
         wi.customStyle = container->style;
     }
 
 	// Apply style
-    if (MP_OBJ_IS_TYPE(vals[6].u_obj, &ugfx_style_type)) {
+    if (n_args > 6 && MP_OBJ_IS_TYPE(vals[6].u_obj, &ugfx_style_type)) {
         ugfx_style_obj_t *sty = vals[6].u_obj;
         wi.customStyle = &(sty->style);
     }
@@ -1359,14 +1469,14 @@ STATIC mp_obj_t ugfx_checkbox_make_new(const mp_obj_type_t *type, mp_uint_t n_ar
 
 	// Apply parent
     wi.g.parent = NULL;
-    if (MP_OBJ_IS_TYPE(vals[5].u_obj, &ugfx_container_type)) {
+    if (n_args > 5 && MP_OBJ_IS_TYPE(vals[5].u_obj, &ugfx_container_type)) {
         ugfx_container_obj_t *container = vals[5].u_obj;
         wi.g.parent = container->ghContainer;
         wi.customStyle = container->style;
     }
 
 	// Apply style
-    if (MP_OBJ_IS_TYPE(vals[7].u_obj, &ugfx_style_type)) {
+    if (n_args > 7 && MP_OBJ_IS_TYPE(vals[7].u_obj, &ugfx_style_type)) {
         ugfx_style_obj_t *sty = vals[7].u_obj;
         wi.customStyle = &(sty->style);
     }

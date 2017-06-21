@@ -317,8 +317,8 @@ STATIC mp_obj_t ugfx_polygon(mp_uint_t n_args, const mp_obj_t *args) {
 
 	mp_obj_t *mp_arr;
 	mp_obj_t *mp_arr2;
-	uint len;
-	uint len2;
+	size_t len;
+	size_t len2;
 	mp_obj_get_array(args[3], &len, &mp_arr);
 
 	if (len <= 20){
@@ -357,8 +357,8 @@ STATIC mp_obj_t ugfx_fill_polygon(mp_uint_t n_args, const mp_obj_t *args) {
 
 	mp_obj_t *mp_arr;
 	mp_obj_t *mp_arr2;
-	uint len;
-	uint len2;
+	size_t len;
+	size_t len2;
 	mp_obj_get_array(args[3], &len, &mp_arr);
 
 	if (len <= 20){
@@ -451,7 +451,7 @@ STATIC mp_obj_t ugfx_container_make_new(const mp_obj_type_t *type, mp_uint_t n_a
 	//wi.g.parent = ;
 	wi.text = 0;//text;
 
-	if (MP_OBJ_IS_TYPE(vals[4].u_obj, &ugfx_style_type)) {
+	if (n_args > 4 && MP_OBJ_IS_TYPE(vals[4].u_obj, &ugfx_style_type)) {
 		ugfx_style_obj_t *st = vals[4].u_obj;
 		wi.customStyle = &(st->style);
 		ctr->style = &(st->style);
