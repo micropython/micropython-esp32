@@ -28,7 +28,8 @@
  * THE SOFTWARE.
  */
 
-#include "modbadge.h"
+#include <stdlib.h>
+#include <stdio.h>
 
 #include "py/mperrno.h"
 #include "py/mphal.h"
@@ -76,27 +77,21 @@ STATIC mp_obj_t badge_power_init_() {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_power_init_obj, badge_power_init_);
 
-#if defined(PORTEXP_PIN_NUM_CHRGSTAT) || defined(MPR121_PIN_NUM_CHRGSTAT)
+
 STATIC mp_obj_t battery_charge_status_() {
-  return mp_obj_new_bool(badge_battery_charge_status());
+  return mp_obj_new_bool(true);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(battery_charge_status_obj,
                                  battery_charge_status_);
-#endif
-
-#ifdef ADC1_CHAN_VBAT_SENSE
 STATIC mp_obj_t battery_volt_sense_() {
-  return mp_obj_new_int(badge_battery_volt_sense());
+  return mp_obj_new_int(((float)rand())/RAND_MAX*1000+3500);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(battery_volt_sense_obj, battery_volt_sense_);
-#endif
 
-#ifdef ADC1_CHAN_VUSB_SENSE
 STATIC mp_obj_t usb_volt_sense_() {
-  return mp_obj_new_int(badge_usb_volt_sense());
+  return mp_obj_new_int(((float)rand())/RAND_MAX*1000+4100);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(usb_volt_sense_obj, usb_volt_sense_);
-#endif
 
 // LEDs
 
@@ -105,6 +100,21 @@ STATIC mp_obj_t badge_leds_init_() {
   return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_leds_init_obj, badge_leds_init_);
+
+
+STATIC mp_obj_t badge_leds_enable_() {
+  //badge_leds_enable();
+  return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_leds_enable_obj, badge_leds_enable_);
+
+
+STATIC mp_obj_t badge_leds_disable_() {
+  //badge_leds_disable();
+  return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_leds_disable_obj, badge_leds_disable_);
+
 
 STATIC mp_obj_t badge_leds_set_state_(mp_uint_t n_args, const mp_obj_t *args) {
   /*
@@ -128,33 +138,73 @@ STATIC mp_obj_t badge_leds_set_state_(mp_uint_t n_args, const mp_obj_t *args) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(badge_leds_set_state_obj, 1,1 ,badge_leds_set_state_);
 
+STATIC mp_obj_t badge_leds_send_data_(mp_uint_t n_args, const mp_obj_t *args) {
+  // mp_uint_t len = mp_obj_get_int(args[1]);
+  // uint8_t *leds = (uint8_t *)mp_obj_str_get_data(args[0], &len);
+  // return mp_obj_new_int(badge_leds_send_data(leds, len));
+  mp_uint_t len = mp_obj_get_int(args[1]);
+  uint8_t *rgbw = (uint8_t *)mp_obj_str_get_data(args[0], &len);
+  printf("LEDs: ");
+  for (int i=5; i>=0; i--) {
+      uint8_t r = rgbw[i*4+0];
+      uint8_t g = rgbw[i*4+1];
+      uint8_t b = rgbw[i*4+2];
+      printf("\x1b[48;2;%u;%u;%um", r, g, b);
+      printf("\x1b[38;2;%u;%u;%um", r, g, b);
+      printf(" \x1b[0m ");
+  }
+  printf("\n");
+  return mp_obj_new_int(0);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(badge_leds_send_data_obj, 2,2 ,badge_leds_send_data_);
+
+
+STATIC mp_obj_t badge_vibrator_init_() {
+  // badge_vibrator_init();
+  return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_vibrator_init_obj, badge_vibrator_init_);
+
+STATIC mp_obj_t badge_vibrator_activate_(mp_uint_t n_args, const mp_obj_t *args) {
+  int pattern = mp_obj_get_int(args[0]);
+  while (pattern != 0)
+	{
+		if ((pattern & 1) != 0)
+      printf("\a");
+		pattern >>= 1;
+		mp_hal_delay_ms(200);
+	}
+	// badge_vibrator_off();
+  return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(badge_vibrator_activate_obj, 1,1 ,badge_vibrator_activate_);
+
 // Module globals
 
 STATIC const mp_rom_map_elem_t mock_badge_module_globals_table[] = {
-    {MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_badge)},
+  {MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_badge)},
 
-    {MP_ROM_QSTR(MP_QSTR_init), MP_ROM_PTR(&badge_init_obj)},
-    {MP_ROM_QSTR(MP_QSTR_eink_init), MP_ROM_PTR(&badge_eink_init_obj)},
-    {MP_OBJ_NEW_QSTR(MP_QSTR_power_init), (mp_obj_t)&badge_power_init_obj},
-    {MP_OBJ_NEW_QSTR(MP_QSTR_leds_init), (mp_obj_t)&badge_leds_init_obj},
-    {MP_OBJ_NEW_QSTR(MP_QSTR_leds_set_state), (mp_obj_t)&badge_leds_set_state_obj},
+  {MP_ROM_QSTR(MP_QSTR_init), MP_ROM_PTR(&badge_init_obj)},
+  {MP_ROM_QSTR(MP_QSTR_eink_init), MP_ROM_PTR(&badge_eink_init_obj)},
+  {MP_OBJ_NEW_QSTR(MP_QSTR_power_init), (mp_obj_t)&badge_power_init_obj},
 
-    /*
-    {MP_ROM_QSTR(MP_QSTR_display_picture),
-     MP_ROM_PTR(&badge_display_picture_obj)},
-    */
+  {MP_OBJ_NEW_QSTR(MP_QSTR_leds_init), (mp_obj_t)&badge_leds_init_obj},
+  {MP_OBJ_NEW_QSTR(MP_QSTR_leds_enable), (mp_obj_t)&badge_leds_enable_obj},
+  {MP_OBJ_NEW_QSTR(MP_QSTR_leds_disable), (mp_obj_t)&badge_leds_disable_obj},
+  {MP_OBJ_NEW_QSTR(MP_QSTR_leds_send_data), (mp_obj_t)&badge_leds_send_data_obj},
+  {MP_OBJ_NEW_QSTR(MP_QSTR_leds_set_state), (mp_obj_t)&badge_leds_set_state_obj},
 
-#if defined(PORTEXP_PIN_NUM_CHRGSTAT) || defined(MPR121_PIN_NUM_CHRGSTAT)
-    {MP_OBJ_NEW_QSTR(MP_QSTR_battery_charge_status),
-     (mp_obj_t)&battery_charge_status_obj},
-#endif
-#ifdef ADC1_CHAN_VBAT_SENSE
-    {MP_OBJ_NEW_QSTR(MP_QSTR_battery_volt_sense),
-     (mp_obj_t)&battery_volt_sense_obj},
-#endif
-#ifdef ADC1_CHAN_VUSB_SENSE
-    {MP_OBJ_NEW_QSTR(MP_QSTR_usb_volt_sense), (mp_obj_t)&usb_volt_sense_obj},
-#endif
+  {MP_OBJ_NEW_QSTR(MP_QSTR_vibrator_init), (mp_obj_t)&badge_vibrator_init_obj},
+  {MP_OBJ_NEW_QSTR(MP_QSTR_vibrator_activate), (mp_obj_t)&badge_vibrator_activate_obj},
+
+  // {MP_ROM_QSTR(MP_QSTR_display_picture),
+  //  MP_ROM_PTR(&badge_display_picture_obj)},
+
+  {MP_OBJ_NEW_QSTR(MP_QSTR_battery_charge_status),
+   (mp_obj_t)&battery_charge_status_obj},
+  {MP_OBJ_NEW_QSTR(MP_QSTR_battery_volt_sense),
+   (mp_obj_t)&battery_volt_sense_obj},
+  {MP_OBJ_NEW_QSTR(MP_QSTR_usb_volt_sense), (mp_obj_t)&usb_volt_sense_obj},
 };
 
 STATIC MP_DEFINE_CONST_DICT(mock_badge_module_globals, mock_badge_module_globals_table);

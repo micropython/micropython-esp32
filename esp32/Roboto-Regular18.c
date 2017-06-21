@@ -1,1 +1,1 @@
-../../components/ugfx/Roboto-Regular18.c
+../../components/ugfx/fonts/Roboto-Regular18.c

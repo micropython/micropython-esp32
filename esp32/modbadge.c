@@ -98,19 +98,50 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_0(usb_volt_sense_obj, usb_volt_sense_);
 
 // LEDs
 
-#ifdef PIN_NUM_LED
+#if defined(PIN_NUM_LED) || defined(MPR121_PIN_NUM_LEDS)
 STATIC mp_obj_t badge_leds_init_() {
   badge_leds_init();
   return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_leds_init_obj, badge_leds_init_);
 
+STATIC mp_obj_t badge_leds_enable_() {
+  return mp_obj_new_int(badge_leds_enable());
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_leds_enable_obj, badge_leds_enable_);
+
+STATIC mp_obj_t badge_leds_disable_() {
+  return mp_obj_new_int(badge_leds_disable());
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_leds_disable_obj, badge_leds_disable_);
+
+STATIC mp_obj_t badge_leds_send_data_(mp_uint_t n_args, const mp_obj_t *args) {
+  mp_uint_t len = mp_obj_get_int(args[1]);
+  uint8_t *leds = (uint8_t *)mp_obj_str_get_data(args[0], &len);
+  return mp_obj_new_int(badge_leds_send_data(leds, len));
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(badge_leds_send_data_obj, 2,2 ,badge_leds_send_data_);
+
 STATIC mp_obj_t badge_leds_set_state_(mp_uint_t n_args, const mp_obj_t *args) {
   mp_uint_t len;
   uint8_t *leds = (uint8_t *)mp_obj_str_get_data(args[0], &len);
-  return mp_obj_new_int(badge_leds_set_state(leds));
+  return mp_obj_new_int(badge_leds_send_data(leds, len));
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(badge_leds_set_state_obj, 1,1 ,badge_leds_set_state_);
+#endif
+
+#if defined(PORTEXP_PIN_NUM_VIBRATOR) || defined(MPR121_PIN_NUM_VIBRATOR)
+STATIC mp_obj_t badge_vibrator_init_() {
+  badge_vibrator_init();
+  return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_vibrator_init_obj, badge_vibrator_init_);
+
+STATIC mp_obj_t badge_vibrator_activate_(mp_uint_t n_args, const mp_obj_t *args) {
+  badge_vibrator_activate(mp_obj_get_int(args[0]));
+  return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(badge_vibrator_activate_obj, 1,1 ,badge_vibrator_activate_);
 #endif
 
 // Module globals
@@ -121,8 +152,19 @@ STATIC const mp_rom_map_elem_t badge_module_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR_init), MP_ROM_PTR(&badge_init_obj)},
     {MP_ROM_QSTR(MP_QSTR_eink_init), MP_ROM_PTR(&badge_eink_init_obj)},
     {MP_OBJ_NEW_QSTR(MP_QSTR_power_init), (mp_obj_t)&badge_power_init_obj},
+
+#if defined(PIN_NUM_LED) || defined(MPR121_PIN_NUM_LEDS)
     {MP_OBJ_NEW_QSTR(MP_QSTR_leds_init), (mp_obj_t)&badge_leds_init_obj},
+    {MP_OBJ_NEW_QSTR(MP_QSTR_leds_enable), (mp_obj_t)&badge_leds_enable_obj},
+    {MP_OBJ_NEW_QSTR(MP_QSTR_leds_disable), (mp_obj_t)&badge_leds_disable_obj},
+    {MP_OBJ_NEW_QSTR(MP_QSTR_leds_send_data), (mp_obj_t)&badge_leds_send_data_obj},
     {MP_OBJ_NEW_QSTR(MP_QSTR_leds_set_state), (mp_obj_t)&badge_leds_set_state_obj},
+#endif
+
+#if defined(PORTEXP_PIN_NUM_VIBRATOR) || defined(MPR121_PIN_NUM_VIBRATOR)
+    {MP_OBJ_NEW_QSTR(MP_QSTR_vibrator_init), (mp_obj_t)&badge_vibrator_init_obj},
+    {MP_OBJ_NEW_QSTR(MP_QSTR_vibrator_activate), (mp_obj_t)&badge_vibrator_activate_obj},
+#endif
 
 #ifdef PIN_NUM_LED
     {MP_ROM_QSTR(MP_QSTR_display_picture),
