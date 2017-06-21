@@ -113,7 +113,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_leds_enable_obj, badge_leds_enable_);
 STATIC mp_obj_t badge_leds_disable_() {
   return mp_obj_new_int(badge_leds_disable());
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_leds_disable_obj, badge_leds_disable);
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_leds_disable_obj, badge_leds_disable_);
 
 STATIC mp_obj_t badge_leds_send_data_(mp_uint_t n_args, const mp_obj_t *args) {
   mp_uint_t len = mp_obj_int_from_uint(args[1]);
@@ -125,9 +125,23 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(badge_leds_send_data_obj, 2,2 ,badge_
 STATIC mp_obj_t badge_leds_set_state_(mp_uint_t n_args, const mp_obj_t *args) {
   mp_uint_t len;
   uint8_t *leds = (uint8_t *)mp_obj_str_get_data(args[0], &len);
-  return mp_obj_new_int(badge_leds_set_state(leds));
+  return mp_obj_new_int(badge_leds_send_data(leds, len));
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(badge_leds_set_state_obj, 1,1 ,badge_leds_set_state_);
+#endif
+
+#if defined(PORTEXP_PIN_NUM_VIBRATOR) || defined(MPR121_PIN_NUM_VIBRATOR)
+STATIC mp_obj_t badge_vibrator_init_() {
+  badge_vibrator_init();
+  return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_vibrator_init_obj, badge_vibrator_init_);
+
+STATIC mp_obj_t badge_vibrator_activate(mp_uint_t n_args, const mp_obj_t *args) {
+  badge_vibrator_activate(mp_obj_int_from_uint(args[0]));
+  return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(badge_vibrator_activate_obj, 1,1 ,badge_vibrator_activate_);
 #endif
 
 // Module globals
@@ -145,6 +159,11 @@ STATIC const mp_rom_map_elem_t badge_module_globals_table[] = {
     {MP_OBJ_NEW_QSTR(MP_QSTR_leds_disable), (mp_obj_t)&badge_leds_disable_obj},
     {MP_OBJ_NEW_QSTR(MP_QSTR_leds_send_data), (mp_obj_t)&badge_leds_send_data_obj},
     {MP_OBJ_NEW_QSTR(MP_QSTR_leds_set_state), (mp_obj_t)&badge_leds_set_state_obj},
+#endif
+
+#if defined(PORTEXP_PIN_NUM_VIBRATOR) || defined(MPR121_PIN_NUM_VIBRATOR)
+    {MP_OBJ_NEW_QSTR(MP_QSTR_vibrator_init), (mp_obj_t)&badge_vibrator_init_obj},
+    {MP_OBJ_NEW_QSTR(MP_QSTR_vibrator_activate), (mp_obj_t)&badge_vibrator_activate_obj},
 #endif
 
     {MP_ROM_QSTR(MP_QSTR_display_picture),
