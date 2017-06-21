@@ -199,7 +199,7 @@ LIB_SRC_C += $(addprefix lib/,\
 	oofatfs/option/unicode.c \
 	)
 
-LIB_SRC_C = $(addprefix lib/,\
+LIB_SRC_C += $(addprefix lib/,\
 	mp-readline/readline.c \
 	netutils/netutils.c \
 	)
