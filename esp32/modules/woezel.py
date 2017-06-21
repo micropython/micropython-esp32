@@ -155,6 +155,20 @@ def get_pkg_metadata(name):
     finally:
         f.close()
 
+def get_pkg_list():
+    f = url_open("https://badge.sha2017.org/eggs/list/json")
+    try:
+        return json.load(f)
+    finally:
+        f.close()
+
+def search_pkg_list(query):
+    f = url_open("https://badge.sha2017.org/eggs/search/%s/json" % query)
+    try:
+        return json.load(f)
+    finally:
+        f.close()
+
 
 def fatal(msg, exc=None):
     print("Error:", msg)
@@ -222,6 +236,22 @@ def install(to_install, install_path=None):
                 pkg_spec, e),
             file=sys.stderr)
 
+def display_pkg(packages):
+    for package in packages:
+        print(package["name"])
+        print("  Slug:        " + package["slug"])
+        print("  Version:     " + package["revision"])
+        print("  Description: " + package["description"])
+
+
+def list():
+    packages = get_pkg_list()
+    display_pkg(packages)
+
+def search(query):
+    packages = search_pkg_list(query)
+    display_pkg(packages)
+
 def get_install_path():
     global install_path
     if install_path is None:
@@ -241,7 +271,7 @@ def help():
     print("""\
 woezel - Clone of the Simple PyPI package manager for MicroPython
 Usage: micropython -m woezel install [-p <path>] <package>... | -r <requirements.txt>
-import woezel; shapip.install(package_or_list, [<path>])
+import woezel; woezel.install(package_or_list, [<path>])
 
 If <path> is not given, packages will be installed into sys.path[1]
 (can be set from MICROPYPATH environment variable, if current system
