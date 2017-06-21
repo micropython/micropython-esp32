@@ -27,10 +27,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
- 
+
 #include <stdlib.h>
 #include <stdio.h>
-#include "modbadge.h"
 
 #include "py/mperrno.h"
 #include "py/mphal.h"
@@ -79,27 +78,20 @@ STATIC mp_obj_t badge_power_init_() {
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_power_init_obj, badge_power_init_);
 
 
-#if defined(PORTEXP_PIN_NUM_CHRGSTAT) || defined(MPR121_PIN_NUM_CHRGSTAT)
 STATIC mp_obj_t battery_charge_status_() {
   return mp_obj_new_bool(true);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(battery_charge_status_obj,
                                  battery_charge_status_);
-#endif
-
-#ifdef ADC1_CHAN_VBAT_SENSE
 STATIC mp_obj_t battery_volt_sense_() {
   return mp_obj_new_int(((float)rand())/RAND_MAX*1000+3500);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(battery_volt_sense_obj, battery_volt_sense_);
-#endif
 
-#ifdef ADC1_CHAN_VUSB_SENSE
 STATIC mp_obj_t usb_volt_sense_() {
   return mp_obj_new_int(((float)rand())/RAND_MAX*1000+4100);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(usb_volt_sense_obj, usb_volt_sense_);
-#endif
 
 // LEDs
 
@@ -196,33 +188,23 @@ STATIC const mp_rom_map_elem_t mock_badge_module_globals_table[] = {
   {MP_ROM_QSTR(MP_QSTR_eink_init), MP_ROM_PTR(&badge_eink_init_obj)},
   {MP_OBJ_NEW_QSTR(MP_QSTR_power_init), (mp_obj_t)&badge_power_init_obj},
 
-#if defined(PIN_NUM_LED) || defined(MPR121_PIN_NUM_LEDS)
   {MP_OBJ_NEW_QSTR(MP_QSTR_leds_init), (mp_obj_t)&badge_leds_init_obj},
   {MP_OBJ_NEW_QSTR(MP_QSTR_leds_enable), (mp_obj_t)&badge_leds_enable_obj},
   {MP_OBJ_NEW_QSTR(MP_QSTR_leds_disable), (mp_obj_t)&badge_leds_disable_obj},
   {MP_OBJ_NEW_QSTR(MP_QSTR_leds_send_data), (mp_obj_t)&badge_leds_send_data_obj},
   {MP_OBJ_NEW_QSTR(MP_QSTR_leds_set_state), (mp_obj_t)&badge_leds_set_state_obj},
-#endif
 
-#if defined(PORTEXP_PIN_NUM_VIBRATOR) || defined(MPR121_PIN_NUM_VIBRATOR)
   {MP_OBJ_NEW_QSTR(MP_QSTR_vibrator_init), (mp_obj_t)&badge_vibrator_init_obj},
   {MP_OBJ_NEW_QSTR(MP_QSTR_vibrator_activate), (mp_obj_t)&badge_vibrator_activate_obj},
-#endif
 
   // {MP_ROM_QSTR(MP_QSTR_display_picture),
   //  MP_ROM_PTR(&badge_display_picture_obj)},
 
-#if defined(PORTEXP_PIN_NUM_CHRGSTAT) || defined(MPR121_PIN_NUM_CHRGSTAT)
   {MP_OBJ_NEW_QSTR(MP_QSTR_battery_charge_status),
    (mp_obj_t)&battery_charge_status_obj},
-#endif
-#ifdef ADC1_CHAN_VBAT_SENSE
   {MP_OBJ_NEW_QSTR(MP_QSTR_battery_volt_sense),
    (mp_obj_t)&battery_volt_sense_obj},
-#endif
-#ifdef ADC1_CHAN_VUSB_SENSE
   {MP_OBJ_NEW_QSTR(MP_QSTR_usb_volt_sense), (mp_obj_t)&usb_volt_sense_obj},
-#endif
 };
 
 STATIC MP_DEFINE_CONST_DICT(mock_badge_module_globals, mock_badge_module_globals_table);
