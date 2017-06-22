@@ -134,8 +134,8 @@
         #define GDISP_NEED_IMAGE_BMP_16              TRUE
         #define GDISP_NEED_IMAGE_BMP_24              TRUE
         #define GDISP_NEED_IMAGE_BMP_32              TRUE
-        #define GDISP_IMAGE_BMP_BLIT_BUFFER_SIZE     32
-//#define GDISP_NEED_IMAGE_JPG                     TRUE
+        #define GDISP_IMAGE_BMP_BLIT_BUFFER_SIZE     36
+#define GDISP_NEED_IMAGE_JPG                     TRUE
 #define GDISP_NEED_IMAGE_PNG                     TRUE
         #define GDISP_NEED_IMAGE_PNG_INTERLACED      FALSE
         #define GDISP_NEED_IMAGE_PNG_TRANSPARENCY    TRUE
@@ -182,7 +182,6 @@
 //        #define GDISP_HARDWARE_CONTROL               FALSE
 //        #define GDISP_HARDWARE_QUERY                 FALSE
 //        #define GDISP_HARDWARE_CLIP                  FALSE
-
 //        #define GDISP_PIXELFORMAT                    GDISP_PIXELFORMAT_RGB888
 //    #endif
 
@@ -324,7 +323,7 @@
 //#define GFILE_NEED_RAMFS                             FALSE
 //#define GFILE_NEED_FATFS                             TRUE
 //#define GFILE_FATFS_EXTERNAL_LIB                     TRUE
-//#define GFILE_NEED_NATIVEFS                          FALSE
+#define GFILE_NEED_NATIVEFS                          TRUE
 //#define GFILE_NEED_CHBIOSFS                          FALSE
 //#define GFILE_NEED_USERFS                            FALSE
 
