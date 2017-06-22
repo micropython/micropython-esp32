@@ -1,6 +1,8 @@
 #include <stdbool.h>
 #include <stdio.h>
 
+#include "esp_wifi.h"
+
 #include "badge.h"
 #include "badge_pins.h"
 #include "badge_eink.h"

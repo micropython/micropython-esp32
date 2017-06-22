@@ -1,4 +1,5 @@
 import ugfx
+import badge
 import sys
 import gc
 import uos as os
@@ -10,10 +11,7 @@ import time
 import network
 
 sta_if = network.WLAN(network.STA_IF); sta_if.active(True)
-# sta_if.connect('real-internetz', 'Zigg0sucks')
-sta_if.connect('SORRY!', '@mst3rd@m')
-
-ugfx.init()
+badge.wifi_init()
 
 ugfx.clear(ugfx.BLACK)
 ugfx.string(20,25,"Connecting to:","Roboto_BlackItalic24",ugfx.WHITE)
