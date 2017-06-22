@@ -117,6 +117,8 @@ def url_open(url):
     except OSError as e:
         fatal("Unable to resolve %s (no Internet?)" % host, e)
     #print("Address infos:", ai)
+    if len(ai) == 0:
+        fatal("Unable to resolve %s (no Internet?)" % host, errno.EHOSTUNREACH)
     addr = ai[0][4]
 
     s = usocket.socket(ai[0][0])
@@ -180,26 +182,36 @@ def fatal(msg, exc=None):
 
 def install_pkg(pkg_spec, install_path, force_reinstall):
     data = get_pkg_metadata(pkg_spec)
+    already_installed = False
     try:
         os.stat("%s%s/" % (install_path, pkg_spec))
-    except:
-        print("Package %s not yet installed" % (pkg_spec))
+    except OSError as e:
+        if e.args[0] == errno.EINVAL:
+            print("Package %s already installed" % (pkg_spec))
+            already_installed = True
+        else:
+            print("Package %s not yet installed" % (pkg_spec))
     else:
+        # fallback for unix version
         print("Package %s already installed" % (pkg_spec))
+        already_installed = True
     latest_ver = data["info"]["version"]
     verf = "%s%s/version" % (install_path, pkg_spec)
-    try:
-        fver = open(verf, "r")
-    except:
-        print("No version file found")
-    else:
-        old_ver = fver.read();
-        if old_ver == latest_ver:
+    if already_installed:
+        try:
+            fver = open(verf, "r")
+        except:
+            print("No version file found")
+        else:
+            old_ver = fver.read();
+            if old_ver == latest_ver:
+                if not force_reinstall:
+                    raise LatestInstalledError("Latest version installed")
+            else:
+                print("Removing previous rev. %s" % old_ver)
+                for rm_file in os.listdir("%s%s" % (install_path, pkg_spec)):
+                    os.remove("%s%s/%s" % (install_path, pkg_spec, rm_file))
             fver.close()
-            if not force_reinstall:
-                raise LatestInstalledError("Latest version installed")
-        print("Previous version %s" % old_ver)
-        fver.close()
     packages = data["releases"][latest_ver]
     del data
     gc.collect()

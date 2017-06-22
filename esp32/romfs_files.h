@@ -5,3 +5,5 @@
  * 		file2c -dcs infile outfile
  */
 #include "imgv3_hacking.h"
+#include "imgv3_badgers.h"
+#include "imgv3_jpeg.h"
