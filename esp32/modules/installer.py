@@ -27,7 +27,7 @@ ugfx.string(180,25,"STILL","Roboto_BlackItalic24",ugfx.WHITE)
 ugfx.string(160,50,"Hacking","PermanentMarker22",ugfx.WHITE)
 len = ugfx.get_string_width("Hacking","PermanentMarker22")
 ugfx.line(160, 72, 144 + len, 72, ugfx.WHITE)
-ugfx.line(170 + len, 52, 140 + len, 70, ugfx.WHITE)
+ugfx.line(170 + len, 52, 170 + len, 70, ugfx.WHITE)
 ugfx.string(170,75,"Anyway","Roboto_BlackItalic24",ugfx.WHITE)
 
 ugfx.input_init()
