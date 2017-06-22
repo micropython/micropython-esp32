@@ -18,6 +18,9 @@ file_buf = bytearray(512)
 class NotFoundError(Exception):
     pass
 
+class LatestInstalledError(Exception):
+    pass
+
 def op_split(path):
     if path == "":
         return ("", "")
@@ -169,38 +172,58 @@ def search_pkg_list(query):
     finally:
         f.close()
 
-
 def fatal(msg, exc=None):
     print("Error:", msg)
     if exc and debug:
         raise exc
     sys.exit(1)
 
-def install_pkg(pkg_spec, install_path):
+def install_pkg(pkg_spec, install_path, force_reinstall):
     data = get_pkg_metadata(pkg_spec)
-    print("Not (yet) checking if %s already installed" % (pkg_spec))
+    try:
+        os.stat("%s%s/" % (install_path, pkg_spec))
+    except:
+        print("Package %s not yet installed" % (pkg_spec))
+    else:
+        print("Package %s already installed" % (pkg_spec))
     latest_ver = data["info"]["version"]
-    print("Not (yet) checking if version %s already installed" % (latest_ver))
+    verf = "%s%s/version" % (install_path, pkg_spec)
+    try:
+        fver = open(verf, "r")
+    except:
+        print("No version file found")
+    else:
+        old_ver = fver.read();
+        if old_ver == latest_ver:
+            fver.close()
+            if not force_reinstall:
+                raise LatestInstalledError("Latest version installed")
+        print("Previous version %s" % old_ver)
+        fver.close()
     packages = data["releases"][latest_ver]
     del data
     gc.collect()
     assert len(packages) == 1
     package_url = packages[0]["url"]
-    print("Installing %s %s from %s" % (pkg_spec, latest_ver, package_url))
+    print("Installing %s rev. %s from %s" % (pkg_spec, latest_ver, package_url))
     package_fname = op_basename(package_url)
     f1 = url_open(package_url)
     try:
         f2 = uzlib.DecompIO(f1, gzdict_sz)
         f3 = tarfile.TarFile(fileobj=f2)
-        meta = install_tar(f3, install_path)
+        meta = install_tar(f3, "%s%s/" % (install_path, pkg_spec))
     finally:
         f1.close()
     del f3
     del f2
+    fver = open(verf, "w")
+    fver.write(latest_ver)
+    fver.close()
+    del fver
     gc.collect()
     return meta
 
-def install(to_install, install_path=None):
+def install(to_install, install_path=None, force_reinstall=False):
     # Calculate gzip dictionary size to use
     global gzdict_sz
     sz = gc.mem_free() + gc.mem_alloc()
@@ -223,7 +246,7 @@ def install(to_install, install_path=None):
             pkg_spec = to_install.pop(0)
             if pkg_spec in installed:
                 continue
-            meta = install_pkg(pkg_spec, install_path)
+            meta = install_pkg(pkg_spec, install_path, force_reinstall)
             installed.append(pkg_spec)
             if debug:
                 print(meta)
@@ -270,7 +293,10 @@ def help():
     print("""\
 woezel - Clone of the Simple PyPI package manager for MicroPython
 Usage: micropython -m woezel install [-p <path>] <package>... | -r <requirements.txt>
-import woezel; woezel.install(package_or_list, [<path>])
+
+import woezel
+woezel.install(package_or_list, [<path>])
+woezel.search([query])
 
 If <path> is not given, packages will be installed into sys.path[1]
 (can be set from MICROPYPATH environment variable, if current system
