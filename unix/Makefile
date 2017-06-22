@@ -157,7 +157,8 @@ SRC_C = \
 	modmachine.c \
 	ugfx_containers.c \
 	ugfx_widgets.c \
-        ugfx_styles.c \
+	ugfx_styles.c \
+	rom/tjpgd.c \
 	modugfx.c \
 	modnetwork.c \
 	modbadge.c \
