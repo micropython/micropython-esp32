@@ -87,7 +87,6 @@
 #define MICROPY_PY_BUILTINS_HELP_MODULES    (1)
 #define MICROPY_PY___FILE__                 (1)
 #define MICROPY_PY_MICROPYTHON_MEM_INFO     (1)
-#define MICROPY_PY_OS_DUPTERM               (1)
 #define MICROPY_PY_ARRAY                    (1)
 #define MICROPY_PY_ARRAY_SLICE_ASSIGN       (1)
 #define MICROPY_PY_ATTRTUPLE                (1)
@@ -139,8 +138,6 @@
 #define MICROPY_PY_USSL                     (1)
 #define MICROPY_SSL_MBEDTLS                 (1)
 #define MICROPY_PY_WEBSOCKET                (0)
-#define MICROPY_PY_WEBREPL                  (1)
-#define MICROPY_PY_WEBREPL_DELAY            (20)
 #define MICROPY_PY_FRAMEBUF                 (1)
 #define MICROPY_PY_BTREE                    (0)
 
