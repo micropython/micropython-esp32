@@ -205,12 +205,12 @@ def install_pkg(pkg_spec, install_path, force_reinstall):
         else:
             old_ver = fver.read();
             if old_ver == latest_ver:
-                fver.close()
                 if not force_reinstall:
                     raise LatestInstalledError("Latest version installed")
             else:
                 print("Removing previous rev. %s" % old_ver)
-                os.rmdir("%s%s/" % (install_path, pkg_spec))
+                for rm_file in os.listdir("%s%s" % (install_path, pkg_spec)):
+                    os.remove("%s%s/%s" % (install_path, pkg_spec, rm_file))
             fver.close()
     packages = data["releases"][latest_ver]
     del data
