@@ -45,8 +45,9 @@ uint8_t target_lut;
 #include <stdint.h>
 #include <badge_button.h>
 
-#include "gfx.h"
+#include "modugfx.h"
 #include "gfxconf.h"
+
 #define MF_RLEFONT_INTERNALS
 #include <mcufont.h>
 #include <string.h>
@@ -55,11 +56,57 @@ uint8_t target_lut;
 #include "py/mphal.h"
 #include "py/runtime.h"
 
+#include "ugfx_widgets.h"
+
 #define EMU_EINK_SCREEN_DELAY_MS 500
 
 typedef struct _ugfx_obj_t { mp_obj_base_t base; } ugfx_obj_t;
 
+static orientation_t get_orientation(int a){
+	if (a == 90)
+		return GDISP_ROTATE_90;
+	else if (a == 180)
+		return GDISP_ROTATE_180;
+	else if (a == 270)
+		return GDISP_ROTATE_270;
+	else
+		return GDISP_ROTATE_0;
+}
+
+// Our default style - a white background theme
+const GWidgetStyle BWWhiteWidgetStyle = {
+    White,           // window background
+    Black,           // focused
+
+    // enabled color set
+    {
+        Black,       // text
+        Black,       // edge
+        White,       // fill
+        Black        // progress - active area
+    },
+
+    // disabled color set
+    {
+        Black,       // text
+        White,       // edge
+        White,       // fill
+        White        // progress - active area
+    },
+
+    // pressed color set
+    {
+        White,       // text
+        White,       // edge
+        Black,       // fill
+        Black        // progress - active area
+    }
+};
+
+
 STATIC mp_obj_t ugfx_init(void) {
+  gwinSetDefaultFont(gdispOpenFont(gdispListFonts()->font->short_name));
+  gwinSetDefaultStyle(&BWWhiteWidgetStyle, FALSE);
   gfxInit();
   return mp_const_none;
 }
@@ -83,6 +130,118 @@ STATIC mp_obj_t ugfx_set_lut(mp_obj_t selected_lut) {
   return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(ugfx_set_lut_obj, ugfx_set_lut);
+
+/// \method set_orientation(a)
+///
+/// Set orientation to 0, 90, 180 or 270 degrees
+///
+STATIC mp_obj_t ugfx_set_orientation(mp_uint_t n_args, const mp_obj_t *args) {
+	if (n_args > 0){
+		int a = mp_obj_get_int(args[0]);
+		gdispSetOrientation(get_orientation(a));
+
+	}
+
+    return mp_obj_new_int(gdispGetOrientation());
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ugfx_set_orientation_obj, 0, 1, ugfx_set_orientation);
+
+/// \method width()
+///
+/// Gets current width of the screen in pixels
+///
+STATIC mp_obj_t ugfx_width(void) {
+    return mp_obj_new_int(gdispGetWidth());
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(ugfx_width_obj, ugfx_width);
+
+
+
+/// \method height()
+///
+/// Gets current width of the screen in pixels
+///
+STATIC mp_obj_t ugfx_height(void) {
+    return mp_obj_new_int(gdispGetHeight());
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(ugfx_height_obj, ugfx_height);
+
+
+/// \method get_pixel()
+///
+/// Gets the colour of the given pixel at (x,y)
+///
+STATIC mp_obj_t ugfx_get_pixel(mp_obj_t x_in, mp_obj_t y_in) {
+    // extract arguments
+    //ugfx_obj_t *self = args[0];
+	//int x = mp_obj_get_int(x_in);
+	//int y = mp_obj_get_int(y_in);
+	return mp_obj_new_int(0);
+	//needs sorting, currently returns somewhat dodgy values
+    //return mp_obj_new_int(gdispGetPixelColor(x,y));
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_2(ugfx_get_pixel_obj, ugfx_get_pixel);
+
+
+/// \method set_default_font()
+///
+/// Sets the default font used by widgets.
+/// Note, it is only necessary to use a font object if font scaling is used, since
+///  in this case memory will need to be cleared once the scaled font is no longer required
+///
+STATIC mp_obj_t ugfx_set_default_font(mp_obj_t font_obj) {
+	ugfx_font_obj_t *fo = font_obj;
+	if (MP_OBJ_IS_TYPE(font_obj, &ugfx_font_type)){
+		gwinSetDefaultFont(fo->font);
+	}else if (MP_OBJ_IS_STR(font_obj)){
+		const char *file = mp_obj_str_get_str(font_obj);
+		gwinSetDefaultFont(gdispOpenFont(file));
+        /*}else if (MP_OBJ_IS_INT(font_obj)){*/
+        /*if (mp_obj_get_int(font_obj) < sizeof(font_list)/sizeof(char*)){*/
+        /*gwinSetDefaultFont(gdispOpenFont(font_list[mp_obj_get_int(font_obj)]));*/
+        /*}*/
+        /*else*/
+        /*nlr_raise(mp_obj_new_exception_msg_varg(&mp_type_ValueError, "Invalid font index"));*/
+        /*}*/
+    }
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(ugfx_set_default_font_obj, ugfx_set_default_font);
+
+/// \method set_default_style()
+///
+/// Sets the default style used by widgets.
+///
+STATIC mp_obj_t ugfx_set_default_style(mp_obj_t style_obj) {
+	ugfx_style_obj_t *st = style_obj;
+	if (MP_OBJ_IS_TYPE(style_obj, &ugfx_style_type))
+		gwinSetDefaultStyle(&(st->style),FALSE);
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(ugfx_set_default_style_obj, ugfx_set_default_style);
+
+/// \method send_tab()
+///
+/// Sends a 'tab' signal to cycle through focus.
+///
+STATIC mp_obj_t ugfx_send_tab(void) {
+
+	GSourceListener	*psl=0;
+	GEventKeyboard	*pe;
+
+	while ((psl = geventGetSourceListener(ginputGetKeyboard(GKEYBOARD_ALL_INSTANCES), psl))){
+		pe = (GEventKeyboard *)geventGetEventBuffer(psl);
+
+
+		pe->type = GEVENT_KEYBOARD;
+		pe->bytecount = 1;
+		pe->c[0] = GKEY_TAB;
+		geventSendEvent(psl);
+	}
+
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(ugfx_send_tab_obj, ugfx_send_tab);
 
 
 // PRIMITIVES
@@ -163,6 +322,25 @@ STATIC mp_obj_t ugfx_char(mp_uint_t n_args, const mp_obj_t *args) {
   return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ugfx_char_obj, 5, 5, ugfx_char);
+
+/// \method text(x, y, str, colour)
+///
+/// Draw the given text to the position `(x, y)` using the given colour.
+///
+STATIC mp_obj_t ugfx_text(mp_uint_t n_args, const mp_obj_t *args) {
+    // extract arguments
+    //ugfx_obj_t *self = args[0];
+    mp_uint_t len;
+    const char *data = mp_obj_str_get_data(args[2], &len);
+    int x0 = mp_obj_get_int(args[0]);
+    int y0 = mp_obj_get_int(args[1]);
+    int col = mp_obj_get_int(args[3]);
+
+    gdispDrawString(x0, y0, data, gwinGetDefaultFont(), col);
+
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ugfx_text_obj, 4, 4, ugfx_text);
 
 /// \method string(x, y, str, font, colour)
 ///
@@ -549,6 +727,62 @@ STATIC mp_obj_t ugfx_fill_rounded_box(mp_uint_t n_args, const mp_obj_t *args) {
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ugfx_fill_rounded_box_obj, 6, 6,
                                            ugfx_fill_rounded_box);
 
+// Image
+
+
+/// \method display_image(x, y, image_object)
+///
+STATIC mp_obj_t ugfx_display_image(mp_uint_t n_args, const mp_obj_t *args){
+    // extract arguments
+    //pyb_ugfx_obj_t *self = args[0];
+	int x = mp_obj_get_int(args[0]);
+	int y = mp_obj_get_int(args[1]);
+	mp_obj_t img_obj = args[2];
+	gdispImage imo;
+	gdispImage *iptr;
+
+	if (img_obj != mp_const_none) {
+		if (MP_OBJ_IS_STR(img_obj)){
+			const char *img_str = mp_obj_str_get_str(img_obj);
+			gdispImageError er = gdispImageOpenFile(&imo, img_str);
+			if (er != 0){
+				nlr_raise(mp_obj_new_exception_msg(&mp_type_ValueError, "Error opening file"));
+				return mp_const_none;
+			}
+			iptr = &imo;
+		}
+		else if (MP_OBJ_IS_TYPE(img_obj, &ugfx_image_type))
+			iptr = &(((ugfx_image_obj_t*)img_obj)->thisImage);
+		else{
+            nlr_raise(mp_obj_new_exception_msg(&mp_type_TypeError, "img argument needs to be be a Image or String type"));
+			return mp_const_none;
+		}
+
+
+		coord_t	swidth, sheight;
+
+		// Get the display dimensions
+		swidth = gdispGetWidth();
+		sheight = gdispGetHeight();
+
+		// if (n_args > 3)
+		// 	set_blit_rotation(get_orientation(mp_obj_get_int(args[3])));
+
+		int err = gdispImageDraw(iptr, x, y, swidth, sheight, 0, 0);
+
+		// set_blit_rotation(GDISP_ROTATE_0);
+
+		if (MP_OBJ_IS_STR(img_obj))
+			gdispImageClose(&imo);
+
+		print_image_error(err);  // TODO
+
+	}
+
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ugfx_display_image_obj, 3, 3, ugfx_display_image);
+
 // INPUT
 
 /// \method poll()
@@ -868,6 +1102,7 @@ STATIC const mp_rom_map_elem_t ugfx_module_globals_table[] = {
      (mp_obj_t)&ugfx_get_char_width_obj},
     {MP_OBJ_NEW_QSTR(MP_QSTR_char), (mp_obj_t)&ugfx_char_obj},
     {MP_OBJ_NEW_QSTR(MP_QSTR_string), (mp_obj_t)&ugfx_string_obj},
+    {MP_OBJ_NEW_QSTR(MP_QSTR_text), (mp_obj_t)&ugfx_text_obj },
     {MP_OBJ_NEW_QSTR(MP_QSTR_string_box), (mp_obj_t)&ugfx_string_box_obj},
 
     {MP_OBJ_NEW_QSTR(MP_QSTR_pixel), (mp_obj_t)&ugfx_pixel_obj},
@@ -887,6 +1122,11 @@ STATIC const mp_rom_map_elem_t ugfx_module_globals_table[] = {
     {MP_OBJ_NEW_QSTR(MP_QSTR_polygon), (mp_obj_t)&ugfx_polygon_obj},
     {MP_OBJ_NEW_QSTR(MP_QSTR_fill_polygon), (mp_obj_t)&ugfx_fill_polygon_obj},
 
+    { MP_OBJ_NEW_QSTR(MP_QSTR_display_image), (mp_obj_t)&ugfx_display_image_obj },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_orientation), (mp_obj_t)&ugfx_set_orientation_obj },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_width), (mp_obj_t)&ugfx_width_obj },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_height), (mp_obj_t)&ugfx_height_obj },
+
     {MP_OBJ_NEW_QSTR(MP_QSTR_fonts_list), (mp_obj_t)&ugfx_fonts_list_obj},
     {MP_OBJ_NEW_QSTR(MP_QSTR_fonts_dump), (mp_obj_t)&ugfx_fonts_dump_obj},
     {MP_OBJ_NEW_QSTR(MP_QSTR_fonts_load), (mp_obj_t)&ugfx_fonts_load_obj},
@@ -894,6 +1134,23 @@ STATIC const mp_rom_map_elem_t ugfx_module_globals_table[] = {
     {MP_OBJ_NEW_QSTR(MP_QSTR_input_init), (mp_obj_t)&ugfx_input_init_obj},
     {MP_OBJ_NEW_QSTR(MP_QSTR_input_attach), (mp_obj_t)&ugfx_input_attach_obj},
     {MP_OBJ_NEW_QSTR(MP_QSTR_demo), (mp_obj_t)&ugfx_demo_obj},
+    { MP_OBJ_NEW_QSTR(MP_QSTR_set_default_font), (mp_obj_t)&ugfx_set_default_font_obj },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_set_default_style), (mp_obj_t)&ugfx_set_default_style_obj },
+
+    { MP_OBJ_NEW_QSTR(MP_QSTR_send_tab), (mp_obj_t)&ugfx_send_tab_obj },
+
+    { MP_OBJ_NEW_QSTR(MP_QSTR_Button), (mp_obj_t)&ugfx_button_type },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_Container), (mp_obj_t)&ugfx_container_type },
+    // { MP_OBJ_NEW_QSTR(MP_QSTR_Graph), (mp_obj_t)&ugfx_graph_type },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_Font), (mp_obj_t)&ugfx_font_type },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_List), (mp_obj_t)&ugfx_list_type },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_Textbox), (mp_obj_t)&ugfx_textbox_type },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_Style), (mp_obj_t)&ugfx_style_type },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_Keyboard), (mp_obj_t)&ugfx_keyboard_type },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_Label), (mp_obj_t)&ugfx_label_type },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_Image), (mp_obj_t)&ugfx_image_type },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_Checkbox), (mp_obj_t)&ugfx_checkbox_type },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_Imagebox), (mp_obj_t)&ugfx_imagebox_type },
 };
 
 STATIC MP_DEFINE_CONST_DICT(ugfx_module_globals, ugfx_module_globals_table);

@@ -155,6 +155,10 @@ SRC_C = \
 	input.c \
 	file.c \
 	modmachine.c \
+	ugfx_containers.c \
+	ugfx_widgets.c \
+	ugfx_styles.c \
+	rom/tjpgd.c \
 	modugfx.c \
 	modnetwork.c \
 	modbadge.c \
@@ -196,7 +200,7 @@ LIB_SRC_C += $(addprefix lib/,\
 	oofatfs/option/unicode.c \
 	)
 
-LIB_SRC_C = $(addprefix lib/,\
+LIB_SRC_C += $(addprefix lib/,\
 	mp-readline/readline.c \
 	netutils/netutils.c \
 	)
