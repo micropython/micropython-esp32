@@ -1,7 +1,6 @@
-import badge
 import ugfx
+import time
 
-badge.init()
 ugfx.init()
 
 ugfx.clear(ugfx.BLACK)
@@ -31,6 +30,11 @@ def render(text, pushed):
         ugfx.string(100,10,text,"PermanentMarker22",ugfx.BLACK)
     ugfx.flush()
 
+def start_app(pushed):
+    if(pushed):
+        import installer
+        app = __import__(installer)
+
 ugfx.input_init()
 ugfx.input_attach(ugfx.JOY_UP, lambda pressed: render('UP', pressed))
 ugfx.input_attach(ugfx.JOY_DOWN, lambda pressed: render('DOWN', pressed))
@@ -38,8 +42,5 @@ ugfx.input_attach(ugfx.JOY_LEFT, lambda pressed: render('LEFT', pressed))
 ugfx.input_attach(ugfx.JOY_RIGHT, lambda pressed: render('RIGHT', pressed))
 ugfx.input_attach(ugfx.BTN_A, lambda pressed: render('A', pressed))
 ugfx.input_attach(ugfx.BTN_B, lambda pressed: render('B', pressed))
-ugfx.input_attach(ugfx.BTN_START, lambda pressed: render('Start', pressed))
+ugfx.input_attach(ugfx.BTN_START, start_app)
 ugfx.input_attach(ugfx.BTN_SELECT, lambda pressed: render('Select', pressed))
-
-while True:
-    pass

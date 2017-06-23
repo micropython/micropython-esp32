@@ -179,6 +179,12 @@ STATIC mp_obj_t badge_vibrator_activate_(mp_uint_t n_args, const mp_obj_t *args)
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(badge_vibrator_activate_obj, 1,1 ,badge_vibrator_activate_);
 
+STATIC mp_obj_t badge_wifi_init_() {
+  // we just assume internets
+  return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_wifi_init_obj, badge_wifi_init_);
+
 // Module globals
 
 STATIC const mp_rom_map_elem_t mock_badge_module_globals_table[] = {
@@ -205,6 +211,8 @@ STATIC const mp_rom_map_elem_t mock_badge_module_globals_table[] = {
   {MP_OBJ_NEW_QSTR(MP_QSTR_battery_volt_sense),
    (mp_obj_t)&battery_volt_sense_obj},
   {MP_OBJ_NEW_QSTR(MP_QSTR_usb_volt_sense), (mp_obj_t)&usb_volt_sense_obj},
+
+  {MP_OBJ_NEW_QSTR(MP_QSTR_wifi_init), (mp_obj_t)&badge_wifi_init_obj},
 };
 
 STATIC MP_DEFINE_CONST_DICT(mock_badge_module_globals, mock_badge_module_globals_table);
