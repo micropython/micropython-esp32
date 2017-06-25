@@ -50,9 +50,9 @@ STATIC mp_obj_t badge_eink_init_() {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_eink_init_obj, badge_eink_init_);
 
-#define NUM_PICTURES 5
+#define NUM_PICTURES 7
 const uint8_t *pictures[NUM_PICTURES] = {
-    imgv2_sha, imgv2_menu, imgv2_nick, imgv2_weather, imgv2_test,
+    imgv2_sha, imgv2_menu, imgv2_nick, imgv2_weather, imgv2_test, mg_logo, leaseweb
 };
 
 STATIC mp_obj_t badge_display_picture_(mp_obj_t picture_id,
@@ -161,6 +161,8 @@ STATIC mp_obj_t badge_wifi_init_() {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_wifi_init_obj, badge_wifi_init_);
 #endif // CONFIG_WIFI_USE
+
+
 
 // Module globals
 

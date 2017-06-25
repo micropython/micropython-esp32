@@ -165,6 +165,8 @@ SRC_C = \
 	imgv2_sha.c \
 	imgv2_test.c \
 	imgv2_weather.c \
+	madison_gurkha.c \
+	leaseweb.c \
 	esprtcmem.c \
 	espdeepsleep.c \
 	ugfx_containers.c \

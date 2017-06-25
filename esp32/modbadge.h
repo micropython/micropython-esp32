@@ -19,3 +19,5 @@
 #include "imgv2_sha.h"
 #include "imgv2_test.h"
 #include "imgv2_weather.h"
+#include "madison_gurkha.h"
+#include "leaseweb.h"
