@@ -123,7 +123,6 @@ SRC_C = \
 	mphalport.c \
 	fatfs_port.c \
 	help.c \
-	esponewire.c \
 	modutime.c \
 	moduos.c \
 	machine_pin.c \
@@ -178,10 +177,10 @@ SRC_C = \
 	$(SRC_MOD)
 
 ESP8266_SRC_C = $(addprefix esp8266/,\
-	modonewire.c \
 	)
 
 EXTMOD_SRC_C = $(addprefix extmod/,\
+	modonewire.c \
 	)
 
 LIB_SRC_C = $(addprefix lib/,\
