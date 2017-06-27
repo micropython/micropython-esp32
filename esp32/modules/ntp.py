@@ -45,7 +45,7 @@ def set_NTP_time():
 
 	tz = 0
 	with database.Database() as db:
-		tz = db.get("timezone", 0)
+		tz = db.get("timezone", 200) # default to CEST
 
 	tz_minutes = int(abs(tz) % 100) * (1 if tz >= 0 else -1)
 	tz_hours = int(tz / 100)
