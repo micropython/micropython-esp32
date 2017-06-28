@@ -25,9 +25,9 @@ while not sta_if.isconnected():
 ugfx.clear(ugfx.WHITE)
 ugfx.string(180,25,"STILL","Roboto_BlackItalic24",ugfx.BLACK)
 ugfx.string(160,50,"Hacking","PermanentMarker22",ugfx.BLACK)
-len = ugfx.get_string_width("Hacking","PermanentMarker22")
-ugfx.line(160, 72, 144 + len, 72, ugfx.BLACK)
-ugfx.line(170 + len, 52, 170 + len, 70, ugfx.BLACK)
+str_len = ugfx.get_string_width("Hacking","PermanentMarker22")
+ugfx.line(160, 72, 144 + str_len, 72, ugfx.BLACK)
+ugfx.line(170 + str_len, 52, 170 + str_len, 70, ugfx.BLACK)
 ugfx.string(170,75,"Anyway","Roboto_BlackItalic24",ugfx.BLACK)
 
 ugfx.input_init()
