@@ -22,13 +22,13 @@ while not sta_if.isconnected():
     time.sleep(0.1)
     pass
 
-ugfx.clear(ugfx.BLACK)
-ugfx.string(180,25,"STILL","Roboto_BlackItalic24",ugfx.WHITE)
-ugfx.string(160,50,"Hacking","PermanentMarker22",ugfx.WHITE)
+ugfx.clear(ugfx.WHITE)
+ugfx.string(180,25,"STILL","Roboto_BlackItalic24",ugfx.BLACK)
+ugfx.string(160,50,"Hacking","PermanentMarker22",ugfx.BLACK)
 len = ugfx.get_string_width("Hacking","PermanentMarker22")
-ugfx.line(160, 72, 144 + len, 72, ugfx.WHITE)
-ugfx.line(170 + len, 52, 170 + len, 70, ugfx.WHITE)
-ugfx.string(170,75,"Anyway","Roboto_BlackItalic24",ugfx.WHITE)
+ugfx.line(160, 72, 144 + len, 72, ugfx.BLACK)
+ugfx.line(170 + len, 52, 170 + len, 70, ugfx.BLACK)
+ugfx.string(170,75,"Anyway","Roboto_BlackItalic24",ugfx.BLACK)
 
 ugfx.input_init()
 
@@ -91,6 +91,7 @@ finally:
 for package in packages:
     options.add_item("%s rev. %s"% (package["name"], package["revision"]))
 
+ugfx.set_lut(ugfx.LUT_FULL)
 ugfx.flush()
 
 def show_description(active):
@@ -121,3 +122,7 @@ ugfx.input_attach(ugfx.JOY_LEFT, lambda x: ugfx.flush())
 ugfx.input_attach(ugfx.JOY_RIGHT, lambda x: ugfx.flush())
 
 text = ugfx.Textbox(int(ugfx.width()/2),0, int(ugfx.width()/2), ugfx.height())
+
+ugfx.flush()
+time.sleep(0.2)
+ugfx.set_lut(ugfx.LUT_FASTER)
