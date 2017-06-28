@@ -3,7 +3,7 @@
  *
  * The MIT License (MIT)
  *
- * Copyright (c) 2015 Damien P. George
+ * Copyright (c) 2015-2017 Damien P. George
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -29,50 +29,92 @@
 
 #include "py/obj.h"
 #include "py/mphal.h"
-#include "modmachine.h"
-#include "esponewire.h"
 
-STATIC mp_obj_t onewire_timings(mp_obj_t timings_in) {
-    mp_obj_t *items;
-    mp_obj_get_array_fixed_n(timings_in, 9, &items);
-    for (int i = 0; i < 9; ++i) {
-        esp_onewire_timings[i] = mp_obj_get_int(items[i]);
-    }
-    return mp_const_none;
+/******************************************************************************/
+// Low-level 1-Wire routines
+
+#define TIMING_RESET1 (480)
+#define TIMING_RESET2 (40)
+#define TIMING_RESET3 (420)
+#define TIMING_READ1 (5)
+#define TIMING_READ2 (5)
+#define TIMING_READ3 (40)
+#define TIMING_WRITE1 (10)
+#define TIMING_WRITE2 (50)
+#define TIMING_WRITE3 (10)
+
+STATIC int onewire_bus_reset(mp_hal_pin_obj_t pin) {
+    mp_hal_pin_write(pin, 0);
+    mp_hal_delay_us(TIMING_RESET1);
+    uint32_t i = mp_hal_quiet_timing_enter();
+    mp_hal_pin_write(pin, 1);
+    mp_hal_delay_us_fast(TIMING_RESET2);
+    int status = !mp_hal_pin_read(pin);
+    mp_hal_quiet_timing_exit(i);
+    mp_hal_delay_us(TIMING_RESET3);
+    return status;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(onewire_timings_obj, onewire_timings);
+
+STATIC int onewire_bus_readbit(mp_hal_pin_obj_t pin) {
+    mp_hal_pin_write(pin, 1);
+    uint32_t i = mp_hal_quiet_timing_enter();
+    mp_hal_pin_write(pin, 0);
+    mp_hal_delay_us_fast(TIMING_READ1);
+    mp_hal_pin_write(pin, 1);
+    mp_hal_delay_us_fast(TIMING_READ2);
+    int value = mp_hal_pin_read(pin);
+    mp_hal_quiet_timing_exit(i);
+    mp_hal_delay_us_fast(TIMING_READ3);
+    return value;
+}
+
+STATIC void onewire_bus_writebit(mp_hal_pin_obj_t pin, int value) {
+    uint32_t i = mp_hal_quiet_timing_enter();
+    mp_hal_pin_write(pin, 0);
+    mp_hal_delay_us_fast(TIMING_WRITE1);
+    if (value) {
+        mp_hal_pin_write(pin, 1);
+    }
+    mp_hal_delay_us_fast(TIMING_WRITE2);
+    mp_hal_pin_write(pin, 1);
+    mp_hal_delay_us_fast(TIMING_WRITE3);
+    mp_hal_quiet_timing_exit(i);
+}
+
+/******************************************************************************/
+// MicroPython bindings
 
 STATIC mp_obj_t onewire_reset(mp_obj_t pin_in) {
-    return mp_obj_new_bool(esp_onewire_reset(mp_obj_get_pin(pin_in)));
+    return mp_obj_new_bool(onewire_bus_reset(mp_hal_get_pin_obj(pin_in)));
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(onewire_reset_obj, onewire_reset);
 
 STATIC mp_obj_t onewire_readbit(mp_obj_t pin_in) {
-    return MP_OBJ_NEW_SMALL_INT(esp_onewire_readbit(mp_obj_get_pin(pin_in)));
+    return MP_OBJ_NEW_SMALL_INT(onewire_bus_readbit(mp_hal_get_pin_obj(pin_in)));
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(onewire_readbit_obj, onewire_readbit);
 
 STATIC mp_obj_t onewire_readbyte(mp_obj_t pin_in) {
-    uint pin = mp_obj_get_pin(pin_in);
+    mp_hal_pin_obj_t pin = mp_hal_get_pin_obj(pin_in);
     uint8_t value = 0;
     for (int i = 0; i < 8; ++i) {
-        value |= esp_onewire_readbit(pin) << i;
+        value |= onewire_bus_readbit(pin) << i;
     }
     return MP_OBJ_NEW_SMALL_INT(value);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(onewire_readbyte_obj, onewire_readbyte);
 
 STATIC mp_obj_t onewire_writebit(mp_obj_t pin_in, mp_obj_t value_in) {
-    esp_onewire_writebit(mp_obj_get_pin(pin_in), mp_obj_get_int(value_in));
+    onewire_bus_writebit(mp_hal_get_pin_obj(pin_in), mp_obj_get_int(value_in));
     return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(onewire_writebit_obj, onewire_writebit);
 
 STATIC mp_obj_t onewire_writebyte(mp_obj_t pin_in, mp_obj_t value_in) {
-    uint pin = mp_obj_get_pin(pin_in);
+    mp_hal_pin_obj_t pin = mp_hal_get_pin_obj(pin_in);
     int value = mp_obj_get_int(value_in);
     for (int i = 0; i < 8; ++i) {
-        esp_onewire_writebit(pin, value & 1);
+        onewire_bus_writebit(pin, value & 1);
         value >>= 1;
     }
     return mp_const_none;
@@ -104,7 +146,6 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(onewire_crc8_obj, onewire_crc8);
 STATIC const mp_map_elem_t onewire_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_onewire) },
 
-    { MP_ROM_QSTR(MP_QSTR_timings), MP_ROM_PTR((mp_obj_t)&onewire_timings_obj) },
     { MP_ROM_QSTR(MP_QSTR_reset), MP_ROM_PTR((mp_obj_t)&onewire_reset_obj) },
     { MP_ROM_QSTR(MP_QSTR_readbit), MP_ROM_PTR((mp_obj_t)&onewire_readbit_obj) },
     { MP_ROM_QSTR(MP_QSTR_readbyte), MP_ROM_PTR((mp_obj_t)&onewire_readbyte_obj) },
@@ -115,7 +156,7 @@ STATIC const mp_map_elem_t onewire_module_globals_table[] = {
 
 STATIC MP_DEFINE_CONST_DICT(onewire_module_globals, onewire_module_globals_table);
 
-const mp_obj_module_t onewire_module = {
+const mp_obj_module_t mp_module_onewire = {
     .base = { &mp_type_module },
     .globals = (mp_obj_dict_t*)&onewire_module_globals,
 };

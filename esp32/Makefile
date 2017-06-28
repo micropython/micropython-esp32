@@ -30,7 +30,7 @@ ESPCOMP = $(ESPIDF)/components
 ESPTOOL ?= $(ESPCOMP)/esptool_py/esptool/esptool.py
 
 # verify the ESP IDF version
-ESPIDF_SUPHASH := 7ed8c665471200613552e113fd0c1e2d017ea8f7
+ESPIDF_SUPHASH := ff6a3b1a11032798565d7b78319444aa81881542
 ESPIDF_CURHASH := $(shell git -C $(ESPIDF) show -s --pretty=format:'%H')
 ifneq ($(ESPIDF_CURHASH),$(ESPIDF_SUPHASH))
 $(info ** WARNING **)
@@ -123,7 +123,6 @@ SRC_C = \
 	mphalport.c \
 	fatfs_port.c \
 	help.c \
-	esponewire.c \
 	modutime.c \
 	moduos.c \
 	machine_pin.c \
@@ -165,6 +164,8 @@ SRC_C = \
 	imgv2_sha.c \
 	imgv2_test.c \
 	imgv2_weather.c \
+	madison_gurkha.c \
+	leaseweb.c \
 	esprtcmem.c \
 	espdeepsleep.c \
 	ugfx_containers.c \
@@ -176,10 +177,10 @@ SRC_C = \
 	$(SRC_MOD)
 
 ESP8266_SRC_C = $(addprefix esp8266/,\
-	modonewire.c \
 	)
 
 EXTMOD_SRC_C = $(addprefix extmod/,\
+	modonewire.c \
 	)
 
 LIB_SRC_C = $(addprefix lib/,\

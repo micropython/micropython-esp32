@@ -36,8 +36,15 @@
 
 // INIT
 
+static bool badge_initialised = false;
+static bool badge_leds_initialised = false;
 STATIC mp_obj_t badge_init_() {
-  badge_init();
+  if (!badge_initialised)
+  {
+      badge_initialised = true;
+      badge_leds_initialised = true;
+      badge_init();
+  }
   return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_init_obj, badge_init_);
@@ -50,9 +57,9 @@ STATIC mp_obj_t badge_eink_init_() {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_eink_init_obj, badge_eink_init_);
 
-#define NUM_PICTURES 5
+#define NUM_PICTURES 7
 const uint8_t *pictures[NUM_PICTURES] = {
-    imgv2_sha, imgv2_menu, imgv2_nick, imgv2_weather, imgv2_test,
+    imgv2_sha, imgv2_menu, imgv2_nick, imgv2_weather, imgv2_test, mg_logo, leaseweb
 };
 
 STATIC mp_obj_t badge_display_picture_(mp_obj_t picture_id,
@@ -100,7 +107,10 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_0(usb_volt_sense_obj, usb_volt_sense_);
 
 #if defined(PIN_NUM_LED) || defined(MPR121_PIN_NUM_LEDS)
 STATIC mp_obj_t badge_leds_init_() {
-  badge_leds_init();
+  if (!badge_leds_initialised) {
+    badge_leds_initialised = true;
+    badge_leds_init();
+  }
   return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_leds_init_obj, badge_leds_init_);
@@ -161,6 +171,8 @@ STATIC mp_obj_t badge_wifi_init_() {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_wifi_init_obj, badge_wifi_init_);
 #endif // CONFIG_WIFI_USE
+
+
 
 // Module globals
 
