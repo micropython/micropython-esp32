@@ -56,7 +56,7 @@ typedef struct _machine_timer_obj_t {
 
 const mp_obj_type_t machine_timer_type;
 
-STATIC esp_err_t machine_try(esp_err_t code) {
+STATIC esp_err_t check_esp_err(esp_err_t code) {
     if (code) {
         mp_raise_OSError(code);
     }
@@ -97,7 +97,7 @@ STATIC void machine_timer_disable(machine_timer_obj_t *self) {
     }
 }
 
-STATIC void IRAM_ATTR machine_timer_isr(void *self_in) {
+STATIC void machine_timer_isr(void *self_in) {
     machine_timer_obj_t *self = self_in;
     timg_dev_t *device = self->group?&(TIMERG1):&(TIMERG0);
 
@@ -121,12 +121,12 @@ STATIC void machine_timer_enable(machine_timer_obj_t *self) {
     config.intr_type = TIMER_INTR_LEVEL;
     config.counter_en = TIMER_PAUSE;
 
-    machine_try(timer_init(self->group, self->index, &config));
-    machine_try(timer_set_counter_value(self->group, self->index, 0x00000000ULL));
-    machine_try(timer_set_alarm_value(self->group, self->index, self->period));
-    machine_try(timer_enable_intr(self->group, self->index));
-    machine_try(timer_isr_register(self->group, self->index, machine_timer_isr, (void*)self, TIMER_FLAGS, &self->handle));
-    machine_try(timer_start(self->group, self->index));
+    check_esp_err(timer_init(self->group, self->index, &config));
+    check_esp_err(timer_set_counter_value(self->group, self->index, 0x00000000));
+    check_esp_err(timer_set_alarm_value(self->group, self->index, self->period));
+    check_esp_err(timer_enable_intr(self->group, self->index));
+    check_esp_err(timer_isr_register(self->group, self->index, machine_timer_isr, (void*)self, TIMER_FLAGS, &self->handle));
+    check_esp_err(timer_start(self->group, self->index));
 }
 
 STATIC mp_obj_t machine_timer_init_helper(machine_timer_obj_t *self, mp_uint_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
@@ -142,7 +142,7 @@ STATIC mp_obj_t machine_timer_init_helper(machine_timer_obj_t *self, mp_uint_t n
     mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
     // Timer uses an 80MHz base clock, which is divided by the divider/scalar, we then convert to ms.
-    self->period = (args[0].u_int*TIMER_BASE_CLK)/(1000*TIMER_DIVIDER);
+    self->period = (args[0].u_int * TIMER_BASE_CLK) / (1000 * TIMER_DIVIDER);
     self->repeat = args[1].u_int;
     self->callback = args[2].u_obj;
     self->handle = NULL;
@@ -170,7 +170,7 @@ STATIC mp_obj_t machine_timer_value(mp_obj_t self_in) {
 
     timer_get_counter_time_sec(self->group, self->index, &result);
 
-    return MP_OBJ_NEW_SMALL_INT((mp_uint_t)(result*1000));  // value in ms
+    return MP_OBJ_NEW_SMALL_INT((mp_uint_t)(result * 1000));  // value in ms
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(machine_timer_value_obj, machine_timer_value);
 
