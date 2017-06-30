@@ -30,7 +30,7 @@ ESPCOMP = $(ESPIDF)/components
 ESPTOOL ?= $(ESPCOMP)/esptool_py/esptool/esptool.py
 
 # verify the ESP IDF version
-ESPIDF_SUPHASH := 90f1d42a9be55dad5ced8603f5406d543d9b6759
+ESPIDF_SUPHASH := 9b955f4c9f1b32652ea165d3e4cdaad01bba170e
 ESPIDF_CURHASH := $(shell git -C $(ESPIDF) show -s --pretty=format:'%H')
 ifneq ($(ESPIDF_CURHASH),$(ESPIDF_SUPHASH))
 $(info ** WARNING **)
@@ -86,6 +86,7 @@ INC += -I$(ESPCOMP)/wpa_supplicant/include
 INC += -I$(ESPCOMP)/wpa_supplicant/port/include
 INC += -I$(ESPCOMP)/ethernet/include
 INC += -I$(ESPCOMP)/tcpip_adapter/include
+INC += -I$(ESPCOMP)/app_trace/include
 
 CFLAGS = -std=gnu99 -Os -ffunction-sections -fdata-sections -fstrict-volatile-bitfields -mlongcalls -nostdlib -Wall -Wno-error=unused-function -Wno-error=unused-but-set-variable -Wno-error=unused-variable -Wno-error=deprecated-declarations -DMBEDTLS_CONFIG_FILE='"mbedtls/esp_config.h"' -DHAVE_CONFIG_H -DESP_PLATFORM  $(INC)
 CFLAGS += -DIDF_VER=\"$(IDF_VER)\"
@@ -251,7 +252,6 @@ ESPIDF_DRIVER_O = $(addprefix $(ESPCOMP)/driver/,\
 
 $(BUILD)/$(ESPCOMP)/esp32/dport_access.o: CFLAGS += -Wno-array-bounds
 ESPIDF_ESP32_O = $(addprefix $(ESPCOMP)/esp32/,\
-	app_trace.o \
 	panic.o \
 	event_default_handlers.o \
 	task_wdt.o \
@@ -294,6 +294,10 @@ ESPIDF_CXX_O = $(addprefix $(ESPCOMP)/cxx/,\
 ESPIDF_ETHERNET_O = $(addprefix $(ESPCOMP)/ethernet/,\
 	emac_dev.o \
 	emac_main.o \
+	)
+
+ESPIDF_APP_TRACE_O = $(addprefix $(ESPCOMP)/app_trace/,\
+	app_trace.o \
 	)
 
 $(BUILD)/$(ESPCOMP)/expat/%.o: CFLAGS += -Wno-unused-function
@@ -581,6 +585,7 @@ OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_ESP32_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_SOC_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_CXX_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_ETHERNET_O))
+OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_APP_TRACE_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_EXPAT_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_FREERTOS_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_VFS_O))
