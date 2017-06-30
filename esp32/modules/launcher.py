@@ -20,7 +20,10 @@ ugfx.string(170,75,"Anyway","Roboto_BlackItalic24",ugfx.BLACK)
 
 options = ugfx.List(0,0,int(ugfx.width()/2),ugfx.height())
 
-apps = os.listdir('lib')
+try:
+    apps = os.listdir('lib')
+except OSError:
+    apps = []
 
 apps.extend(['installer'])
 
