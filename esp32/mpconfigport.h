@@ -78,6 +78,7 @@
 #define MICROPY_PY_BUILTINS_FILTER          (1)
 #define MICROPY_PY_BUILTINS_REVERSED        (1)
 #define MICROPY_PY_BUILTINS_NOTIMPLEMENTED  (1)
+#define MICROPY_PY_BUILTINS_INPUT           (1)
 #define MICROPY_PY_BUILTINS_MIN_MAX         (1)
 #define MICROPY_PY_BUILTINS_POW3            (1)
 #define MICROPY_PY_BUILTINS_HELP            (1)
@@ -118,6 +119,7 @@
 #define MICROPY_PY_UJSON                    (1)
 #define MICROPY_PY_URE                      (1)
 #define MICROPY_PY_UHEAPQ                   (1)
+#define MICROPY_PY_UTIMEQ                   (1)
 #define MICROPY_PY_UHASHLIB                 (0) // We use the ESP32 version
 #define MICROPY_PY_UHASHLIB_SHA1            (MICROPY_PY_USSL && MICROPY_SSL_AXTLS)
 #define MICROPY_PY_UBINASCII                (1)
