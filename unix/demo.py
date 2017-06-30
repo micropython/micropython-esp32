@@ -32,8 +32,7 @@ def render(text, pushed):
 
 def start_app(pushed):
     if(pushed):
-        import installer
-        app = __import__(installer)
+        import launcher
 
 ugfx.input_init()
 ugfx.input_attach(ugfx.JOY_UP, lambda pressed: render('UP', pressed))

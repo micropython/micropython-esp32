@@ -26,7 +26,7 @@ ugfx.clear(ugfx.WHITE)
 ugfx.string(180,25,"STILL","Roboto_BlackItalic24",ugfx.BLACK)
 ugfx.string(160,50,"Hacking","PermanentMarker22",ugfx.BLACK)
 str_len = ugfx.get_string_width("Hacking","PermanentMarker22")
-ugfx.line(160, 72, 144 + str_len, 72, ugfx.BLACK)
+ugfx.line(160, 72, 174 + str_len, 72, ugfx.BLACK)
 ugfx.line(170 + str_len, 52, 170 + str_len, 70, ugfx.BLACK)
 ugfx.string(170,75,"Anyway","Roboto_BlackItalic24",ugfx.BLACK)
 
@@ -108,10 +108,9 @@ def woezel_it(active):
         import woezel
         woezel.install(packages[options.selected_index()]["slug"])
         ugfx.clear(ugfx.BLACK)
-        ugfx.string(40,25,"Running:","Roboto_BlackItalic24",ugfx.WHITE)
+        ugfx.string(40,25,"Installed:","Roboto_BlackItalic24",ugfx.WHITE)
         ugfx.string(100,75, packages[options.selected_index()]["name"],"PermanentMarker22",ugfx.WHITE)
         ugfx.flush()
-        app = __import__(packages[options.selected_index()]["slug"])
 
 ugfx.input_attach(ugfx.JOY_UP, show_description)
 ugfx.input_attach(ugfx.JOY_DOWN, show_description)
