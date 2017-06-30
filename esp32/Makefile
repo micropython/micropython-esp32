@@ -125,6 +125,7 @@ SRC_C = \
 	help.c \
 	modutime.c \
 	moduos.c \
+	machine_timer.c \
 	machine_pin.c \
 	machine_touchpad.c \
 	machine_adc.c \
