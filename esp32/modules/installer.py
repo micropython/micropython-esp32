@@ -112,10 +112,16 @@ def woezel_it(active):
         ugfx.string(100,75, packages[options.selected_index()]["name"],"PermanentMarker22",ugfx.WHITE)
         ugfx.flush()
 
+def start_app(pushed):
+    if(pushed):
+        import launcher
+
 ugfx.input_attach(ugfx.JOY_UP, show_description)
 ugfx.input_attach(ugfx.JOY_DOWN, show_description)
 ugfx.input_attach(ugfx.BTN_A, woezel_it)
 ugfx.input_attach(ugfx.BTN_B, woezel_it)
+
+ugfx.input_attach(ugfx.BTN_START, start_app)
 
 ugfx.input_attach(ugfx.JOY_LEFT, lambda x: ugfx.flush())
 ugfx.input_attach(ugfx.JOY_RIGHT, lambda x: ugfx.flush())
