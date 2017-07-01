@@ -9,6 +9,7 @@ import ussl
 import usocket
 import time
 import network
+import machine
 
 sta_if = network.WLAN(network.STA_IF); sta_if.active(True)
 badge.wifi_init()
@@ -114,7 +115,7 @@ def woezel_it(active):
 
 def start_app(pushed):
     if(pushed):
-        import launcher
+        machine.deepsleep(1)
 
 ugfx.input_attach(ugfx.JOY_UP, show_description)
 ugfx.input_attach(ugfx.JOY_DOWN, show_description)
