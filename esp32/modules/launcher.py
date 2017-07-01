@@ -32,11 +32,14 @@ for app in apps:
 
 def run_it(pushed):
     if (pushed):
+        selected = options.selected_index()
+        options.destroy()
+
         ugfx.clear(ugfx.BLACK)
         ugfx.string(40,25,"Running:","Roboto_BlackItalic24",ugfx.WHITE)
-        ugfx.string(100,75, apps[options.selected_index()],"PermanentMarker22",ugfx.WHITE)
+        ugfx.string(100,75, apps[selected],"PermanentMarker22",ugfx.WHITE)
         ugfx.flush()
-        __import__(apps[options.selected_index()])
+        __import__(apps[selected])
 
 ugfx.input_attach(ugfx.BTN_A, run_it)
 ugfx.input_attach(ugfx.BTN_B, run_it)
