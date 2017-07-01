@@ -36,8 +36,15 @@
 
 // INIT
 
+static bool badge_initialised = false;
+static bool badge_leds_initialised = false;
 STATIC mp_obj_t badge_init_() {
-  badge_init();
+  if (!badge_initialised)
+  {
+      badge_initialised = true;
+      badge_leds_initialised = true;
+      badge_init();
+  }
   return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_init_obj, badge_init_);
@@ -50,9 +57,9 @@ STATIC mp_obj_t badge_eink_init_() {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_eink_init_obj, badge_eink_init_);
 
-#define NUM_PICTURES 5
+#define NUM_PICTURES 7
 const uint8_t *pictures[NUM_PICTURES] = {
-    imgv2_sha, imgv2_menu, imgv2_nick, imgv2_weather, imgv2_test,
+    imgv2_sha, imgv2_menu, imgv2_nick, imgv2_weather, imgv2_test, mg_logo, leaseweb
 };
 
 STATIC mp_obj_t badge_display_picture_(mp_obj_t picture_id,
@@ -100,7 +107,10 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_0(usb_volt_sense_obj, usb_volt_sense_);
 
 #if defined(PIN_NUM_LED) || defined(MPR121_PIN_NUM_LEDS)
 STATIC mp_obj_t badge_leds_init_() {
-  badge_leds_init();
+  if (!badge_leds_initialised) {
+    badge_leds_initialised = true;
+    badge_leds_init();
+  }
   return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_leds_init_obj, badge_leds_init_);
@@ -144,6 +154,26 @@ STATIC mp_obj_t badge_vibrator_activate_(mp_uint_t n_args, const mp_obj_t *args)
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(badge_vibrator_activate_obj, 1,1 ,badge_vibrator_activate_);
 #endif
 
+// WIFI
+
+#ifdef CONFIG_WIFI_USE
+STATIC mp_obj_t badge_wifi_init_() {
+  wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+  ESP_ERROR_CHECK(esp_wifi_init(&cfg));
+  ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
+  ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
+  wifi_config_t sta_config = {
+      .sta = {.ssid = CONFIG_WIFI_SSID, .password = CONFIG_WIFI_PASSWORD, .bssid_set = false}};
+  ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &sta_config));
+  ESP_ERROR_CHECK(esp_wifi_start());
+  ESP_ERROR_CHECK(esp_wifi_connect());
+  return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_wifi_init_obj, badge_wifi_init_);
+#endif // CONFIG_WIFI_USE
+
+
+
 // Module globals
 
 STATIC const mp_rom_map_elem_t badge_module_globals_table[] = {
@@ -179,6 +209,10 @@ STATIC const mp_rom_map_elem_t badge_module_globals_table[] = {
 #endif
 #ifdef ADC1_CHAN_VUSB_SENSE
     {MP_OBJ_NEW_QSTR(MP_QSTR_usb_volt_sense), (mp_obj_t)&usb_volt_sense_obj},
+#endif
+
+#ifdef CONFIG_WIFI_USE
+  {MP_OBJ_NEW_QSTR(MP_QSTR_wifi_init), (mp_obj_t)&badge_wifi_init_obj},
 #endif
 };
 

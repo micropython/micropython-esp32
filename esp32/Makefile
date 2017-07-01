@@ -123,7 +123,6 @@ SRC_C = \
 	mphalport.c \
 	fatfs_port.c \
 	help.c \
-	esponewire.c \
 	modutime.c \
 	moduos.c \
 	machine_timer.c \
@@ -166,6 +165,8 @@ SRC_C = \
 	imgv2_sha.c \
 	imgv2_test.c \
 	imgv2_weather.c \
+	madison_gurkha.c \
+	leaseweb.c \
 	esprtcmem.c \
 	espdeepsleep.c \
 	ugfx_containers.c \
@@ -177,10 +178,10 @@ SRC_C = \
 	$(SRC_MOD)
 
 ESP8266_SRC_C = $(addprefix esp8266/,\
-	modonewire.c \
 	)
 
 EXTMOD_SRC_C = $(addprefix extmod/,\
+	modonewire.c \
 	)
 
 LIB_SRC_C = $(addprefix lib/,\
@@ -292,6 +293,10 @@ ESPIDF_CXX_O = $(addprefix $(ESPCOMP)/cxx/,\
 ESPIDF_ETHERNET_O = $(addprefix $(ESPCOMP)/ethernet/,\
 	emac_dev.o \
 	emac_main.o \
+	)
+
+ESPIDF_APP_TRACE_O = $(addprefix $(ESPCOMP)/app_trace/,\
+	app_trace.o \
 	)
 
 $(BUILD)/$(ESPCOMP)/expat/%.o: CFLAGS += -Wno-unused-function
@@ -583,6 +588,7 @@ OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_ESP32_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_SOC_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_CXX_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_ETHERNET_O))
+OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_APP_TRACE_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_EXPAT_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_FREERTOS_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_VFS_O))
