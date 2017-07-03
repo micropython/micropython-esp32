@@ -45,6 +45,9 @@
 #include "mbedtls/ctr_drbg.h"
 #include "mbedtls/debug.h"
 
+extern const uint8_t server_root_cert_pem_start[] asm("_binary_server_root_cert_pem_start");
+extern const uint8_t server_root_cert_pem_end[]   asm("_binary_server_root_cert_pem_end");
+
 typedef struct _mp_obj_ssl_socket_t {
     mp_obj_base_t base;
     mp_obj_t sock;
@@ -136,13 +139,22 @@ STATIC mp_obj_ssl_socket_t *socket_new(mp_obj_t sock, struct ssl_args *args) {
     mbedtls_pk_init(&o->pkey);
     mbedtls_ctr_drbg_init(&o->ctr_drbg);
     // Debug level (0-4)
-    mbedtls_debug_set_threshold(0);
+    mbedtls_debug_set_threshold(4);
 
     mbedtls_entropy_init(&o->entropy);
     const byte seed[] = "upy";
     ret = mbedtls_ctr_drbg_seed(&o->ctr_drbg, null_entropy_func/*mbedtls_entropy_func*/, &o->entropy, seed, sizeof(seed));
     if (ret != 0) {
         printf("ret=%d\n", ret);
+        assert(0);
+    }
+
+    ret = mbedtls_x509_crt_parse(&o->cacert, server_root_cert_pem_start,
+                                 server_root_cert_pem_end-server_root_cert_pem_start);
+
+    if(ret < 0)
+    {
+        printf("mbedtls_x509_crt_parse returned -0x%x\n\n", -ret);
         assert(0);
     }
 
@@ -154,7 +166,7 @@ STATIC mp_obj_ssl_socket_t *socket_new(mp_obj_t sock, struct ssl_args *args) {
         assert(0);
     }
 
-    mbedtls_ssl_conf_authmode(&o->conf, MBEDTLS_SSL_VERIFY_NONE);
+    mbedtls_ssl_conf_authmode(&o->conf, MBEDTLS_SSL_VERIFY_REQUIRED);
     mbedtls_ssl_conf_rng(&o->conf, mbedtls_ctr_drbg_random, &o->ctr_drbg);
     mbedtls_ssl_conf_dbg(&o->conf, mbedtls_debug, NULL);
 
@@ -223,7 +235,7 @@ STATIC mp_uint_t socket_read(mp_obj_t o_in, void *buf, mp_uint_t size, int *errc
         return 0;
     }
 
-    if (ret == MBEDTLS_ERR_SSL_WANT_READ) { 
+    if (ret == MBEDTLS_ERR_SSL_WANT_READ) {
         *errcode = EWOULDBLOCK;
         return 0;
     }
@@ -243,7 +255,7 @@ STATIC mp_uint_t socket_write(mp_obj_t o_in, const void *buf, mp_uint_t size, in
         return ret;
     }
 
-    if (ret == MBEDTLS_ERR_SSL_WANT_WRITE) { 
+    if (ret == MBEDTLS_ERR_SSL_WANT_WRITE) {
         *errcode = EWOULDBLOCK;
         return 0;
     }
