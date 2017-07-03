@@ -1650,6 +1650,7 @@ STATIC mp_obj_t network_bluetooth_callback_queue_handler(mp_obj_t arg) {
 
                         if (chr != MP_OBJ_NULL) {
                             chr->handle = cbdata.gatts_add_char_descr.handle;
+                            bool addNextChar = true;
 
                             size_t len;
                             mp_obj_t *items;
@@ -1668,7 +1669,6 @@ STATIC mp_obj_t network_bluetooth_callback_queue_handler(mp_obj_t arg) {
                             } else {
                                 // check to see if all descriptors are registered before adding next char
                                 ITEM_BEGIN();
-                                bool addNextChar = true;
                                 mp_obj_get_array(service->last_added_chr->descrs, &len, &items);
                                 for (int j = 0; j < len; j++) {
                                     network_bluetooth_char_descr_obj_t* descr = (network_bluetooth_char_descr_obj_t*) items[j];
@@ -1678,12 +1678,14 @@ STATIC mp_obj_t network_bluetooth_callback_queue_handler(mp_obj_t arg) {
                                     }
                                 }
                                 ITEM_END();
-                                if (addNextChar) {
-                                    chr = network_bluetooth_find_next_char_in_service(service, chr->parent);
-                                    if (chr != MP_OBJ_NULL) {
-                                        esp_ble_gatts_add_char(service->handle, &chr->id.uuid, chr->perm, chr->prop, NULL, NULL); 
-                                        service->last_added_chr = chr;
-                                    }
+                            }
+
+                            if (addNextChar) {
+                                chr = network_bluetooth_find_next_char_in_service(service, chr);
+
+                                if (chr != MP_OBJ_NULL) {
+                                    esp_ble_gatts_add_char(service->handle, &chr->id.uuid, chr->perm, chr->prop, NULL, NULL); 
+                                    service->last_added_chr = chr;
                                 }
                             }
                         }
