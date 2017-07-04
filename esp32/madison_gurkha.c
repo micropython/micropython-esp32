@@ -1,1 +1,0 @@
-../../main/madison_gurkha.c

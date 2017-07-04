@@ -23,6 +23,7 @@ INC +=  -I.
 INC +=  -I..
 INC += -I$(BUILD)
 INC += -I../../components/ugfx
+INC += -I../../components/badge
 INC += -I../../esp-idf/components/esp32/include/
 INC += -I../../ugfx/src/gdisp/mcufont
 INC += -I../../ugfx
