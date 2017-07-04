@@ -73,16 +73,16 @@ STATIC mp_obj_t badge_display_picture_(mp_obj_t picture_id,
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(badge_display_picture_obj,
                                  badge_display_picture_);
 
- STATIC mp_obj_t badge_eink_bussy_() {
+ STATIC mp_obj_t badge_eink_busy_() {
    return mp_obj_new_bool(badge_eink_dev_is_busy());
  }
- STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_eink_bussy_obj, badge_eink_bussy_);
+ STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_eink_busy_obj, badge_eink_busy_);
 
- STATIC mp_obj_t badge_eink_bussy_wait_() {
+ STATIC mp_obj_t badge_eink_busy_wait_() {
    badge_eink_dev_busy_wait();
    return mp_const_none;
  }
- STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_eink_bussy_wait_obj, badge_eink_bussy_wait_);
+ STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_eink_busy_wait_obj, badge_eink_busy_wait_);
 
 // Power
 
@@ -207,8 +207,8 @@ STATIC const mp_rom_map_elem_t badge_module_globals_table[] = {
     {MP_OBJ_NEW_QSTR(MP_QSTR_vibrator_activate), (mp_obj_t)&badge_vibrator_activate_obj},
 #endif
 
-    {MP_ROM_QSTR(MP_QSTR_eink_bussy), MP_ROM_PTR(&badge_eink_bussy_obj)},
-    {MP_ROM_QSTR(MP_QSTR_eink_bussy_wait), MP_ROM_PTR(&badge_eink_bussy_wait_obj)},
+    {MP_ROM_QSTR(MP_QSTR_eink_busy), MP_ROM_PTR(&badge_eink_busy_obj)},
+    {MP_ROM_QSTR(MP_QSTR_eink_busy_wait), MP_ROM_PTR(&badge_eink_busy_wait_obj)},
 
     {MP_ROM_QSTR(MP_QSTR_display_picture),
      MP_ROM_PTR(&badge_display_picture_obj)},
