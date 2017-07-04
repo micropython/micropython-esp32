@@ -49,7 +49,10 @@ INC += -I..
 INC += -I../lib/mp-readline
 INC += -I../lib/netutils
 INC += -I../lib/timeutils
+INC += -I../../components/badge
 INC += -I../../components/ugfx
+INC += -I../../components/graph
+INC += -I../../main
 INC += -I../../ugfx/src/gdisp/mcufont
 INC += -I../../ugfx
 INC += -I../../ugfx/src
@@ -143,39 +146,39 @@ SRC_C = \
 	machine_rtc.c \
 	machine_hw_spi.c \
 	mpthreadport.c \
-	badge_base.c \
-	badge_eink.c \
-	badge_i2c.c \
-	badge_leds.c \
-	badge_mpr121.c \
-	badge_portexp.c \
-	badge_gpiobutton.c \
-	badge_touch.c \
-	badge_input.c \
-	badge_sdcard.c \
-	badge_vibrator.c \
-	badge_power.c \
-	badge_eink_dev.c \
-	badge_eink_lut.c \
-	badge.c \
-	font.c \
-	font_16px.c \
-	font_8px.c \
-	imgv2_menu.c \
-	imgv2_nick.c \
-	imgv2_sha.c \
-	imgv2_test.c \
-	imgv2_weather.c \
-	madison_gurkha.c \
-	leaseweb.c \
+	../../components/badge/badge_base.c \
+	../../components/badge/badge_eink.c \
+	../../components/badge/badge_i2c.c \
+	../../components/badge/badge_leds.c \
+	../../components/badge/badge_mpr121.c \
+	../../components/badge/badge_portexp.c \
+	../../components/badge/badge_gpiobutton.c \
+	../../components/badge/badge_touch.c \
+	../../components/badge/badge_input.c \
+	../../components/badge/badge_sdcard.c \
+	../../components/badge/badge_vibrator.c \
+	../../components/badge/badge_power.c \
+	../../components/badge/badge_eink_dev.c \
+	../../components/badge/badge_eink_lut.c \
+	../../components/badge/badge.c \
+	../../components/graph/font.c \
+	../../components/graph/font_16px.c \
+	../../components/graph/font_8px.c \
+	../../main/imgv2_menu.c \
+	../../main/imgv2_nick.c \
+	../../main/imgv2_sha.c \
+	../../main/imgv2_test.c \
+	../../main/imgv2_weather.c \
+	../../main/madison_gurkha.c \
+	../../main/leaseweb.c \
 	esprtcmem.c \
 	espdeepsleep.c \
 	ugfx_containers.c \
 	ugfx_widgets.c \
 	ugfx_styles.c \
-	gdisp_lld_framebuffer.c \
-	ginput_lld_toggle.c \
-	gfx_mk.c \
+	../../components/ugfx/gdisp_lld_framebuffer.c \
+	../../components/ugfx/ginput_lld_toggle.c \
+	../../components/ugfx/gfx_mk.c \
 	$(SRC_MOD)
 
 ESP8266_SRC_C = $(addprefix esp8266/,\

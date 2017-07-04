@@ -1,1 +1,0 @@
-../../components/badge/badge_eink_lut.c
