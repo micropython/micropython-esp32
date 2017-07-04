@@ -44,8 +44,8 @@ def run_it(pushed):
 ugfx.input_attach(ugfx.BTN_A, run_it)
 ugfx.input_attach(ugfx.BTN_B, run_it)
 
-ugfx.input_attach(ugfx.JOY_UP, lambda x: ugfx.flush())
-ugfx.input_attach(ugfx.JOY_DOWN, lambda x: ugfx.flush())
+ugfx.input_attach(ugfx.JOY_UP, lambda pushed: ugfx.flush() if pushed else 0)
+ugfx.input_attach(ugfx.JOY_DOWN, lambda pushed: ugfx.flush() if pushed else 0)
 
 ugfx.flush()
 time.sleep(0.2)
