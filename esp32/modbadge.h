@@ -6,6 +6,7 @@
 #include "badge.h"
 #include "badge_pins.h"
 #include "badge_eink.h"
+#include "badge_eink_dev.h"
 #include "badge_power.h"
 #include "badge_leds.h"
 #include "badge_vibrator.h"
