@@ -18,7 +18,7 @@ PORT ?= /dev/ttyUSB0
 BAUD ?= 460800
 FLASH_MODE ?= dio
 FLASH_FREQ ?= 40m
-FLASH_SIZE ?= 4MB
+FLASH_SIZE ?= 16MB
 CROSS_COMPILE ?= xtensa-esp32-elf-
 
 # paths to ESP IDF and its components
@@ -28,6 +28,7 @@ endif
 ESPIDF = $(IDF_PATH)
 ESPCOMP = $(ESPIDF)/components
 ESPTOOL ?= $(ESPCOMP)/esptool_py/esptool/esptool.py
+BADGE = $(IDF_PATH)/..
 
 # verify the ESP IDF version
 ESPIDF_SUPHASH := 9b955f4c9f1b32652ea165d3e4cdaad01bba170e
@@ -146,42 +147,23 @@ SRC_C = \
 	machine_rtc.c \
 	machine_hw_spi.c \
 	mpthreadport.c \
-	../../components/badge/badge_base.c \
-	../../components/badge/badge_eink.c \
-	../../components/badge/badge_i2c.c \
-	../../components/badge/badge_leds.c \
-	../../components/badge/badge_mpr121.c \
-	../../components/badge/badge_portexp.c \
-	../../components/badge/badge_gpiobutton.c \
-	../../components/badge/badge_touch.c \
-	../../components/badge/badge_input.c \
-	../../components/badge/badge_sdcard.c \
-	../../components/badge/badge_vibrator.c \
-	../../components/badge/badge_power.c \
-	../../components/badge/badge_eink_dev.c \
-	../../components/badge/badge_eink_lut.c \
-	../../components/badge/badge.c \
-	../../components/graph/font.c \
-	../../components/graph/font_16px.c \
-	../../components/graph/font_8px.c \
-	../../main/imgv2_menu.c \
-	../../main/imgv2_nick.c \
-	../../main/imgv2_sha.c \
-	../../main/imgv2_test.c \
-	../../main/imgv2_weather.c \
-	../../main/madison_gurkha.c \
-	../../main/leaseweb.c \
 	esprtcmem.c \
 	espdeepsleep.c \
 	ugfx_containers.c \
 	ugfx_widgets.c \
 	ugfx_styles.c \
-	../../components/ugfx/gdisp_lld_framebuffer.c \
-	../../components/ugfx/ginput_lld_toggle.c \
-	../../components/ugfx/gfx_mk.c \
 	$(SRC_MOD)
 
-ESP8266_SRC_C = $(addprefix esp8266/,\
+### TODO remove hardcoded images when loader works ;)
+
+BADGE_MAIN_SRC_C = $(addprefix ../../main/,\
+	imgv2_menu.c \
+	imgv2_nick.c \
+	imgv2_sha.c \
+	imgv2_test.c \
+	imgv2_weather.c \
+	madison_gurkha.c \
+	leaseweb.c \
 	)
 
 EXTMOD_SRC_C = $(addprefix extmod/,\
@@ -228,13 +210,13 @@ DRIVERS_SRC_C = $(addprefix drivers/,\
 OBJ_MP =
 OBJ_MP += $(PY_O)
 OBJ_MP += $(addprefix $(BUILD)/, $(SRC_C:.c=.o))
-OBJ_MP += $(addprefix $(BUILD)/, $(ESP8266_SRC_C:.c=.o))
 OBJ_MP += $(addprefix $(BUILD)/, $(EXTMOD_SRC_C:.c=.o))
 OBJ_MP += $(addprefix $(BUILD)/, $(LIB_SRC_C:.c=.o))
 OBJ_MP += $(addprefix $(BUILD)/, $(DRIVERS_SRC_C:.c=.o))
+OBJ_MP += $(addprefix $(BUILD)/, $(BADGE_MAIN_C:.c=.o))
 
 # List of sources for qstr extraction
-SRC_QSTR += $(SRC_C) $(ESP8266_SRC_C) $(EXTMOD_SRC_C) $(LIB_SRC_C) $(DRIVERS_SRC_C)
+SRC_QSTR += $(SRC_C) $(EXTMOD_SRC_C) $(LIB_SRC_C) $(DRIVERS_SRC_C)
 # Append any auto-generated sources that are needed by sources listed in SRC_QSTR
 SRC_QSTR_AUTO_DEPS +=
 
@@ -603,6 +585,38 @@ OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_NVS_FLASH_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_OPENSSL_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_SPI_FLASH_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_WPA_SUPPLICANT_O))
+
+
+####################
+# Badge magic
+
+$(BUILD)/components/%.o: CFLAGS += -Wno-strict-aliasing
+BADGE_COMPONENTS_O = $(addprefix $(BADGE)/components/,\
+	badge/badge_base.o \
+	badge/badge_eink.o \
+	badge/badge_i2c.o \
+	badge/badge_leds.o \
+	badge/badge_mpr121.o \
+	badge/badge_portexp.o \
+	badge/badge_gpiobutton.o \
+	badge/badge_touch.o \
+	badge/badge_input.o \
+	badge/badge_sdcard.o \
+	badge/badge_vibrator.o \
+	badge/badge_power.o \
+	badge/badge_eink_dev.o \
+	badge/badge_eink_lut.o \
+	badge/badge.o \
+	graph/font.o \
+	graph/font_16px.o \
+	graph/font_8px.o \
+	ugfx/gdisp_lld_framebuffer.o \
+	ugfx/ginput_lld_toggle.o \
+	ugfx/gfx_mk.o \
+	)
+
+OBJ_ESPIDF += $(addprefix $(BUILD)/, $(BADGE_COMPONENTS_O))
+
 ################################################################################
 # Main targets
 
