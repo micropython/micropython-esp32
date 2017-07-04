@@ -53,6 +53,7 @@ INC += -I../lib/timeutils
 INC += -I../../components/badge
 INC += -I../../components/ugfx
 INC += -I../../components/graph
+INC += -I../../components/sha2017
 INC += -I../../main
 INC += -I../../ugfx/src/gdisp/mcufont
 INC += -I../../ugfx
@@ -154,8 +155,7 @@ SRC_C = \
 	ugfx_styles.c \
 	$(SRC_MOD)
 
-### TODO remove hardcoded images when loader works ;)
-
+### TODO fix hardcoded images when we can't get image loader to work
 #BADGE_MAIN_SRC_C = $(addprefix ../../main/,\
 #	imgv2_menu.c \
 #	imgv2_nick.c \
@@ -590,7 +590,7 @@ OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_WPA_SUPPLICANT_O))
 ####################
 # Badge magic
 
-$(BUILD)/components/%.o: CFLAGS += -Wno-strict-aliasing
+$(BUILD)/components/%.o:
 BADGE_COMPONENTS_O = $(addprefix $(BADGE)/components/,\
 	badge/badge_base.o \
 	badge/badge_eink.o \
@@ -613,6 +613,7 @@ BADGE_COMPONENTS_O = $(addprefix $(BADGE)/components/,\
 	ugfx/gdisp_lld_framebuffer.o \
 	ugfx/ginput_lld_toggle.o \
 	ugfx/gfx_mk.o \
+	sha2017/wildcard_sha2017_org.o \
 	)
 
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(BADGE_COMPONENTS_O))

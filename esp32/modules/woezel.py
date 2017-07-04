@@ -104,10 +104,7 @@ def expandhome(s):
 
 import ussl
 import usocket
-warn_ussl = True
 def url_open(url):
-    global warn_ussl
-
     if debug:
         print(url)
 
@@ -128,9 +125,6 @@ def url_open(url):
 
         if proto == "https:":
             s = ussl.wrap_socket(s, server_hostname=host)
-            if warn_ussl:
-                print("Warning: %s SSL certificate is not validated" % host)
-                warn_ussl = False
 
         # MicroPython rawsocket module supports file interface directly
         s.write("GET /%s HTTP/1.0\r\nHost: %s\r\n\r\n" % (urlpath, host))
