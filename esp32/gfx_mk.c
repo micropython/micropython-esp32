@@ -1,1 +1,0 @@
-../../components/ugfx/gfx_mk.c

@@ -1,1 +1,0 @@
-../../components/badge/badge_i2c.c
