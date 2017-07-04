@@ -140,7 +140,7 @@ STATIC mp_obj_ssl_socket_t *socket_new(mp_obj_t sock, struct ssl_args *args) {
     mbedtls_pk_init(&o->pkey);
     mbedtls_ctr_drbg_init(&o->ctr_drbg);
     // Debug level (0-4)
-    mbedtls_debug_set_threshold(4);
+    mbedtls_debug_set_threshold(0);
 
     mbedtls_entropy_init(&o->entropy);
     const byte seed[] = "upy";
