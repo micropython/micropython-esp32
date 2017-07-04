@@ -45,8 +45,7 @@
 #include "mbedtls/ctr_drbg.h"
 #include "mbedtls/debug.h"
 
-extern const uint8_t server_root_cert_pem_start[] asm("_binary_server_root_cert_pem_start");
-extern const uint8_t server_root_cert_pem_end[]   asm("_binary_server_root_cert_pem_end");
+#include "wildcard_sha2017_org.h"
 
 typedef struct _mp_obj_ssl_socket_t {
     mp_obj_base_t base;
@@ -149,8 +148,7 @@ STATIC mp_obj_ssl_socket_t *socket_new(mp_obj_t sock, struct ssl_args *args) {
         assert(0);
     }
 
-    ret = mbedtls_x509_crt_parse(&o->cacert, server_root_cert_pem_start,
-                                 server_root_cert_pem_end-server_root_cert_pem_start);
+    ret = mbedtls_x509_crt_parse(&o->cacert, wildcard_sha2017_org, 2151);
 
     if(ret < 0)
     {
