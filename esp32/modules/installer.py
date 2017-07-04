@@ -98,7 +98,7 @@ ugfx.flush()
 def show_description(active):
     if active:
          text.text(packages[options.selected_index()]["description"])
-    ugfx.flush()
+         ugfx.flush()
 
 def woezel_it(active):
     if active:
@@ -124,8 +124,8 @@ ugfx.input_attach(ugfx.BTN_B, woezel_it)
 
 ugfx.input_attach(ugfx.BTN_START, start_app)
 
-ugfx.input_attach(ugfx.JOY_LEFT, lambda x: ugfx.flush())
-ugfx.input_attach(ugfx.JOY_RIGHT, lambda x: ugfx.flush())
+ugfx.input_attach(ugfx.JOY_LEFT, lambda pushed: ugfx.flush() if pushed else 0)
+ugfx.input_attach(ugfx.JOY_RIGHT, lambda pushed: ugfx.flush() if pushed else 0)
 
 text = ugfx.Textbox(int(ugfx.width()/2),0, int(ugfx.width()/2), ugfx.height())
 
