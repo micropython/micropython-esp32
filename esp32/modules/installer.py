@@ -81,6 +81,11 @@ def url_open(url):
 
     return s
 
+def show_description(active):
+    if active:
+         text.text(packages[options.selected_index()]["description"])
+         ugfx.flush()
+
 options = ugfx.List(0,0,int(ugfx.width()/2),ugfx.height())
 
 f = url_open("https://badge.sha2017.org/eggs/list/json")
@@ -91,14 +96,6 @@ finally:
 
 for package in packages:
     options.add_item("%s rev. %s"% (package["name"], package["revision"]))
-
-ugfx.set_lut(ugfx.LUT_FULL)
-ugfx.flush()
-
-def show_description(active):
-    if active:
-         text.text(packages[options.selected_index()]["description"])
-         ugfx.flush()
 
 def woezel_it(active):
     if active:
@@ -129,6 +126,8 @@ ugfx.input_attach(ugfx.JOY_RIGHT, lambda pushed: ugfx.flush() if pushed else 0)
 
 text = ugfx.Textbox(int(ugfx.width()/2),0, int(ugfx.width()/2), ugfx.height())
 
+show_description(True)
+
+ugfx.set_lut(ugfx.LUT_FULL)
 ugfx.flush()
-time.sleep(0.2)
 ugfx.set_lut(ugfx.LUT_FASTER)
