@@ -23,6 +23,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+#define _GNU_SOURCE
 
 #include "py/mpconfig.h"
 #if MICROPY_PY_USSL && MICROPY_SSL_MBEDTLS
@@ -30,6 +31,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#include <string.h>
 
 #include "py/nlr.h"
 #include "py/runtime.h"
@@ -148,12 +150,24 @@ STATIC mp_obj_ssl_socket_t *socket_new(mp_obj_t sock, struct ssl_args *args) {
         assert(0);
     }
 
-    ret = mbedtls_x509_crt_parse(&o->cacert, wildcard_sha2017_org, 2151);
+    bool sha2017_subdomain = false;
+    if (args->server_hostname.u_obj != mp_const_none) {
+      const char *sni = mp_obj_str_get_str(args->server_hostname.u_obj);
+      char *ptr;
+      sha2017_subdomain = ((ptr = strcasestr(sni, ".sha2017.org")) != NULL && ptr[12] == 0);
+      if (sha2017_subdomain) {
+        printf("Validating certificate for: %s\n", sni);
+      } else {
+        printf("Warning: %s SSL certificate is not validated\n", sni);
+      }
+    }
 
-    if(ret < 0)
-    {
-        printf("mbedtls_x509_crt_parse returned -0x%x\n\n", -ret);
-        assert(0);
+    if (sha2017_subdomain) {
+        ret = mbedtls_x509_crt_parse_der(&o->cacert, wildcard_sha2017_org, 856);
+        if(ret < 0) {
+            printf("mbedtls_x509_crt_parse returned -0x%x\n\n", -ret);
+            assert(0);
+        }
     }
 
     ret = mbedtls_ssl_config_defaults(&o->conf,
@@ -164,7 +178,12 @@ STATIC mp_obj_ssl_socket_t *socket_new(mp_obj_t sock, struct ssl_args *args) {
         assert(0);
     }
 
-    mbedtls_ssl_conf_authmode(&o->conf, MBEDTLS_SSL_VERIFY_REQUIRED);
+    if (sha2017_subdomain) {
+      mbedtls_ssl_conf_authmode(&o->conf, MBEDTLS_SSL_VERIFY_REQUIRED);
+      mbedtls_ssl_conf_ca_chain(&o->conf, &o->cacert, NULL);
+    } else {
+      mbedtls_ssl_conf_authmode(&o->conf, MBEDTLS_SSL_VERIFY_NONE);
+    }
     mbedtls_ssl_conf_rng(&o->conf, mbedtls_ctr_drbg_random, &o->ctr_drbg);
     mbedtls_ssl_conf_dbg(&o->conf, mbedtls_debug, NULL);
 

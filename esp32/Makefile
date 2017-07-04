@@ -155,16 +155,16 @@ SRC_C = \
 	ugfx_styles.c \
 	$(SRC_MOD)
 
-### TODO remove hardcoded images when loader works ;)
-BADGE_MAIN_SRC_C = $(addprefix ../../main/,\
-	imgv2_menu.c \
-	imgv2_nick.c \
-	imgv2_sha.c \
-	imgv2_test.c \
-	imgv2_weather.c \
-	madison_gurkha.c \
-	leaseweb.c \
-	)
+### TODO fix hardcoded images when we can't get image loader to work
+#BADGE_MAIN_SRC_C = $(addprefix ../../main/,\
+#	imgv2_menu.c \
+#	imgv2_nick.c \
+#	imgv2_sha.c \
+#	imgv2_test.c \
+#	imgv2_weather.c \
+#	madison_gurkha.c \
+#	leaseweb.c \
+#	)
 
 EXTMOD_SRC_C = $(addprefix extmod/,\
 	modonewire.c \
