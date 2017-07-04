@@ -143,6 +143,7 @@ SRC_C = \
 	machine_rtc.c \
 	machine_hw_spi.c \
 	mpthreadport.c \
+	badge_base.c \
 	badge_eink.c \
 	badge_i2c.c \
 	badge_leds.c \

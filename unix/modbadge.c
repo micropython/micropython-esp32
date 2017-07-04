@@ -69,6 +69,17 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_2(badge_display_picture_obj,
                                  badge_display_picture_);
 */
 
+STATIC mp_obj_t badge_eink_busy_() {
+  return mp_obj_new_bool(false);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_eink_busy_obj, badge_eink_busy_);
+
+STATIC mp_obj_t badge_eink_busy_wait_() {
+  // badge_eink_dev_busy_wait();
+  return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_eink_busy_wait_obj, badge_eink_busy_wait_);
+
 // Power
 
 STATIC mp_obj_t badge_power_init_() {
@@ -202,6 +213,9 @@ STATIC const mp_rom_map_elem_t mock_badge_module_globals_table[] = {
 
   {MP_OBJ_NEW_QSTR(MP_QSTR_vibrator_init), (mp_obj_t)&badge_vibrator_init_obj},
   {MP_OBJ_NEW_QSTR(MP_QSTR_vibrator_activate), (mp_obj_t)&badge_vibrator_activate_obj},
+
+  {MP_ROM_QSTR(MP_QSTR_eink_busy), MP_ROM_PTR(&badge_eink_busy_obj)},
+  {MP_ROM_QSTR(MP_QSTR_eink_busy_wait), MP_ROM_PTR(&badge_eink_busy_wait_obj)},
 
   // {MP_ROM_QSTR(MP_QSTR_display_picture),
   //  MP_ROM_PTR(&badge_display_picture_obj)},
