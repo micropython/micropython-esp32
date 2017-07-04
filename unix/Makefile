@@ -24,6 +24,7 @@ INC +=  -I..
 INC += -I$(BUILD)
 INC += -I../../components/ugfx
 INC += -I../../components/badge
+INC += -I../../components/sha2017
 INC += -I../../esp-idf/components/esp32/include/
 INC += -I../../ugfx/src/gdisp/mcufont
 INC += -I../../ugfx
@@ -165,6 +166,7 @@ SRC_C = \
 	modbadge.c \
 	../../ugfx/drivers/multiple/SDL/gdisp_lld_SDL.c \
 	ginput_lld_toggle.c \
+	../../components/sha2017/wildcard_sha2017_org.c \
 	gfx_mk.c \
 	modos.c \
 	moduos_vfs.c \
