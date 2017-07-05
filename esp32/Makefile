@@ -59,7 +59,6 @@ INC += -I../../ugfx/src/gdisp/mcufont
 INC += -I../../ugfx
 INC += -I../../ugfx/src
 INC += -I../../ugfx/drivers/gdisp/framebuffer
-INC += -I../../esp-idf/components/freertos/include/freertos
 INC += -I$(BUILD)
 INC += -I$(ESPCOMP)/bootloader_support/include
 INC += -I$(ESPCOMP)/driver/include
@@ -91,6 +90,9 @@ INC += -I$(ESPCOMP)/wpa_supplicant/include
 INC += -I$(ESPCOMP)/wpa_supplicant/port/include
 INC += -I$(ESPCOMP)/ethernet/include
 INC += -I$(ESPCOMP)/app_trace/include
+INC += -I$(ESPCOMP)/freertos/include/freertos
+INC += -I$(ESPCOMP)/app_update/include
+INC += -I$(ESPCOMP)/bootloader_support/include_priv
 
 CFLAGS = -std=gnu99 -Os -ffunction-sections -fdata-sections -fstrict-volatile-bitfields -mlongcalls -nostdlib -Wall -Wno-error=unused-function -Wno-error=unused-but-set-variable -Wno-error=unused-variable -Wno-error=deprecated-declarations -DMBEDTLS_CONFIG_FILE='"mbedtls/esp_config.h"' -DHAVE_CONFIG_H -DESP_PLATFORM  $(INC)
 CFLAGS += -DIDF_VER=\"$(IDF_VER)\"
@@ -284,6 +286,16 @@ ESPIDF_ETHERNET_O = $(addprefix $(ESPCOMP)/ethernet/,\
 ESPIDF_APP_TRACE_O = $(addprefix $(ESPCOMP)/app_trace/,\
 	app_trace.o \
 	)
+
+ESPIDF_APP_UPDATE_O = $(addprefix $(ESPCOMP)/app_update/,\
+	esp_ota_ops.o \
+	)
+
+ESPIDF_BOOTLOADER_O = $(addprefix $(ESPCOMP)/bootloader_support/src/,\
+	esp_image_format.o \
+	bootloader_flash.o \
+	)
+
 
 $(BUILD)/$(ESPCOMP)/expat/%.o: CFLAGS += -Wno-unused-function
 ESPIDF_EXPAT_O = $(addprefix $(ESPCOMP)/expat/,\
@@ -585,7 +597,8 @@ OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_NVS_FLASH_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_OPENSSL_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_SPI_FLASH_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_WPA_SUPPLICANT_O))
-
+OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_APP_UPDATE_O))
+OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_BOOTLOADER_O))
 
 ####################
 # Badge magic
@@ -614,6 +627,7 @@ BADGE_COMPONENTS_O = $(addprefix $(BADGE)/components/,\
 	ugfx/ginput_lld_toggle.o \
 	ugfx/gfx_mk.o \
 	sha2017/wildcard_sha2017_org.o \
+	sha2017/sha2017_ota.o \
 	)
 
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(BADGE_COMPONENTS_O))
@@ -746,7 +760,7 @@ $(BUILD)/bootloader.elf: $(BOOTLOADER_OBJ)
 # Declarations to build the partitions
 
 PYTHON2 ?= python2
-PART_SRC = $(ESPCOMP)/partition_table/partitions_singleapp.csv
+PART_SRC = $(ESPCOMP)/partition_table/partitions_two_ota.csv
 
 $(BUILD)/partitions.bin: $(PART_SRC)
 	$(ECHO) "Create $@"
