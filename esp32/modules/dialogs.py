@@ -5,7 +5,7 @@
 
 import ugfx, badge, utime as time
 
-wait_for_interupt = True
+wait_for_interrupt = True
 
 def notice(text, title="SHA2017", close_text="Close", width = 296, height = 128, font="Roboto_Regular12"):
 	prompt_boolean(text, title = title, true_text = close_text, false_text = None, width = width, height = height, font=font)
@@ -16,7 +16,7 @@ def prompt_boolean(text, title="SHA2017", true_text="Yes", false_text="No", widt
 	if 'false_text' is set to None only one button is displayed.
 	If both 'true_text' and 'false_text' are given a boolean is returned
 	"""
-	global wait_for_interupt
+	global wait_for_interrupt
 
 	window = ugfx.Container((ugfx.width() - width) // 2, (ugfx.height() - height) // 2,  width, height)
 	window.show()
@@ -41,8 +41,8 @@ def prompt_boolean(text, title="SHA2017", true_text="Yes", false_text="No", widt
 		window.show()
 		ugfx.flush()
 
-		wait_for_interupt = True
-		while wait_for_interupt:
+		wait_for_interrupt = True
+		while wait_for_interrupt:
 			if buttons.is_triggered("BTN_A"): return True
 			if buttons.is_triggered("BTN_B"): return False
 			time.sleep(0.2)
@@ -59,7 +59,7 @@ def prompt_text(description, init_text = "", true_text="OK", false_text="Back", 
 
 	Returns None if user aborts with button B
 	"""
-	global wait_for_interupt
+	global wait_for_interrupt
 
 	window = ugfx.Container(int((ugfx.width()-width)/2), int((ugfx.height()-height)/2), width, height)
 
@@ -89,8 +89,8 @@ def prompt_text(description, init_text = "", true_text="OK", false_text="Back", 
 		edit.set_focus()
 		ugfx.flush()
 
-		wait_for_interupt = True
-		while wait_for_interupt:
+		wait_for_interrupt = True
+		while wait_for_interrupt:
 			#if buttons.is_triggered("BTN_A"): return edit.text()
 			if buttons.is_triggered("BTN_B"): return None
 			if buttons.is_triggered("BTN_MENU"): return edit.text()
@@ -111,7 +111,7 @@ def prompt_option(options, index=0, text = "Please select one of the following:"
 	If none_text is specified the user can use the B or Menu button to skip the selection
 	if title is specified a blue title will be displayed about the text
 	"""
-	global wait_for_interupt
+	global wait_for_interrupt
 
 	ugfx.set_default_font("Roboto_Regular12")
 	window = ugfx.Container(5, 5, ugfx.width() - 10, ugfx.height() - 10)
@@ -145,8 +145,8 @@ def prompt_option(options, index=0, text = "Please select one of the following:"
 	try:
 		ugfx.input_init()
 
-		wait_for_interupt = True
-		while wait_for_interupt:
+		wait_for_interrupt = True
+		while wait_for_interrupt:
 			if buttons.is_triggered("BTN_A"): return options[options_list.selected_index()]
 			if button_none and buttons.is_triggered("BTN_B"): return None
 			if button_none and buttons.is_triggered("BTN_MENU"): return None
@@ -158,6 +158,14 @@ def prompt_option(options, index=0, text = "Please select one of the following:"
 		button_select.destroy()
 		if button_none: button_none.destroy()
 		ugfx.poll()
+
+
+def do_interrupt(pushed):
+	global wait_for_interrupt
+	wait_for_interrupt = False
+
+ugfx.input_attach(ugfx.BTN_A, do_interrupt)
+ugfx.input_attach(ugfx.BTN_B, do_interrupt)
 
 class WaitingMessage:
 	"""Shows a dialog with a certain message that can not be dismissed by the user"""
@@ -191,6 +199,3 @@ class WaitingMessage:
 
 	def __exit__(self, exc_type, exc_value, traceback):
 		self.destroy()
-
-ugfx.input_attach(ugfx.BTN_A, wait_for_interupt = False)
-ugfx.input_attach(ugfx.BTN_B, wait_for_interupt = False)
