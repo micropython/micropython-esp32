@@ -162,14 +162,24 @@ def prompt_option(options, index=0, text = "Please select one of the following:"
 		ugfx.poll()
 
 
-def do_interrupt(button):
+def pressed_a(pushed):
 	global wait_for_interrupt, button_pushed
 	wait_for_interrupt = False
-	button_pushed = button
+	button_pushed = 'A'
 
-ugfx.input_attach(ugfx.BTN_A, do_interrupt('A'))
-ugfx.input_attach(ugfx.BTN_B, do_interrupt('B'))
-ugfx.input_attach(ugfx.BTN_START, do_interrupt('START'))
+def pressed_b(pushed):
+	global wait_for_interrupt, button_pushed
+	wait_for_interrupt = False
+	button_pushed = 'B'
+
+def pressed_start(pushed):
+	global wait_for_interrupt, button_pushed
+	wait_for_interrupt = False
+	button_pushed = 'START'
+
+ugfx.input_attach(ugfx.BTN_A, pressed_a)
+ugfx.input_attach(ugfx.BTN_B, pressed_b)
+ugfx.input_attach(ugfx.BTN_START, pressed_start)
 
 class WaitingMessage:
 	"""Shows a dialog with a certain message that can not be dismissed by the user"""
