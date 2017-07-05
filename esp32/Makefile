@@ -85,6 +85,9 @@ INC_MAIN += -I$(ESPCOMP)/wpa_supplicant/include
 INC_MAIN += -I$(ESPCOMP)/wpa_supplicant/port/include
 INC_MAIN += -I$(ESPCOMP)/ethernet/include
 INC_MAIN += -I$(ESPCOMP)/tcpip_adapter/include
+INC_MAIN += -I$(ESPCOMP)/app_trace/include
+INC_MAIN += -I$(ESPCOMP)/nghttp/port/include
+INC_MAIN += -I$(ESPCOMP)/nghttp/nghttp2/lib/includes
 
 
 # Bluetooth includes have to be separate because
