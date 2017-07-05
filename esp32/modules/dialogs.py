@@ -192,5 +192,5 @@ class WaitingMessage:
 	def __exit__(self, exc_type, exc_value, traceback):
 		self.destroy()
 
-ugfx.input_attach(ugfx.BTN_A, lambda pushed: wait_for_interupt = False)
-ugfx.input_attach(ugfx.BTN_B, lambda pushed: wait_for_interupt = False)
+ugfx.input_attach(ugfx.BTN_A, wait_for_interupt = False)
+ugfx.input_attach(ugfx.BTN_B, wait_for_interupt = False)
