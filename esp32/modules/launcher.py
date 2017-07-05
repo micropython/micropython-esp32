@@ -47,6 +47,6 @@ ugfx.input_attach(ugfx.BTN_B, run_it)
 ugfx.input_attach(ugfx.JOY_UP, lambda pushed: ugfx.flush() if pushed else 0)
 ugfx.input_attach(ugfx.JOY_DOWN, lambda pushed: ugfx.flush() if pushed else 0)
 
+ugfx.set_lut(ugfx.LUT_FULL)
 ugfx.flush()
-time.sleep(0.2)
 ugfx.set_lut(ugfx.LUT_FASTER)
