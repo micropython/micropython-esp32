@@ -48,7 +48,9 @@
 #include "lwip/dns.h"
 #include "tcpip_adapter.h"
 
+#if (MICROPY_ESP32_BLUETOOTH)
 extern const mp_obj_type_t network_bluetooth_type;
+#endif
 
 #define MODNETWORK_INCLUDE_CONSTANTS (1)
 
@@ -526,7 +528,7 @@ STATIC const mp_rom_map_elem_t mp_module_network_globals_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR_WLAN), (mp_obj_t)&get_wlan_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_phy_mode), (mp_obj_t)&esp_phy_mode_obj },
 
-#if (MICROPY_BLUETOOTH)
+#if (MICROPY_ESP32_BLUETOOTH)
     { MP_ROM_QSTR(MP_QSTR_Bluetooth), MP_ROM_PTR(&network_bluetooth_type) },
 #endif
 

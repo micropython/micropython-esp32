@@ -1,13 +1,17 @@
 include ../py/mkenv.mk
 
-# qstr definitions (must come before including py.mk)
-QSTR_DEFS = qstrdefsport.h
-QSTR_GEN_EXTRA_CFLAGS += $(INC_BT)
 
 MICROPY_PY_USSL = 0
 MICROPY_SSL_AXTLS = 0
 MICROPY_FATFS = 1
 MICROPY_PY_BTREE = 0
+MICROPY_ESP32_BLUETOOTH ?= 1
+
+# qstr definitions (must come before including py.mk)
+QSTR_DEFS = qstrdefsport.h
+ifeq ($(MICROPY_ESP32_BLUETOOTH),1)
+QSTR_GEN_EXTRA_CFLAGS += $(INC_BT)
+endif
 
 #FROZEN_DIR = scripts
 FROZEN_MPY_DIR = modules
@@ -124,6 +128,10 @@ INC_BT += -I$(ESPCOMP)/bt/bluedroid/stack/sdp/include/
 
 CFLAGS = -std=gnu99 -Os -ffunction-sections -fdata-sections -fstrict-volatile-bitfields -mlongcalls -nostdlib -Wall -Werror -Wno-error=unused-function -Wno-error=unused-but-set-variable -Wno-error=unused-variable -Wno-error=deprecated-declarations -DMBEDTLS_CONFIG_FILE='"mbedtls/esp_config.h"' -DHAVE_CONFIG_H -DESP_PLATFORM
 
+ifeq ($(MICROPY_ESP32_BLUETOOTH),1)
+CFLAGS += -DMICROPY_ESP32_BLUETOOTH=1
+endif
+
 CFLAGS += -DIDF_VER=\"$(IDF_VER)\"
 CFLAGS += $(CFLAGS_MOD)
 
@@ -178,10 +186,13 @@ SRC_C = \
 	modesp.c \
 	moduhashlib.c \
 	espneopixel.c \
-	network_bluetooth.c \
 	machine_hw_spi.c \
 	mpthreadport.c \
 	$(SRC_MOD)
+
+ifeq ($(MICROPY_ESP32_BLUETOOTH),1)
+SRC_C += network_bluetooth.c
+endif
 
 ESP8266_SRC_C = $(addprefix esp8266/,\
 	modonewire.c \
@@ -713,7 +724,6 @@ ESPIDF_WPA_SUPPLICANT_O = $(addprefix $(ESPCOMP)/wpa_supplicant/,\
 
 
 OBJ_ESPIDF =
-OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_BLUETOOTH_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_NEWLIB_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_DRIVER_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_ESP32_O))
@@ -735,6 +745,11 @@ OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_NVS_FLASH_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_OPENSSL_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_SPI_FLASH_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_WPA_SUPPLICANT_O))
+
+ifeq ($(MICROPY_ESP32_BLUETOOTH),1)
+OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_BLUETOOTH_O))
+endif 
+
 ################################################################################
 # Main targets
 
