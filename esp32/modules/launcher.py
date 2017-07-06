@@ -22,25 +22,25 @@ ugfx.string(230,100,"OTA","PermanentMarker22",ugfx.BLACK)
 options = ugfx.List(0,0,int(ugfx.width()/2),ugfx.height())
 
 try:
-    apps = os.ilistdir('lib')
+    apps = os.listdir('lib')
 except OSError:
     apps = []
-
-apps.extend(['installer'])
 
 for app in apps:
     options.add_item(app)
 
+options.add_item('installer')
+
 def run_it(pushed):
     if (pushed):
-        selected = options.selected_index()
+        selected = options.selected_text()
         options.destroy()
 
         ugfx.clear(ugfx.BLACK)
         ugfx.string(40,25,"Running:","Roboto_BlackItalic24",ugfx.WHITE)
-        ugfx.string(100,75, apps[selected],"PermanentMarker22",ugfx.WHITE)
+        ugfx.string(100,75, selected,"PermanentMarker22",ugfx.WHITE)
         ugfx.flush()
-        __import__(apps[selected])
+        __import__(selected)
 
 ugfx.input_attach(ugfx.BTN_A, run_it)
 ugfx.input_attach(ugfx.BTN_B, run_it)
