@@ -131,6 +131,11 @@ STATIC mp_obj_t ugfx_set_lut(mp_obj_t selected_lut) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(ugfx_set_lut_obj, ugfx_set_lut);
 
+STATIC mp_obj_t ugfx_get_lut() {
+  return mp_obj_new_int(target_lut);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(ugfx_get_lut_obj, ugfx_get_lut);
+
 /// \method set_orientation(a)
 ///
 /// Set orientation to 0, 90, 180 or 270 degrees
@@ -1096,7 +1101,8 @@ STATIC const mp_rom_map_elem_t ugfx_module_globals_table[] = {
 		 {MP_OBJ_NEW_QSTR(MP_QSTR_LUT_DEFAULT), MP_OBJ_NEW_SMALL_INT(BADGE_EINK_LUT_DEFAULT)},
 		 {MP_OBJ_NEW_QSTR(MP_QSTR_LUT_MAX), MP_OBJ_NEW_SMALL_INT(BADGE_EINK_LUT_MAX)},
 
-     {MP_OBJ_NEW_QSTR(MP_QSTR_set_lut), (mp_obj_t)&ugfx_set_lut_obj},
+		 {MP_OBJ_NEW_QSTR(MP_QSTR_set_lut), (mp_obj_t)&ugfx_set_lut_obj},
+		 {MP_OBJ_NEW_QSTR(MP_QSTR_get_lut), (mp_obj_t)&ugfx_get_lut_obj},
 
     {MP_OBJ_NEW_QSTR(MP_QSTR_clear), (mp_obj_t)&ugfx_clear_obj},
     {MP_OBJ_NEW_QSTR(MP_QSTR_flush), (mp_obj_t)&ugfx_flush_obj},
