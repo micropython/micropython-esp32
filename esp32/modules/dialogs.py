@@ -8,9 +8,13 @@ import ugfx, badge, utime as time
 wait_for_interrupt = True
 button_pushed = ''
 
+# Show a notice which can be closed with button B.
+# The caller is responsible for flushing the display after the user has confirmed the notice.
 def notice(text, title="SHA2017", close_text="Close", width = 296, height = 128, font="Roboto_Regular12"):
 	prompt_boolean(text, title = title, true_text = close_text, false_text = None, width = width, height = height, font=font)
 
+# Prompt the user to choose between 2 options.
+# The caller is responsible for flushing the display after processing the response.
 def prompt_boolean(text, title="SHA2017", true_text="Yes", false_text="No", width = 296, height = 128, font="Roboto_Regular12"):
 	"""A simple one and two-options dialog
 
@@ -26,34 +30,37 @@ def prompt_boolean(text, title="SHA2017", true_text="Yes", false_text="No", widt
 	window.line(0, 30, width, 30, ugfx.BLACK)
 
 	if false_text:
-		true_text = "A: " + true_text
 		false_text = "B: " + false_text
+		true_text = "A: " + true_text
 
 	label = ugfx.Label(5, 30, width - 10, height - 80, text = text, parent=window)
-	button_yes = ugfx.Button(5, height - 40, width // 2 - 15 if false_text else width - 15, 30 , true_text, parent=window)
-	button_no = ugfx.Button(width // 2 + 5, height - 40, width // 2 - 15, 30 , false_text, parent=window) if false_text else None
+	button_no = ugfx.Button(5, height - 40, width // 2 - 15, 30, false_text, parent=window) if false_text else None
+	button_yes = ugfx.Button(width // 2 + 5 if true_text else 5, height - 40, width // 2 - 15 if false_text else width - 10, 30, true_text, parent=window)
+	button_yes.set_focus()
 
-	try:
-		ugfx.input_init()
+	ugfx.input_init()
 
-		button_yes.attach_input(ugfx.BTN_A,0)
-		if button_no: button_no.attach_input(ugfx.BTN_B,0)
+	window.show()
+	ugfx.set_lut(ugfx.LUT_NORMAL)
+	ugfx.flush()
 
-		window.show()
-		ugfx.flush()
-
-		wait_for_interrupt = True
-		while wait_for_interrupt:
-			if button_pushed == "A": return True
-			if button_pushed == "B": return False
-			time.sleep(0.2)
-
-	finally:
+	def done(value):
 		window.hide()
 		window.destroy()
 		button_yes.destroy()
 		if button_no: button_no.destroy()
 		label.destroy()
+		return value
+
+	if button_no: ugfx.input_attach(ugfx.BTN_B, pressed_b)
+	ugfx.input_attach(ugfx.BTN_A, pressed_a)
+
+	wait_for_interrupt = True
+	while wait_for_interrupt:
+		time.sleep(0.2)
+
+	if button_pushed == "B": return done(False)
+	if button_pushed == "A": return done(True)
 
 def prompt_text(description, init_text = "", true_text="OK", false_text="Back", width = 300, height = 200, font="Roboto_BlackItalic24"):
 	"""Shows a dialog and keyboard that allows the user to input/change a string

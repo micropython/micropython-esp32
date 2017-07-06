@@ -830,7 +830,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_0(ugfx_input_init_obj, ugfx_input_init);
 
 /// \method ugfx_input_attach(button, callback)
 ///
-/// Register callbacks for button events
+/// Register callbacks for button events. This overwrites any previous callback registered for this button.
 ///
 STATIC mp_obj_t ugfx_input_attach(mp_uint_t n_args, const mp_obj_t *args) {
   uint8_t button = mp_obj_get_int(args[0]);
