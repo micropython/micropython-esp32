@@ -97,7 +97,7 @@ typedef enum {
     NETWORK_BLUETOOTH_GATTS_CREATE,
     NETWORK_BLUETOOTH_GATTS_START,
     NETWORK_BLUETOOTH_GATTS_STOP,
-    NETWORK_BLUETOOTH_GATTS_ADD_CHAR, // Add char 
+    NETWORK_BLUETOOTH_GATTS_ADD_CHAR, // Add char
     NETWORK_BLUETOOTH_GATTS_ADD_CHAR_DESCR, // Add descriptor
 
     // GAP / GATTC events
@@ -741,7 +741,9 @@ STATIC void gattc_event_dump(
         "GET_DESCR",
         "GET_INCL_SRVC",
         "REG_FOR_NOTIFY",
-        "UNREG_FOR_NOTIFY"
+        "UNREG_FOR_NOTIFY",  // 0x27
+        "CONNECT",
+        "DISCONNECT"
     };
 
     NETWORK_BLUETOOTH_DEBUG_PRINTF(
@@ -1094,9 +1096,60 @@ STATIC void gattc_event_dump(
                 NETWORK_BLUETOOTH_DEBUG_PRINTF("uuid = ");
                 network_bluetooth_gatt_id_print(NULL, &param->unreg_for_notify.char_id);
             }
-        default:
-            // Rest of events have no printable data
-            // do nothing, intentionally
+
+        case ESP_GATTC_CONNECT_EVT:
+            {
+                PRINT_STATUS(param->connect.status);
+                NETWORK_BLUETOOTH_DEBUG_PRINTF(
+                    ", conn_id = %04X"
+                    ", addr = %02X:%02X:%02X:%02X:%02X:%02X",
+                    param->connect.conn_id,
+                    param->connect.remote_bda[0],
+                    param->connect.remote_bda[1],
+                    param->connect.remote_bda[2],
+                    param->connect.remote_bda[3],
+                    param->connect.remote_bda[4],
+                    param->connect.remote_bda[5]);
+            }
+            break;
+
+        case ESP_GATTC_DISCONNECT_EVT:
+            {
+                PRINT_STATUS(param->disconnect.status);
+                NETWORK_BLUETOOTH_DEBUG_PRINTF(
+                    ", conn_id = %04X"
+                    ", addr = %02X:%02X:%02X:%02X:%02X:%02X",
+                    param->disconnect.conn_id,
+                    param->disconnect.remote_bda[0],
+                    param->disconnect.remote_bda[1],
+                    param->disconnect.remote_bda[2],
+                    param->disconnect.remote_bda[3],
+                    param->disconnect.remote_bda[4],
+                    param->disconnect.remote_bda[5]);
+            }
+            break;
+
+
+        // Not printed
+        case ESP_GATTC_UNREG_EVT:
+        case ESP_GATTC_ACL_EVT:
+        case ESP_GATTC_CANCEL_OPEN_EVT:
+        case ESP_GATTC_ENC_CMPL_CB_EVT:
+        case ESP_GATTC_ADV_DATA_EVT:
+        case ESP_GATTC_MULT_ADV_ENB_EVT:
+        case ESP_GATTC_MULT_ADV_UPD_EVT:
+        case ESP_GATTC_MULT_ADV_DATA_EVT:
+        case ESP_GATTC_MULT_ADV_DIS_EVT:
+        case ESP_GATTC_BTH_SCAN_ENB_EVT:
+        case ESP_GATTC_BTH_SCAN_CFG_EVT:
+        case ESP_GATTC_BTH_SCAN_RD_EVT:
+        case ESP_GATTC_BTH_SCAN_THR_EVT:
+        case ESP_GATTC_BTH_SCAN_PARAM_EVT:
+        case ESP_GATTC_BTH_SCAN_DIS_EVT:
+        case ESP_GATTC_SCAN_FLT_CFG_EVT:
+        case ESP_GATTC_SCAN_FLT_PARAM_EVT:
+        case ESP_GATTC_SCAN_FLT_STATUS_EVT:
+        case ESP_GATTC_ADV_VSC_EVT:
             break;
     }
     NETWORK_BLUETOOTH_DEBUG_PRINTF(")\n");
@@ -1447,7 +1500,10 @@ STATIC void gap_event_dump(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t 
         "LOCAL_ER",
         "NC_REQ",
         "ADV_STOP_COMPLETE",
-        "SCAN_STOP_COMPLETE"
+        "SCAN_STOP_COMPLETE",
+        "SET_STATIC_RAND_ADDR_EVT",
+        "UPDATE_CONN_PARAMS_EVT",
+        "SET_PKT_LENGTH_COMPLETE_EVT"
     };
 
     NETWORK_BLUETOOTH_DEBUG_PRINTF("network_bluetooth_gap_event_handler(event = %02X / %s", event, event_names[event]);
@@ -1455,6 +1511,7 @@ STATIC void gap_event_dump(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t 
     switch (event) {
 
         case ESP_GAP_BLE_ADV_DATA_RAW_SET_COMPLETE_EVT:
+        case ESP_GAP_BLE_SET_STATIC_RAND_ADDR_EVT:
         case ESP_GAP_BLE_ADV_STOP_COMPLETE_EVT:
         case ESP_GAP_BLE_ADV_DATA_SET_COMPLETE_EVT:
         case ESP_GAP_BLE_ADV_START_COMPLETE_EVT:
@@ -1465,6 +1522,45 @@ STATIC void gap_event_dump(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t 
         case ESP_GAP_BLE_SCAN_START_COMPLETE_EVT:
             {
                 PRINT_STATUS(param->adv_data_cmpl.status);
+            }
+            break;
+
+
+        case ESP_GAP_BLE_SET_PKT_LENGTH_COMPLETE_EVT:
+            {
+                PRINT_STATUS(param->pkt_data_lenth_cmpl.status);
+                NETWORK_BLUETOOTH_DEBUG_PRINTF(
+                    ", rx_len = %04X"
+                    ", tx_len = %04X",
+                    param->pkt_data_lenth_cmpl.params.rx_len,
+                    param->pkt_data_lenth_cmpl.params.tx_len
+                );
+
+            }
+            break;
+
+        case ESP_GAP_BLE_UPDATE_CONN_PARAMS_EVT:
+            {
+                PRINT_STATUS(param->update_conn_params.status);
+                NETWORK_BLUETOOTH_DEBUG_PRINTF(
+                    ", bda = %02X:%02X:%02X:%02X:%02X:%02X"
+                    ", min_int = %04X"
+                    ", max_int = %04X"
+                    ", latency = %04X"
+                    ", conn_int = %04X"
+                    ", timeout = %04X",
+                    param->update_conn_params.bda[0],
+                    param->update_conn_params.bda[1],
+                    param->update_conn_params.bda[2],
+                    param->update_conn_params.bda[3],
+                    param->update_conn_params.bda[4],
+                    param->update_conn_params.bda[5],
+                    param->update_conn_params.min_int,
+                    param->update_conn_params.max_int,
+                    param->update_conn_params.latency,
+                    param->update_conn_params.conn_int,
+                    param->update_conn_params.timeout
+                );
             }
             break;
 
@@ -1606,13 +1702,13 @@ STATIC mp_obj_t network_bluetooth_callback_queue_handler(mp_obj_t arg) {
                                 // Only start first characteristic
                                 //
                                 // This is because the IDF only allows adding
-                                // descriptors to the last-added charactersitic, 
+                                // descriptors to the last-added charactersitic,
                                 // so we have to add new chars after adding descriptros
-                                
-                                
+
+
                                 if (len > 0) {
                                     network_bluetooth_char_descr_obj_t* chr = (network_bluetooth_char_descr_obj_t*) items[0];
-                                    esp_ble_gatts_add_char(service->handle, &chr->id.uuid, chr->perm, chr->prop, NULL, NULL); 
+                                    esp_ble_gatts_add_char(service->handle, &chr->id.uuid, chr->perm, chr->prop, NULL, NULL);
                                     service->last_added_chr = chr;
                                 } else {
                                     service->last_added_chr = MP_OBJ_NULL;
@@ -1684,7 +1780,7 @@ STATIC mp_obj_t network_bluetooth_callback_queue_handler(mp_obj_t arg) {
                                 chr = network_bluetooth_find_next_char_in_service(service, chr);
 
                                 if (chr != MP_OBJ_NULL) {
-                                    esp_ble_gatts_add_char(service->handle, &chr->id.uuid, chr->perm, chr->prop, NULL, NULL); 
+                                    esp_ble_gatts_add_char(service->handle, &chr->id.uuid, chr->perm, chr->prop, NULL, NULL);
                                     service->last_added_chr = chr;
                                 }
                             }
@@ -1798,8 +1894,8 @@ STATIC mp_obj_t network_bluetooth_callback_queue_handler(mp_obj_t arg) {
                 if (bluetooth->callback != mp_const_none) {
                     mp_obj_t data = mp_const_none;
                     if (cbdata.event == NETWORK_BLUETOOTH_GATTC_SCAN_RES) {
-                        mp_obj_t scan_res_args[] = { 
-                            MP_OBJ_NEW_BYTES(ESP_BD_ADDR_LEN, cbdata.gattc_scan_res.bda), 
+                        mp_obj_t scan_res_args[] = {
+                            MP_OBJ_NEW_BYTES(ESP_BD_ADDR_LEN, cbdata.gattc_scan_res.bda),
                             MP_OBJ_NEW_BYTES(cbdata.gattc_scan_res.adv_data_len, cbdata.gattc_scan_res.adv_data),
                             mp_obj_new_int(cbdata.gattc_scan_res.rssi)
                         } ;
@@ -1919,6 +2015,10 @@ STATIC void network_bluetooth_gattc_event_handler(
             enqueue = false;
             break;
 
+        case ESP_GATTC_UNREG_EVT:
+            bluetooth->gattc_interface = ESP_GATT_IF_NONE;
+            break;
+
         case ESP_GATTC_OPEN_EVT:
             {
                 cbdata.event = NETWORK_BLUETOOTH_GATTC_OPEN;
@@ -2031,6 +2131,10 @@ STATIC void network_bluetooth_gatts_event_handler(
         case ESP_GATTS_REG_EVT:
             bluetooth->gatts_interface = gatts_if;
             enqueue = false;
+            break;
+
+        case ESP_GATTS_UNREG_EVT:
+            bluetooth->gatts_interface = ESP_GATT_IF_NONE;
             break;
 
         case ESP_GATTS_CREATE_EVT:
@@ -2268,7 +2372,7 @@ STATIC void network_bluetooth_service_print(const mp_print_t *print, mp_obj_t se
 
 STATIC void network_bluetooth_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
     network_bluetooth_obj_t *self = MP_OBJ_TO_PTR(self_in);
-//#define NETWORK_BLUETOOTH_LF "\n"
+    //#define NETWORK_BLUETOOTH_LF "\n"
 #define NETWORK_BLUETOOTH_LF
     mp_printf(print,
               "Bluetooth(params = (conn_id = %04X" NETWORK_BLUETOOTH_LF
@@ -2362,8 +2466,12 @@ STATIC mp_obj_t network_bluetooth_init(mp_obj_t self_in) {
 
     if (self->state == NETWORK_BLUETOOTH_STATE_DEINIT) {
 
+        self->state = NETWORK_BLUETOOTH_STATE_INIT;
+
         esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
-        esp_bt_controller_init(&bt_cfg);
+        if (esp_bt_controller_init(&bt_cfg) != ESP_OK) {
+            mp_raise_msg(&mp_type_OSError, "esp_bt_controller_init() failed");
+        }
 
         if (esp_bt_controller_enable(ESP_BT_MODE_BTDM) != ESP_OK) {
             mp_raise_msg(&mp_type_OSError, "esp_bt_controller_enable() failed");
@@ -2377,9 +2485,17 @@ STATIC mp_obj_t network_bluetooth_init(mp_obj_t self_in) {
             mp_raise_msg(&mp_type_OSError, "esp_bluedroid_enable() failed");
         }
 
-        esp_ble_gatts_register_callback(network_bluetooth_gatts_event_handler);
-        esp_ble_gattc_register_callback(network_bluetooth_gattc_event_handler);
-        esp_ble_gap_register_callback(network_bluetooth_gap_event_handler);
+        if (esp_ble_gatts_register_callback(network_bluetooth_gatts_event_handler) != ESP_OK) {
+            mp_raise_msg(&mp_type_OSError, "esp_ble_gatts_register_callback() failed");
+        }
+
+        if (esp_ble_gattc_register_callback(network_bluetooth_gattc_event_handler) != ESP_OK) {
+            mp_raise_msg(&mp_type_OSError, "esp_ble_gattc_register_callback() failed");
+        }
+
+        if (esp_ble_gap_register_callback(network_bluetooth_gap_event_handler) != ESP_OK) {
+            mp_raise_msg(&mp_type_OSError, "esp_ble_gap_register_callback() failed");
+        }
 
         if (esp_ble_gatts_app_register(0) != ESP_OK) {
             mp_raise_msg(&mp_type_OSError, "esp_ble_gatts_app_register() failed");
@@ -2389,7 +2505,6 @@ STATIC mp_obj_t network_bluetooth_init(mp_obj_t self_in) {
             mp_raise_msg(&mp_type_OSError, "esp_ble_gattc_app_register() failed");
         }
 
-        self->state = NETWORK_BLUETOOTH_STATE_INIT;
     }
     return mp_const_none;
 }
@@ -3099,12 +3214,14 @@ STATIC mp_obj_t network_bluetooth_service_start(mp_obj_t self_in) {
         return mp_const_none;
     }
 
-    int numChars = mp_obj_get_int(mp_obj_len(self->chars));
-    int numDescrs = 0;
+    size_t numDescrs = 0;
 
     size_t index;
     mp_obj_t *items;
-    mp_obj_get_array(bluetooth->services, &index, &items);
+    mp_obj_get_array(self->chars, &index, &items);
+
+    size_t numChars = index;
+
     while (index--) {
         network_bluetooth_char_descr_obj_t* chr = (network_bluetooth_char_descr_obj_t*)items[index];
         numDescrs += mp_obj_get_int(mp_obj_len(chr->descrs));
@@ -3119,7 +3236,7 @@ STATIC mp_obj_t network_bluetooth_service_start(mp_obj_t self_in) {
     }
 
     if (bluetooth->gatts_interface == ESP_GATT_IF_NONE) {
-        mp_raise_msg(&mp_type_OSError, "esp_ble_gatts_app_register() has failed");
+        mp_raise_msg(&mp_type_OSError, "esp_ble_gatts_app_register() has timed out");
     }
 
     // Handle calculation:
@@ -3405,7 +3522,7 @@ STATIC const mp_rom_map_elem_t network_bluetooth_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_ADV_CHNL_39),                 MP_ROM_INT(ADV_CHNL_39) },
     { MP_ROM_QSTR(MP_QSTR_ADV_CHNL_ALL),                MP_ROM_INT(ADV_CHNL_ALL) },
 
-// BLE_ADV_DATA_FLAG
+    // BLE_ADV_DATA_FLAG
 
     { MP_ROM_QSTR(MP_QSTR_BLE_ADV_FLAG_LIMIT_DISC),         MP_ROM_INT(ESP_BLE_ADV_FLAG_LIMIT_DISC) },
     { MP_ROM_QSTR(MP_QSTR_BLE_ADV_FLAG_GEN_DISC),           MP_ROM_INT(ESP_BLE_ADV_FLAG_GEN_DISC) },
