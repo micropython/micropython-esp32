@@ -26,10 +26,10 @@ try:
 except OSError:
     apps = []
 
+apps.extend(['installer'])
+
 for app in apps:
     options.add_item(app)
-
-options.add_item("installer")
 
 def run_it(pushed):
     if (pushed):
