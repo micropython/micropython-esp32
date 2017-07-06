@@ -260,15 +260,19 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ugfx_clear_obj, 0, 1, ugfx_clear);
 /// \method flush()
 ///
 /// Flush the display buffer to the screen
+/// Optional LUT
 ///
-STATIC mp_obj_t ugfx_flush() {
+STATIC mp_obj_t ugfx_flush(mp_uint_t n_args, const mp_obj_t *args) {
 #ifdef UNIX
   mp_hal_delay_ms(EMU_EINK_SCREEN_DELAY_MS);
 #endif
+	if (n_args == 1) {
+		ugfx_set_lut(args[0]);
+	}
   gdispFlush();
   return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(ugfx_flush_obj, ugfx_flush);
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ugfx_flush_obj, 0, 1, ugfx_flush);
 
 /// \method get_char_width(char, font)
 ///
