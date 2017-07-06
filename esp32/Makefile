@@ -349,6 +349,10 @@ ESPIDF_TCPIP_ADAPTER_O = $(addprefix $(ESPCOMP)/tcpip_adapter/,\
 	tcpip_adapter_lwip.o \
 	)
 
+ESPIDF_APP_TRACE_O = $(addprefix $(ESPCOMP)/app_trace/,\
+	app_trace.o \
+	)
+
 ESPIDF_NEWLIB_O = $(addprefix $(ESPCOMP)/newlib/,\
 	time.o \
 	syscalls.o \
@@ -580,6 +584,7 @@ OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_LWIP_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_MBEDTLS_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_XTENSA_DEBUG_MODULE_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_TCPIP_ADAPTER_O))
+OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_APP_TRACE_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_NGHTTP_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_NVS_FLASH_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_OPENSSL_O))
