@@ -34,5 +34,9 @@ def setup():
     with open("boot.py", "w") as f:
         f.write("""\
 # This file is executed on every boot (including wake-boot from deepsleep)
+import badge, machine, time
+if machine.reset_cause() != machine.DEEPSLEEP_RESET:
+    badge.init()
+    import launcher
 """)
     return vfs

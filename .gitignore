@@ -23,6 +23,9 @@
 # Build directory
 ######################
 build/
+ugfx/
+components/
+lib/mbedtls/
 
 # Test failure outputs
 ######################

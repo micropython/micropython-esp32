@@ -18,15 +18,17 @@ PORT ?= /dev/ttyUSB0
 BAUD ?= 460800
 FLASH_MODE ?= dio
 FLASH_FREQ ?= 40m
-FLASH_SIZE ?= 4MB
+FLASH_SIZE ?= 16MB
 CROSS_COMPILE ?= xtensa-esp32-elf-
 
 # paths to ESP IDF and its components
-ifeq ($(ESPIDF),)
+ifeq ($(IDF_PATH),)
 $(error Please configure the ESPIDF variable)
 endif
+ESPIDF = $(IDF_PATH)
 ESPCOMP = $(ESPIDF)/components
 ESPTOOL ?= $(ESPCOMP)/esptool_py/esptool/esptool.py
+BADGE = $(IDF_PATH)/..
 
 # verify the ESP IDF version
 ESPIDF_SUPHASH := 9b955f4c9f1b32652ea165d3e4cdaad01bba170e
@@ -48,6 +50,16 @@ INC += -I..
 INC += -I../lib/mp-readline
 INC += -I../lib/netutils
 INC += -I../lib/timeutils
+INC += -I../../components/badge
+INC += -I../../components/ugfx
+INC += -I../../components/graph
+INC += -I../../components/sha2017
+INC += -I../../main
+INC += -I../../ugfx/src/gdisp/mcufont
+INC += -I../../ugfx
+INC += -I../../ugfx/src
+INC += -I../../ugfx/drivers/gdisp/framebuffer
+INC += -I../../esp-idf/components/freertos/include/freertos
 INC += -I$(BUILD)
 INC += -I$(ESPCOMP)/bootloader_support/include
 INC += -I$(ESPCOMP)/driver/include
@@ -80,12 +92,12 @@ INC += -I$(ESPCOMP)/wpa_supplicant/port/include
 INC += -I$(ESPCOMP)/ethernet/include
 INC += -I$(ESPCOMP)/app_trace/include
 
-CFLAGS = -std=gnu99 -Os -ffunction-sections -fdata-sections -fstrict-volatile-bitfields -mlongcalls -nostdlib -Wall -Werror -Wno-error=unused-function -Wno-error=unused-but-set-variable -Wno-error=unused-variable -Wno-error=deprecated-declarations -DMBEDTLS_CONFIG_FILE='"mbedtls/esp_config.h"' -DHAVE_CONFIG_H -DESP_PLATFORM  $(INC)
+CFLAGS = -std=gnu99 -Os -ffunction-sections -fdata-sections -fstrict-volatile-bitfields -mlongcalls -nostdlib -Wall -Wno-error=unused-function -Wno-error=unused-but-set-variable -Wno-error=unused-variable -Wno-error=deprecated-declarations -DMBEDTLS_CONFIG_FILE='"mbedtls/esp_config.h"' -DHAVE_CONFIG_H -DESP_PLATFORM  $(INC)
 CFLAGS += -DIDF_VER=\"$(IDF_VER)\"
 CFLAGS += $(CFLAGS_MOD)
 
 # this is what ESPIDF uses for c++ compilation
-CXXFLAGS = -std=gnu++11 -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -fstrict-volatile-bitfields -mlongcalls -nostdlib -Wall -Werror -Wno-error=unused-function -Wno-error=unused-but-set-variable -Wno-error=unused-variable -Wno-error=deprecated-declarations -DESP_PLATFORM $(INC)
+CXXFLAGS = -std=gnu++11 -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -fstrict-volatile-bitfields -mlongcalls -nostdlib -Wall -Wno-error=unused-function -Wno-error=unused-but-set-variable -Wno-error=unused-variable -Wno-error=deprecated-declarations -DESP_PLATFORM $(INC)
 
 LDFLAGS = -nostdlib -Map=$(@:.elf=.map) --cref
 LDFLAGS += --gc-sections -static -EL
@@ -116,7 +128,6 @@ SRC_C = \
 	mphalport.c \
 	fatfs_port.c \
 	help.c \
-	esponewire.c \
 	modutime.c \
 	moduos.c \
 	machine_timer.c \
@@ -130,17 +141,33 @@ SRC_C = \
 	modnetwork.c \
 	modsocket.c \
 	modesp.c \
+	modbadge.c \
+	modugfx.c \
 	moduhashlib.c \
 	espneopixel.c \
+	machine_rtc.c \
 	machine_hw_spi.c \
 	mpthreadport.c \
+	esprtcmem.c \
+	espdeepsleep.c \
+	ugfx_containers.c \
+	ugfx_widgets.c \
+	ugfx_styles.c \
 	$(SRC_MOD)
 
-ESP8266_SRC_C = $(addprefix esp8266/,\
-	modonewire.c \
-	)
+### TODO fix hardcoded images when we can't get image loader to work
+#BADGE_MAIN_SRC_C = $(addprefix ../../main/,\
+#	imgv2_menu.c \
+#	imgv2_nick.c \
+#	imgv2_sha.c \
+#	imgv2_test.c \
+#	imgv2_weather.c \
+#	madison_gurkha.c \
+#	leaseweb.c \
+#	)
 
 EXTMOD_SRC_C = $(addprefix extmod/,\
+	modonewire.c \
 	)
 
 LIB_SRC_C = $(addprefix lib/,\
@@ -167,7 +194,7 @@ LIB_SRC_C = $(addprefix lib/,\
 	timeutils/timeutils.c \
 	utils/pyexec.c \
 	utils/interrupt_char.c \
-	utils/sys_stdio_mphal.c \
+ 	utils/sys_stdio_mphal.c \
 	)
 
 ifeq ($(MICROPY_FATFS), 1)
@@ -183,13 +210,13 @@ DRIVERS_SRC_C = $(addprefix drivers/,\
 OBJ_MP =
 OBJ_MP += $(PY_O)
 OBJ_MP += $(addprefix $(BUILD)/, $(SRC_C:.c=.o))
-OBJ_MP += $(addprefix $(BUILD)/, $(ESP8266_SRC_C:.c=.o))
 OBJ_MP += $(addprefix $(BUILD)/, $(EXTMOD_SRC_C:.c=.o))
 OBJ_MP += $(addprefix $(BUILD)/, $(LIB_SRC_C:.c=.o))
 OBJ_MP += $(addprefix $(BUILD)/, $(DRIVERS_SRC_C:.c=.o))
+OBJ_MP += $(addprefix $(BUILD)/, $(BADGE_MAIN_C:.c=.o))
 
 # List of sources for qstr extraction
-SRC_QSTR += $(SRC_C) $(ESP8266_SRC_C) $(EXTMOD_SRC_C) $(LIB_SRC_C) $(DRIVERS_SRC_C)
+SRC_QSTR += $(SRC_C) $(EXTMOD_SRC_C) $(LIB_SRC_C) $(DRIVERS_SRC_C)
 # Append any auto-generated sources that are needed by sources listed in SRC_QSTR
 SRC_QSTR_AUTO_DEPS +=
 
@@ -201,6 +228,7 @@ ESPIDF_DRIVER_O = $(addprefix $(ESPCOMP)/driver/,\
 	periph_ctrl.o \
 	ledc.o \
 	gpio.o \
+	i2c.o \
 	timer.o \
 	spi_master.o \
 	spi_common.o \
@@ -251,6 +279,10 @@ ESPIDF_CXX_O = $(addprefix $(ESPCOMP)/cxx/,\
 ESPIDF_ETHERNET_O = $(addprefix $(ESPCOMP)/ethernet/,\
 	emac_dev.o \
 	emac_main.o \
+	)
+
+ESPIDF_APP_TRACE_O = $(addprefix $(ESPCOMP)/app_trace/,\
+	app_trace.o \
 	)
 
 $(BUILD)/$(ESPCOMP)/expat/%.o: CFLAGS += -Wno-unused-function
@@ -542,6 +574,7 @@ OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_ESP32_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_SOC_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_CXX_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_ETHERNET_O))
+OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_APP_TRACE_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_EXPAT_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_FREERTOS_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_VFS_O))
@@ -557,6 +590,39 @@ OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_NVS_FLASH_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_OPENSSL_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_SPI_FLASH_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_WPA_SUPPLICANT_O))
+
+
+####################
+# Badge magic
+
+$(BUILD)/components/%.o:
+BADGE_COMPONENTS_O = $(addprefix $(BADGE)/components/,\
+	badge/badge_base.o \
+	badge/badge_eink.o \
+	badge/badge_i2c.o \
+	badge/badge_leds.o \
+	badge/badge_mpr121.o \
+	badge/badge_portexp.o \
+	badge/badge_gpiobutton.o \
+	badge/badge_touch.o \
+	badge/badge_input.o \
+	badge/badge_sdcard.o \
+	badge/badge_vibrator.o \
+	badge/badge_power.o \
+	badge/badge_eink_dev.o \
+	badge/badge_eink_lut.o \
+	badge/badge.o \
+	graph/font.o \
+	graph/font_16px.o \
+	graph/font_8px.o \
+	ugfx/gdisp_lld_framebuffer.o \
+	ugfx/ginput_lld_toggle.o \
+	ugfx/gfx_mk.o \
+	sha2017/wildcard_sha2017_org.o \
+	)
+
+OBJ_ESPIDF += $(addprefix $(BUILD)/, $(BADGE_COMPONENTS_O))
+
 ################################################################################
 # Main targets
 

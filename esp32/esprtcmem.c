@@ -3,7 +3,7 @@
  *
  * The MIT License (MIT)
  *
- * Copyright (c) 2016 Damien P. George
+ * Copyright (c) 2017 Renze Nicolai
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,13 +24,20 @@
  * THE SOFTWARE.
  */
 
-#ifndef __MICROPY_INCLUDED_ESP8266_ESPONEWIRE_H__
-#define __MICROPY_INCLUDED_ESP8266_ESPONEWIRE_H__
+#include "py/mphal.h"
 
-extern uint16_t esp_onewire_timings[9];
+#define USER_RTC_MEM_SIZE 1024
 
-int esp_onewire_reset(uint pin);
-int esp_onewire_readbit(uint pin);
-void esp_onewire_writebit(uint pin, int value);
+static uint8_t RTC_DATA_ATTR rtcmemcontents[USER_RTC_MEM_SIZE] = {0};
 
-#endif // __MICROPY_INCLUDED_ESP8266_ESPONEWIRE_H__
+uint8_t esp_rtcmem_read(uint32_t location) {
+    if (location<USER_RTC_MEM_SIZE) {
+      return rtcmemcontents[location];
+    } else {
+      return 0;
+    }
+}
+
+void esp_rtcmem_write(uint32_t location, uint8_t value) {
+    if (location<USER_RTC_MEM_SIZE) rtcmemcontents[location] = value;
+}
