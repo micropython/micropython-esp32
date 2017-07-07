@@ -24,8 +24,7 @@
  * THE SOFTWARE.
  */
 
-#include "py/mphal.h"
-#include "esp_deep_sleep.h"
+#include "espdeepsleep.h"
 
 void esp_start_sleeping(int time) { //Time in us (or a negative value to disable timer wakeup)
     //To-do: enable other wakeup sources before sleeping (ext0 or ext1?)

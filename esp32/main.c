@@ -6,6 +6,7 @@
  * The MIT License (MIT)
  *
  * Copyright (c) 2016 Damien P. George
+ * Copyright (c) 2017 Anne Jan Brouwer
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -35,6 +36,9 @@
 #include "nvs_flash.h"
 #include "esp_task.h"
 #include "soc/cpu.h"
+
+#include "sha2017_ota.h"
+#include "esprtcmem.h"
 
 #include "py/stackctrl.h"
 #include "py/nlr.h"
@@ -107,7 +111,7 @@ soft_reset:
     mp_thread_deinit();
     #endif
 
-    mp_hal_stdout_tx_str("PYB: soft reboot\r\n");
+    mp_hal_stdout_tx_str("SHA2017Badge: soft reboot\r\n");
 
     // deinitialise peripherals
     machine_pins_deinit();
@@ -119,7 +123,20 @@ soft_reset:
 }
 
 void app_main(void) {
+    uint8_t magic = esp_rtcmem_read(0);
+    uint8_t inv_magic = esp_rtcmem_read(1);
+
+    if (magic == (uint8_t)~inv_magic) {
+      printf("Magic checked out!");
+        switch (magic) {
+          case 1:
+            printf("OTA!?");
+            sha2017_ota_update();
+        }
+    }
+
     nvs_flash_init();
+
     xTaskCreateStaticPinnedToCore(mp_task, "mp_task", MP_TASK_STACK_LEN, NULL, MP_TASK_PRIORITY,
                                   &mp_task_stack[0], &mp_task_tcb, 0);
 }

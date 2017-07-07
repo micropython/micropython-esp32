@@ -26,7 +26,7 @@
 
 #include "py/mphal.h"
 
-#define USER_RTC_MEM_SIZE 1024
+#include "esprtcmem.h"
 
 static uint8_t RTC_DATA_ATTR rtcmemcontents[USER_RTC_MEM_SIZE] = {0};
 
