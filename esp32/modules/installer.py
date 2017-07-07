@@ -1,16 +1,8 @@
-import ugfx
-import badge
-import sys
-import gc
+import ugfx, badge, sys, gc
 import uos as os
 import uerrno as errno
 import ujson as json
-import ussl
-import usocket
-import time
-import network
-import machine
-import esp
+import ussl, usocket, time, network, machine,esp
 
 sta_if = network.WLAN(network.STA_IF); sta_if.active(True)
 badge.wifi_init()

@@ -1,7 +1,4 @@
-import ugfx
-import badge
-import sys
-import gc
+import ugfx, badge, sys, gc
 import uos as os
 import uerrno as errno
 import ujson as json
