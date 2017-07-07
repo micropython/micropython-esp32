@@ -791,7 +791,7 @@ APP_LD_ARGS += $(OBJ)
 APP_LD_ARGS += --end-group
 
 $(BUILD)/esp32_out.ld: sdkconfig.h
-	$(Q)$(CC) -I. -C -P -x c -E $(ESPCOMP)/esp32/ld/esp32.ld -o $@
+	$(Q)$(CC) -I. -C -P -x c -E $(ESPCOMP)/esp32/ld/esp32.ld -o $@ -DMICROPY_ESP32_BLUETOOTH=$(MICROPY_ESP32_BLUETOOTH)
 
 $(BUILD)/network_bluetooth.o: CFLAGS = $(CFLAGS_BT)
 $(BUILD)/application.bin: $(BUILD)/application.elf
