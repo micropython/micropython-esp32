@@ -1,9 +1,11 @@
 /*
- * This file is part of the MicroPython project, http://micropython.org/
+ * This file is part of the SHA2017 Badge MicroPython project,
+ * http://micropython.org/  https://badge.sha2017.org
  *
  * The MIT License (MIT)
  *
  * Copyright (c) 2017 Renze Nicolai
+ * Copyright (c) 2017 Anne Jan Brouwer
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -30,12 +32,20 @@
 
 static uint8_t RTC_DATA_ATTR rtcmemcontents[USER_RTC_MEM_SIZE] = {0};
 
-uint8_t esp_rtcmem_read(uint32_t location) {
+const uint8_t esp_rtcmem_read(uint32_t location) {
     if (location<USER_RTC_MEM_SIZE) {
       return rtcmemcontents[location];
     } else {
       return 0;
     }
+}
+
+void esp_rtcmem_read_string(uint32_t location, char *buffer) {
+  sprintf(buffer, "%s", rtcmemcontents+location);
+}
+
+void esp_rtcmem_write_string(uint32_t location, const char *buffer) {
+  sprintf((char *)rtcmemcontents+location, "%s", buffer);
 }
 
 void esp_rtcmem_write(uint32_t location, uint8_t value) {

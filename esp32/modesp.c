@@ -28,7 +28,7 @@
  */
 
 #include <stdio.h>
-
+#include <string.h>
 #include "esp_spi_flash.h"
 
 #include "drivers/dht/dht.h"
@@ -95,6 +95,30 @@ STATIC mp_obj_t esp_rtcmem_read_(mp_obj_t pos) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(esp_rtcmem_read_obj, esp_rtcmem_read_);
 
+
+STATIC mp_obj_t esp_rtcmem_read_string_(mp_uint_t n_args, const mp_obj_t *args) {
+  int pos = 2;
+  if (n_args > 0){
+    pos = mp_obj_get_int(args[0]);
+	}
+  char words[USER_RTC_MEM_SIZE];
+  esp_rtcmem_read_string(pos, words);
+  return mp_obj_new_str(words, strlen(words), true);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(esp_rtcmem_read_string_obj, 0, 1, esp_rtcmem_read_string_);
+
+STATIC mp_obj_t esp_rtcmem_write_string_(mp_uint_t n_args, const mp_obj_t *args) {
+  int pos = 2;
+  if (n_args > 1){
+    pos = mp_obj_get_int(args[1]);
+	}
+  mp_uint_t len;
+  esp_rtcmem_write_string(pos, mp_obj_str_get_data(args[0], &len));
+  return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(esp_rtcmem_write_string_obj, 1, 2, esp_rtcmem_write_string_);
+
+
 STATIC mp_obj_t esp_rtc_get_reset_reason_(mp_obj_t cpu) {
   uint8_t cpu_id = mp_obj_get_int(cpu);
   if (cpu_id > 1) {
@@ -125,6 +149,8 @@ STATIC const mp_rom_map_elem_t esp_module_globals_table[] = {
 
     {MP_ROM_QSTR(MP_QSTR_rtcmem_write), MP_ROM_PTR(&esp_rtcmem_write_obj)},
     {MP_ROM_QSTR(MP_QSTR_rtcmem_read), MP_ROM_PTR(&esp_rtcmem_read_obj)},
+    {MP_ROM_QSTR(MP_QSTR_rtcmem_write_string), MP_ROM_PTR(&esp_rtcmem_write_string_obj)},
+    {MP_ROM_QSTR(MP_QSTR_rtcmem_read_string), MP_ROM_PTR(&esp_rtcmem_read_string_obj)},
     {MP_ROM_QSTR(MP_QSTR_rtc_get_reset_reason),
      MP_ROM_PTR(&esp_rtc_get_reset_reason_obj)},
 

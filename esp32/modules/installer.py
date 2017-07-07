@@ -10,6 +10,7 @@ import usocket
 import time
 import network
 import machine
+import esp
 
 sta_if = network.WLAN(network.STA_IF); sta_if.active(True)
 badge.wifi_init()
@@ -54,7 +55,7 @@ def url_open(url):
 
         if proto == "https:":
             s = ussl.wrap_socket(s, server_hostname=host)
-            
+
         # MicroPython rawsocket module supports file interface directly
         s.write("GET /%s HTTP/1.0\r\nHost: %s\r\n\r\n" % (urlpath, host))
         l = s.readline()
@@ -106,7 +107,9 @@ def woezel_it(active):
 
 def start_app(pushed):
     if(pushed):
-        machine.deepsleep(1)
+        selected = options.selected_text()
+        esp.rtcmem_write_string(selected)
+        esp.start_sleeping(1)
 
 ugfx.input_attach(ugfx.JOY_UP, show_description)
 ugfx.input_attach(ugfx.JOY_DOWN, show_description)

@@ -6,6 +6,7 @@ import uos as os
 import uerrno as errno
 import ujson as json
 import time
+import esp
 
 ugfx.init()
 ugfx.input_init()
@@ -17,7 +18,7 @@ str_len = ugfx.get_string_width("Hacking","PermanentMarker22")
 ugfx.line(160, 72, 174 + str_len, 72, ugfx.BLACK)
 ugfx.line(170 + str_len, 52, 170 + str_len, 70, ugfx.BLACK)
 ugfx.string(170,75,"Anyway","Roboto_BlackItalic24",ugfx.BLACK)
-ugfx.string(230,100,"OTA","PermanentMarker22",ugfx.BLACK)
+ugfx.string(155,105,"sleepcycling","Roboto_Regular18",ugfx.BLACK)
 
 options = ugfx.List(0,0,int(ugfx.width()/2),ugfx.height())
 
@@ -41,7 +42,9 @@ def run_it(pushed):
         ugfx.string(40,25,"Running:","Roboto_BlackItalic24",ugfx.WHITE)
         ugfx.string(100,75, selected,"PermanentMarker22",ugfx.WHITE)
         ugfx.flush()
-        __import__(selected)
+        badge.eink_busy_wait()
+        esp.rtcmem_write_string(selected)
+        esp.start_sleeping(1)
 
 ugfx.input_attach(ugfx.BTN_A, run_it)
 ugfx.input_attach(ugfx.BTN_B, run_it)
