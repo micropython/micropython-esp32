@@ -47,5 +47,7 @@ else:
         print("starting %s", load_me)
         esp.rtcmem_write_string("")
         __import__(load_me)
+    else:
+        import launcher
 """)
     return vfs
