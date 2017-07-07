@@ -631,6 +631,7 @@ BADGE_COMPONENTS_O = $(addprefix $(BADGE)/components/,\
 	ugfx/ginput_lld_toggle.o \
 	ugfx/gfx_mk.o \
 	sha2017/wildcard_sha2017_org.o \
+	sha2017/sha2017_ota_graphics.o \
 	sha2017/sha2017_ota.o \
 	)
 

@@ -127,10 +127,10 @@ void app_main(void) {
     uint8_t inv_magic = esp_rtcmem_read(1);
 
     if (magic == (uint8_t)~inv_magic) {
-      printf("Magic checked out!");
+      printf("Magic checked out!\n");
         switch (magic) {
           case 1:
-            printf("OTA!?");
+            printf("Starting OTA\n");
             sha2017_ota_update();
         }
     }
