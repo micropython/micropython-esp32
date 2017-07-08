@@ -2,9 +2,11 @@ import ugfx, badge, sys, gc
 import uos as os
 import uerrno as errno
 import ujson as json
-import ussl, usocket, time, network, machine,esp
+import network
+import machine, esp, time
+import urequests as requests
 
-sta_if = network.WLAN(network.STA_IF); sta_if.active(True)
+sta_if = network.WLAN(network.STA_IF)
 badge.wifi_init()
 
 ugfx.clear(ugfx.BLACK)
@@ -24,65 +26,10 @@ ugfx.line(160, 72, 174 + str_len, 72, ugfx.BLACK)
 ugfx.line(170 + str_len, 52, 170 + str_len, 70, ugfx.BLACK)
 ugfx.string(170,75,"Anyway","Roboto_BlackItalic24",ugfx.BLACK)
 
-ugfx.input_init()
-
-debug = False
-
-def url_open(url):
-    if debug:
-        print(url)
-
-    proto, _, host, urlpath = url.split('/', 3)
-    try:
-        ai = usocket.getaddrinfo(host, 443)
-    except OSError as e:
-        fatal("Unable to resolve %s (no Internet?)" % host, e)
-    #print("Address infos:", ai)
-    addr = ai[0][4]
-
-    s = usocket.socket(ai[0][0])
-    try:
-        #print("Connect address:", addr)
-        s.connect(addr)
-
-        if proto == "https:":
-            s = ussl.wrap_socket(s, server_hostname=host)
-
-        # MicroPython rawsocket module supports file interface directly
-        s.write("GET /%s HTTP/1.0\r\nHost: %s\r\n\r\n" % (urlpath, host))
-        l = s.readline()
-        protover, status, msg = l.split(None, 2)
-        if status != b"200":
-            if status == b"404" or status == b"301":
-                raise NotFoundError("Package not found")
-            raise ValueError(status)
-        while 1:
-            l = s.readline()
-            if not l:
-                raise ValueError("Unexpected EOF in HTTP headers")
-            if l == b'\r\n':
-                break
-    except Exception as e:
-        s.close()
-        raise e
-
-    return s
-
 def show_description(active):
     if active:
          text.text(packages[options.selected_index()]["description"])
          ugfx.flush()
-
-options = ugfx.List(0,0,int(ugfx.width()/2),ugfx.height())
-
-f = url_open("https://badge.sha2017.org/eggs/list/json")
-try:
-    packages = json.load(f)
-finally:
-    f.close()
-
-for package in packages:
-    options.add_item("%s rev. %s"% (package["name"], package["revision"]))
 
 def woezel_it(active):
     if active:
@@ -108,6 +55,10 @@ def start_app(pushed):
         badge.eink_busy_wait()
         esp.start_sleeping(1)
 
+ugfx.input_init()
+
+window = ugfx.Container(0, 0, ugfx.width(), ugfx.height())
+
 ugfx.input_attach(ugfx.JOY_UP, show_description)
 ugfx.input_attach(ugfx.JOY_DOWN, show_description)
 ugfx.input_attach(ugfx.BTN_A, woezel_it)
@@ -118,10 +69,26 @@ ugfx.input_attach(ugfx.BTN_START, start_app)
 ugfx.input_attach(ugfx.JOY_LEFT, lambda pushed: ugfx.flush() if pushed else 0)
 ugfx.input_attach(ugfx.JOY_RIGHT, lambda pushed: ugfx.flush() if pushed else 0)
 
-text = ugfx.Textbox(int(ugfx.width()/2),0, int(ugfx.width()/2), ugfx.height())
-
-show_description(True)
+text = ugfx.Textbox(int(ugfx.width()/2),0, int(ugfx.width()/2), ugfx.height(), text="", parent=window)
 
 ugfx.set_lut(ugfx.LUT_FULL)
 ugfx.flush()
+badge.eink_busy_wait()
 ugfx.set_lut(ugfx.LUT_FASTER)
+
+gc.collect()
+
+f = requests.get("https://badge.sha2017.org/eggs/list/json")
+try:
+    packages = f.json()
+finally:
+    f.close()
+
+gc.collect()
+
+options = ugfx.List(0,0,int(ugfx.width()/2),ugfx.height())
+
+for package in packages:
+    options.add_item("%s rev. %s"% (package["name"], package["revision"]))
+
+show_description(True)

@@ -15,7 +15,7 @@ str_len = ugfx.get_string_width("Hacking","PermanentMarker22")
 ugfx.line(160, 72, 174 + str_len, 72, ugfx.BLACK)
 ugfx.line(170 + str_len, 52, 170 + str_len, 70, ugfx.BLACK)
 ugfx.string(170,75,"Anyway","Roboto_BlackItalic24",ugfx.BLACK)
-ugfx.string(155,105,"sleepcycling","Roboto_Regular18",ugfx.BLACK)
+ugfx.string(155,105,"MOTD: OSK","Roboto_Regular18",ugfx.BLACK)
 
 options = ugfx.List(0,0,int(ugfx.width()/2),ugfx.height())
 
