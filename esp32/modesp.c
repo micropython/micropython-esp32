@@ -96,7 +96,7 @@ STATIC mp_obj_t esp_flash_size(void) {
       }
       wl_sect_size = wl_sector_size(fs_handle);
   }
-  return mp_obj_new_int_from_uint(0x1FF000);
+  return mp_obj_new_int_from_uint(0x4E0000);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(esp_flash_size_obj, esp_flash_size);
 
