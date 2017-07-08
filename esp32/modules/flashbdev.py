@@ -2,6 +2,7 @@ import esp
 
 class FlashBdev:
 
+    FS_SIZE = esp.flash_size()
     SEC_SIZE = 4096
     START_SEC = esp.flash_user_start() // SEC_SIZE
 
@@ -31,4 +32,4 @@ if size < 1024*1024:
     bdev = None
 else:
     # for now we use a fixed size for the filesystem
-    bdev = FlashBdev(2048 * 1024 // FlashBdev.SEC_SIZE)
+    bdev = FlashBdev(size // FlashBdev.SEC_SIZE)
