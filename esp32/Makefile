@@ -72,6 +72,8 @@ INC += -I$(ESPCOMP)/lwip/include/lwip/posix
 INC += -I$(ESPCOMP)/mbedtls/include
 INC += -I$(ESPCOMP)/mbedtls/port/include
 INC += -I$(ESPCOMP)/spi_flash/include
+INC += -I$(ESPCOMP)/wear_levelling/include
+INC += -I$(ESPCOMP)/wear_levelling/private_include
 INC += -I$(ESPCOMP)/vfs/include
 INC += -I$(ESPCOMP)/newlib/platform_include
 INC += -I$(ESPCOMP)/xtensa-debug-module/include
@@ -374,6 +376,14 @@ ESPIDF_SPI_FLASH_O = $(addprefix $(ESPCOMP)/spi_flash/,\
 	flash_ops.o \
 	)
 
+ESPIDF_WEAR_LEVELLING_O = $(addprefix $(ESPCOMP)/wear_levelling/,\
+	wear_levelling.o \
+	Partition.o \
+	WL_Flash.o \
+	crc32.o \
+	SPI_Flash.o \
+	)
+
 $(BUILD)/$(ESPCOMP)/lwip/%.o: CFLAGS += -Wno-address -Wno-unused-variable -Wno-unused-but-set-variable
 ESPIDF_LWIP_O = $(addprefix $(ESPCOMP)/lwip/,\
 	api/pppapi.o \
@@ -556,6 +566,7 @@ OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_NGHTTP_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_NVS_FLASH_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_OPENSSL_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_SPI_FLASH_O))
+OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_WEAR_LEVELLING_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_WPA_SUPPLICANT_O))
 ################################################################################
 # Main targets
