@@ -30,6 +30,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "esp_spi_flash.h"
+#include "wear_levelling.h"
 
 #include "drivers/dht/dht.h"
 #include "modesp.h"
@@ -38,50 +39,76 @@
 #include "py/runtime.h"
 #include "rom/rtc.h"
 
+STATIC wl_handle_t fs_handle = WL_INVALID_HANDLE;
+STATIC size_t wl_sect_size = 4096;
+
+STATIC const esp_partition_t fs_part = {
+    ESP_PARTITION_TYPE_DATA,        //type
+    ESP_PARTITION_SUBTYPE_DATA_FAT, //subtype
+    0xB20000,                       // address
+    0x4E0000,                       // size 4992K
+    "locfd",                        // label
+    0                               // encrypted
+};
+
 STATIC mp_obj_t esp_flash_read(mp_obj_t offset_in, mp_obj_t buf_in) {
-  mp_int_t offset = mp_obj_get_int(offset_in);
-  mp_buffer_info_t bufinfo;
-  mp_get_buffer_raise(buf_in, &bufinfo, MP_BUFFER_WRITE);
-  esp_err_t res = spi_flash_read(offset, bufinfo.buf, bufinfo.len);
-  if (res != ESP_OK) {
-    mp_raise_OSError(MP_EIO);
-  }
-  return mp_const_none;
+    mp_int_t offset = mp_obj_get_int(offset_in);
+    mp_buffer_info_t bufinfo;
+    mp_get_buffer_raise(buf_in, &bufinfo, MP_BUFFER_WRITE);
+
+    esp_err_t res = wl_read(fs_handle, offset, bufinfo.buf, bufinfo.len);
+    if (res != ESP_OK) {
+        mp_raise_OSError(MP_EIO);
+    }
+    return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(esp_flash_read_obj, esp_flash_read);
 
 STATIC mp_obj_t esp_flash_write(mp_obj_t offset_in, mp_obj_t buf_in) {
-  mp_int_t offset = mp_obj_get_int(offset_in);
-  mp_buffer_info_t bufinfo;
-  mp_get_buffer_raise(buf_in, &bufinfo, MP_BUFFER_READ);
-  esp_err_t res = spi_flash_write(offset, bufinfo.buf, bufinfo.len);
-  if (res != ESP_OK) {
-    mp_raise_OSError(MP_EIO);
-  }
-  return mp_const_none;
+    mp_int_t offset = mp_obj_get_int(offset_in);
+    mp_buffer_info_t bufinfo;
+    mp_get_buffer_raise(buf_in, &bufinfo, MP_BUFFER_READ);
+
+    esp_err_t res = wl_write(fs_handle, offset, bufinfo.buf, bufinfo.len);
+    if (res != ESP_OK) {
+        mp_raise_OSError(MP_EIO);
+    }
+    return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(esp_flash_write_obj, esp_flash_write);
 
 STATIC mp_obj_t esp_flash_erase(mp_obj_t sector_in) {
-  mp_int_t sector = mp_obj_get_int(sector_in);
-  esp_err_t res = spi_flash_erase_sector(sector);
-  if (res != ESP_OK) {
-    mp_raise_OSError(MP_EIO);
-  }
-  return mp_const_none;
+    mp_int_t sector = mp_obj_get_int(sector_in);
+
+    esp_err_t res = wl_erase_range(fs_handle, sector * wl_sect_size, wl_sect_size);
+    if (res != ESP_OK) {
+        mp_raise_OSError(MP_EIO);
+    }
+    return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(esp_flash_erase_obj, esp_flash_erase);
 
 STATIC mp_obj_t esp_flash_size(void) {
-  return mp_obj_new_int_from_uint(spi_flash_get_chip_size());
+  if (fs_handle == WL_INVALID_HANDLE) {
+      esp_err_t res = wl_mount(&fs_part, &fs_handle);
+      if (res != ESP_OK) {
+          return mp_obj_new_int_from_uint(0x010000);
+      }
+      wl_sect_size = wl_sector_size(fs_handle);
+  }
+  return mp_obj_new_int_from_uint(0x1FF000);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(esp_flash_size_obj, esp_flash_size);
 
-STATIC mp_obj_t esp_flash_user_start(void) {
-  return MP_OBJ_NEW_SMALL_INT(0xB20000); // our SHA badge user space offset!
+STATIC mp_obj_t esp_flash_sec_size() {
+  return mp_obj_new_int_from_uint(wl_sect_size);
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(esp_flash_user_start_obj,
-                                 esp_flash_user_start);
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(esp_flash_sec_size_obj, esp_flash_sec_size);
+
+STATIC IRAM_ATTR mp_obj_t esp_flash_user_start(void) {
+  return MP_OBJ_NEW_SMALL_INT(0);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(esp_flash_user_start_obj, esp_flash_user_start);
 
 STATIC mp_obj_t esp_rtcmem_write_(mp_obj_t pos, mp_obj_t val) {
   esp_rtcmem_write(mp_obj_get_int(pos), mp_obj_get_int(val));
