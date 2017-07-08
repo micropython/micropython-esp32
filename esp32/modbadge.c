@@ -185,15 +185,6 @@ STATIC mp_obj_t badge_wifi_init_() {
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_wifi_init_obj, badge_wifi_init_);
 #endif // CONFIG_WIFI_USE
 
-#ifdef SHA2017_OTA_H
-STATIC mp_obj_t sha2017_ota_update_() {
-  sha2017_ota_update();
-  return mp_const_none;
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(sha2017_ota_update_obj, sha2017_ota_update_);
-#endif
-
-
 // Module globals
 
 STATIC const mp_rom_map_elem_t badge_module_globals_table[] = {
@@ -240,10 +231,6 @@ STATIC const mp_rom_map_elem_t badge_module_globals_table[] = {
   {MP_OBJ_NEW_QSTR(MP_QSTR_wifi_init), (mp_obj_t)&badge_wifi_init_obj},
 #endif
 
-#ifdef SHA2017_OTA_H
-  {MP_ROM_QSTR(MP_QSTR_ota_update),
-   MP_ROM_PTR(&sha2017_ota_update_obj)},
-#endif
 };
 
 STATIC MP_DEFINE_CONST_DICT(badge_module_globals, badge_module_globals_table);
