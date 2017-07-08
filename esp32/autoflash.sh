@@ -8,8 +8,7 @@ do
 	then
 		echo -e '\033[41m'
 		clear
-	       	make
-	       	deploy
+	       	make deploy
 		while [ -r $PORT ]
 		do
 		       echo -e '\033[42m'
