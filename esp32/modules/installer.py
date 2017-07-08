@@ -103,7 +103,7 @@ def start_app(pushed):
         ugfx.string(40,25,"Running:","Roboto_BlackItalic24",ugfx.WHITE)
         ugfx.string(100,75, packages[options.selected_index()]["name"],"PermanentMarker22",ugfx.WHITE)
         ugfx.flush()
-        selected = options.selected_text()
+        selected = packages[options.selected_index()]["slug"]
         esp.rtcmem_write_string(selected)
         badge.eink_busy_wait()
         esp.start_sleeping(1)

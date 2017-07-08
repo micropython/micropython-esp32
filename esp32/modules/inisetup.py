@@ -37,6 +37,8 @@ def setup():
 import badge, machine, esp, ugfx
 badge.init()
 ugfx.init()
+esp.rtcmem_write(0,0)
+esp.rtcmem_write(1,0)
 if machine.reset_cause() != machine.DEEPSLEEP_RESET:
     print("cold boot")
     import launcher
