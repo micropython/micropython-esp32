@@ -8,18 +8,20 @@ import ugfx, badge, utime as time
 wait_for_interrupt = True
 button_pushed = ''
 
-# Show a notice which can be closed with button B.
-# The caller is responsible for flushing the display after the user has confirmed the notice.
 def notice(text, title="SHA2017", close_text="Close", width = 296, height = 128, font="Roboto_Regular12"):
+	"""Show a notice which can be closed with button A.
+
+	The caller is responsible for flushing the display after the user has confirmed the notice.
+	"""
 	prompt_boolean(text, title = title, true_text = close_text, false_text = None, width = width, height = height, font=font)
 
-# Prompt the user to choose between 2 options.
-# The caller is responsible for flushing the display after processing the response.
 def prompt_boolean(text, title="SHA2017", true_text="Yes", false_text="No", width = 296, height = 128, font="Roboto_Regular12"):
 	"""A simple one and two-options dialog
 
 	if 'false_text' is set to None only one button is displayed.
-	If both 'true_text' and 'false_text' are given a boolean is returned
+	If both 'false_text' and 'true_text' are given a boolean is returned, press B for false, A for true.
+
+	The caller is responsible for flushing the display after processing the response.
 	"""
 	global wait_for_interrupt, button_pushed
 
@@ -66,52 +68,96 @@ def prompt_text(description, init_text = "", true_text="OK", false_text="Back", 
 	"""Shows a dialog and keyboard that allows the user to input/change a string
 
 	Returns None if user aborts with button B
+
+	The caller is responsible for flushing the display after processing the response.
 	"""
 	global wait_for_interrupt, button_pushed
 
 	window = ugfx.Container(int((ugfx.width()-width)/2), int((ugfx.height()-height)/2), width, height)
+	window.show()
 
-	if false_text:
-		true_text = "M: " + true_text
-		false_text = "B: " + false_text
-
-	# if buttons.has_interrupt("BTN_MENU"):
-	# 	buttons.disable_interrupt("BTN_MENU")
+	ugfx.set_default_font("Roboto_Regular12")
+	kb_height = int(height/2) + 30
+	kb = ugfx.Keyboard(0, height - kb_height, width, kb_height, parent=window)
 
 	ugfx.set_default_font("Roboto_Regular18")
-	kb = ugfx.Keyboard(0, int(height/2), width, int(height/2), parent=window)
-	edit = ugfx.Textbox(5, int(height/2)-30, int(width*4/5)-10, 25, text = init_text, parent=window)
+	edit_height = 25
+	edit = ugfx.Textbox(5, height-kb_height-5-edit_height, int(width*4/5)-10, edit_height, text = init_text, parent=window)
 	ugfx.set_default_font("Roboto_Regular12")
-	button_yes = ugfx.Button(int(width*4/5), int(height/2)-30, int(width*1/5)-3, 25 , true_text, parent=window)
-	button_no = ugfx.Button(int(width*4/5), int(height/2)-30-30, int(width/5)-3, 25 , false_text, parent=window) if false_text else None
+	button_height = 25
+	button_yes = ugfx.Button(int(width*4/5), height-kb_height-button_height, int(width*1/5)-3, button_height, true_text, parent=window)
+	button_no = ugfx.Button(int(width*4/5), height-kb_height-button_height-button_height, int(width/5)-3, button_height, false_text, parent=window) if false_text else None
 	ugfx.set_default_font(font)
-	label = ugfx.Label(int(width/10), int(height/10), int(width*4/5), int(height*2/5)-60, description, parent=window)
+	label = ugfx.Label(5, 1, int(width*4/5), height-kb_height-5-edit_height-5, description, parent=window)
 
-	try:
-		ugfx.input_init()
-
-		button_yes.attach_input(ugfx.BTN_START,0)
-		if button_no: button_no.attach_input(ugfx.BTN_B,0)
-
-		window.show()
-		edit.set_focus()
+	def vkey_pressed(key):
+		new_text = edit.text() + key
+		edit.text(new_text)
+		edit.cursor_pos(len(new_text))
+		edit.text(new_text)
 		ugfx.flush()
 
-		wait_for_interrupt = True
-		while wait_for_interrupt:
-			if button_pushed == "B": return False
-			if button_pushed == "START": return edit.text()
-			time.sleep(0.2)
+	def vkey_backspace():
+		new_text = edit.text()[:-1]
+		edit.text(new_text)
+		edit.cursor_pos(len(new_text))
+		edit.text(new_text)
+		ugfx.flush()
 
-	finally:
+	focus = 0
+
+	def toggle_focus(pressed):
+		if pressed:
+			if focus == 0:
+				edit.set_focus()
+				kb.enabled(1)
+				# Do we manually have to transfer keypresses to the editbox?
+				print("attaching")
+				ugfx.input_attach(ugfx.BTN_B, lambda pressed: vkey_backspace() if pressed else 0)
+				ugfx.input_attach(ugfx.BTN_A, lambda pressed: vkey_pressed(kb.selected_key()) if pressed else 0)
+				focus = 1
+			elif focus == 1 or not button_no:
+				button_yes.set_focus()
+				kb.enabled(0)
+				ugfx.input_attach(ugfx.BTN_A, pressed_a)
+				ugfx.input_attach(ugfx.BTN_B, pressed_b)
+				focus = (2 if button_no else 0)
+			else:
+				button_no.set_focus()
+				kb.enabled(0)
+				ugfx.input_attach(ugfx.BTN_A, pressed_a)
+				ugfx.input_attach(ugfx.BTN_B, pressed_b)
+				focus = 0
+			ugfx.flush()
+
+	ugfx.input_init()
+	ugfx.input_attach(ugfx.BTN_SELECT, toggle_focus)
+	ugfx.input_attach(ugfx.JOY_LEFT, lambda pressed: ugfx.flush() if pressed else 0)
+	ugfx.input_attach(ugfx.JOY_RIGHT, lambda pressed: ugfx.flush() if pressed else 0)
+	ugfx.input_attach(ugfx.JOY_UP, lambda pressed: ugfx.flush() if pressed else 0)
+	ugfx.input_attach(ugfx.JOY_DOWN, lambda pressed: ugfx.flush() if pressed else 0)
+
+	toggle_focus(True)
+
+	ugfx.set_lut(ugfx.LUT_NORMAL)
+	ugfx.flush()
+
+	wait_for_interrupt = True
+	while wait_for_interrupt:
+		time.sleep(0.2)
+
+	def done(value):
 		window.hide()
 		window.destroy()
 		button_yes.destroy()
 		if button_no: button_no.destroy()
 		label.destroy()
 		kb.destroy()
-		edit.destroy();
-	return
+		edit.destroy()
+		return value
+
+	if (focus == 0 and no_button) or button_pushed == "B": return done(False)
+	return done(edit.text())
 
 def prompt_option(options, index=0, text = "Please select one of the following:", title=None, select_text="OK", none_text=None):
 	"""Shows a dialog prompting for one of multiple options

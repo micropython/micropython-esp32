@@ -311,7 +311,7 @@ STATIC const mp_map_elem_t ugfx_button_locals_dict_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR_text), (mp_obj_t)&ugfx_widget_text_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_style), (mp_obj_t)&ugfx_widget_style_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_enabled), (mp_obj_t)&ugfx_widget_enabled_obj },
-	{ MP_OBJ_NEW_QSTR(MP_QSTR_set_focus), (mp_obj_t)&ugfx_widget_set_focus_obj },
+		{ MP_OBJ_NEW_QSTR(MP_QSTR_set_focus), (mp_obj_t)&ugfx_widget_set_focus_obj },
 
 	//class constants
     { MP_OBJ_NEW_QSTR(MP_QSTR_RECT),          MP_OBJ_NEW_SMALL_INT(BUTTON_RECT) },
@@ -386,7 +386,7 @@ STATIC mp_obj_t ugfx_textbox_make_new(const mp_obj_type_t *type, mp_uint_t n_arg
     wi.g.x = vals[0].u_int;
     wi.text = 0;
 	// text
-    if (n_args > 4 && MP_OBJ_IS_STR(vals[4].u_obj))
+    if (MP_OBJ_IS_STR(vals[4].u_obj))
         wi.text =  mp_obj_str_get_str(vals[4].u_obj);
 
 	// Apply parent
@@ -409,6 +409,26 @@ STATIC mp_obj_t ugfx_textbox_make_new(const mp_obj_type_t *type, mp_uint_t n_arg
     return btn;
 }
 
+/// \method cursor_pos()
+///
+/// Gets or sets location of the cursor in the text
+STATIC mp_obj_t ugfx_textbox_cursor_pos(mp_uint_t n_args, const mp_obj_t *args) {
+    ugfx_textbox_obj_t *self = args[0];
+
+    if (n_args == 1) {
+        return mp_obj_new_int(((GTexteditObject*)self->ghTextbox)->cursorPos);
+    }
+    else
+    {
+        const int newPos = mp_obj_get_int(args[1]);
+				printf("Setting cursor position for widget at %p to %d\n", self, newPos);
+        ((GTexteditObject*)self->ghTextbox)->cursorPos = newPos;
+				// Should not be needed to do this explicitly right?
+				gwinTexteditDefaultDraw(self, NULL);
+        return mp_const_none;
+    }
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ugfx_textbox_cursor_pos_obj, 1, 2, ugfx_textbox_cursor_pos);
 
 /// \method destroy()
 ///
@@ -427,6 +447,7 @@ STATIC const mp_map_elem_t ugfx_textbox_locals_dict_table[] = {
     // instance methods
     { MP_OBJ_NEW_QSTR(MP_QSTR_destroy), (mp_obj_t)&ugfx_textbox_destroy_obj},
     { MP_OBJ_NEW_QSTR(MP_QSTR___del__), (mp_obj_t)&ugfx_textbox_destroy_obj},
+		{ MP_OBJ_NEW_QSTR(MP_QSTR_cursor_pos), (mp_obj_t)&ugfx_textbox_cursor_pos_obj},
     { MP_OBJ_NEW_QSTR(MP_QSTR_visible), (mp_obj_t)&ugfx_widget_visible_obj},
     { MP_OBJ_NEW_QSTR(MP_QSTR_attach_input), (mp_obj_t)&ugfx_widget_attach_input_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_detach_input), (mp_obj_t)&ugfx_widget_detach_input_obj },
@@ -1011,13 +1032,14 @@ STATIC const mp_map_elem_t ugfx_keyboard_locals_dict_table[] = {
     // instance methods
     { MP_OBJ_NEW_QSTR(MP_QSTR_destroy), (mp_obj_t)&ugfx_keyboard_destroy_obj},
     { MP_OBJ_NEW_QSTR(MP_QSTR___del__), (mp_obj_t)&ugfx_keyboard_destroy_obj},
+		{ MP_OBJ_NEW_QSTR(MP_QSTR_selected_key), (mp_obj_t)&ugfx_keyboard_selected_key_obj},
     { MP_OBJ_NEW_QSTR(MP_QSTR_visible), (mp_obj_t)&ugfx_widget_visible_obj},
     { MP_OBJ_NEW_QSTR(MP_QSTR_attach_input), (mp_obj_t)&ugfx_widget_attach_input_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_detach_input), (mp_obj_t)&ugfx_widget_detach_input_obj },
     //{ MP_OBJ_NEW_QSTR(MP_QSTR_callback), (mp_obj_t)&ugfx_keyboard_callback_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_text), (mp_obj_t)&ugfx_widget_text_obj },
-	{ MP_OBJ_NEW_QSTR(MP_QSTR_style), (mp_obj_t)&ugfx_widget_style_obj },
-	{ MP_OBJ_NEW_QSTR(MP_QSTR_enabled), (mp_obj_t)&ugfx_widget_enabled_obj },
+		{ MP_OBJ_NEW_QSTR(MP_QSTR_style), (mp_obj_t)&ugfx_widget_style_obj },
+		{ MP_OBJ_NEW_QSTR(MP_QSTR_enabled), (mp_obj_t)&ugfx_widget_enabled_obj },
 
 //	{ MP_OBJ_NEW_QSTR(MP_QSTR_set_keyboard_callback), (mp_obj_t)&ugfx_set_keyboard_callback_obj },
 //    { MP_OBJ_NEW_QSTR(MP_QSTR_clear_keyboard_callback), (mp_obj_t)&ugfx_clear_keyboard_callback_obj },
