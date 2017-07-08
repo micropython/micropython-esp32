@@ -62,6 +62,12 @@ const char *esp32_help_text =
 "Controlling the RGBW LEDs:\n"
 "TODO\n"
 "\n"
+"Starting an app called 'name' after sleepcycle:\n"
+"\n"
+"import esp"
+"esp.rtcmem_write_string('name')"
+"esp.start_sleeping(1)"
+"\n"
 "For further help on a specific object, type help(obj)\n"
 "For a list of available modules, type help('modules')\n"
 ;
