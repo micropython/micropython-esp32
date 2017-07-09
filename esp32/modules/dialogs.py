@@ -90,18 +90,8 @@ def prompt_text(description, init_text = "", true_text="OK", false_text="Back", 
 	ugfx.set_default_font(font)
 	label = ugfx.Label(5, 1, int(width*4/5), height-kb_height-5-edit_height-5, description, parent=window)
 
-	def vkey_pressed(key):
-		new_text = edit.text() + key
-		edit.text(new_text)
-		edit.cursor_pos(len(new_text))
-		edit.text(new_text)
-		ugfx.flush()
-
 	def vkey_backspace():
-		new_text = edit.text()[:-1]
-		edit.text(new_text)
-		edit.cursor_pos(len(new_text))
-		edit.text(new_text)
+		edit.backspace()
 		ugfx.flush()
 
 	focus = 0
@@ -111,10 +101,8 @@ def prompt_text(description, init_text = "", true_text="OK", false_text="Back", 
 			if focus == 0:
 				edit.set_focus()
 				kb.enabled(1)
-				# Do we manually have to transfer keypresses to the editbox?
-				print("attaching")
 				ugfx.input_attach(ugfx.BTN_B, lambda pressed: vkey_backspace() if pressed else 0)
-				ugfx.input_attach(ugfx.BTN_A, lambda pressed: vkey_pressed(kb.selected_key()) if pressed else 0)
+				ugfx.input_attach(ugfx.BTN_A, lambda pressed: 0 if pressed else ugfx.flush())
 				focus = 1
 			elif focus == 1 or not button_no:
 				button_yes.set_focus()

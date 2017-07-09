@@ -429,6 +429,18 @@ STATIC mp_obj_t ugfx_textbox_cursor_pos(mp_uint_t n_args, const mp_obj_t *args) 
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ugfx_textbox_cursor_pos_obj, 1, 2, ugfx_textbox_cursor_pos);
 
+/// \method backspace()
+///
+/// removes the character before the cursor
+STATIC mp_obj_t ugfx_textbox_backspace(mp_obj_t self_in) {
+    ugfx_textbox_obj_t *self = self_in;
+
+	gwinTexteditBackspace(self->ghTextbox);
+
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(ugfx_textbox_backspace_obj, ugfx_textbox_backspace);
+
 /// \method destroy()
 ///
 /// frees up all resources
@@ -447,6 +459,7 @@ STATIC const mp_map_elem_t ugfx_textbox_locals_dict_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR_destroy), (mp_obj_t)&ugfx_textbox_destroy_obj},
     { MP_OBJ_NEW_QSTR(MP_QSTR___del__), (mp_obj_t)&ugfx_textbox_destroy_obj},
 		{ MP_OBJ_NEW_QSTR(MP_QSTR_cursor_pos), (mp_obj_t)&ugfx_textbox_cursor_pos_obj},
+		{ MP_OBJ_NEW_QSTR(MP_QSTR_backspace), (mp_obj_t)&ugfx_textbox_backspace_obj},
     { MP_OBJ_NEW_QSTR(MP_QSTR_visible), (mp_obj_t)&ugfx_widget_visible_obj},
     { MP_OBJ_NEW_QSTR(MP_QSTR_attach_input), (mp_obj_t)&ugfx_widget_attach_input_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_detach_input), (mp_obj_t)&ugfx_widget_detach_input_obj },
