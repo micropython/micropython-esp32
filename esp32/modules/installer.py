@@ -69,7 +69,7 @@ ugfx.input_attach(ugfx.BTN_START, start_app)
 ugfx.input_attach(ugfx.JOY_LEFT, lambda pushed: ugfx.flush() if pushed else 0)
 ugfx.input_attach(ugfx.JOY_RIGHT, lambda pushed: ugfx.flush() if pushed else 0)
 
-text = ugfx.Textbox(int(ugfx.width()/2),0, int(ugfx.width()/2), ugfx.height(), text="", parent=window)
+text = ugfx.Textbox(int(ugfx.width()/2),0, int(ugfx.width()/2), ugfx.height())
 
 ugfx.set_lut(ugfx.LUT_FULL)
 ugfx.flush()
