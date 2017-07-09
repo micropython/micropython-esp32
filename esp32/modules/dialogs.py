@@ -85,7 +85,14 @@ def prompt_text(description, init_text = "", true_text="OK", false_text="Back", 
 	edit = ugfx.Textbox(5, height-kb_height-5-edit_height, int(width*4/5)-10, edit_height, text = init_text, parent=window)
 	ugfx.set_default_font("Roboto_Regular12")
 	button_height = 25
-	button_yes = ugfx.Button(int(width*4/5), height-kb_height-button_height, int(width*1/5)-3, button_height, true_text, parent=window)
+
+	def okay(evt):
+		# We'd like promises here, but for now this should do
+		global wait_for_interrupt
+		button_pushed = "A"
+		wait_for_interrupt = False
+
+	button_yes = ugfx.Button(int(width*4/5), height-kb_height-button_height, int(width*1/5)-3, button_height, true_text, parent=window, cb=okay)
 	button_no = ugfx.Button(int(width*4/5), height-kb_height-button_height-button_height, int(width/5)-3, button_height, false_text, parent=window) if false_text else None
 	ugfx.set_default_font(font)
 	label = ugfx.Label(5, 1, int(width*4/5), height-kb_height-5-edit_height-5, description, parent=window)

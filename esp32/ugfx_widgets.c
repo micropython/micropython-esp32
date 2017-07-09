@@ -196,7 +196,16 @@ typedef struct _ugfx_button_t {
 
 } ugfx_button_obj_t;
 
-/// \classmethod \constructor(x, y, a, b, text, *, parent=None, trigger=None, shape=ugfx.RECTANGLE, style=None)
+/// Called when the button produces and event and
+/// we registered an event handler when constructing
+/// the widget.
+void ugfx_button_gevent_handler(void *param, GEvent *pe){
+  mp_obj_t* callback = (mp_obj_t*) param;
+	printf("Scheduling call to callback\n");
+  mp_sched_schedule(callback, mp_const_none);
+}
+
+/// \classmethod \constructor(x, y, a, b, text, *, parent=None, trigger=None, shape=ugfx.RECTANGLE, style=None, cb=mycallback)
 ///
 /// Construct an Button object.
 /// If the style input is not set, will take the style from the parent, if the parents style is set. Otherwise uses default style
@@ -210,6 +219,7 @@ STATIC const mp_arg_t ugfx_button_make_new_args[] = {
     { MP_QSTR_trigger, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_const_none} },
     { MP_QSTR_shape, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = BUTTON_RECT} },
     { MP_QSTR_style, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_const_none} },
+		{ MP_QSTR_cb, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_const_none} },
 };
 #define UGFX_BUTTON_MAKE_NEW_NUM_ARGS MP_ARRAY_SIZE(ugfx_button_make_new_args)
 
@@ -283,6 +293,20 @@ STATIC mp_obj_t ugfx_button_make_new(const mp_obj_type_t *type, mp_uint_t n_args
     if (MP_OBJ_IS_INT(vals[6].u_obj)) {
         gwinAttachToggle(btn->ghButton, 0, mp_obj_get_int(vals[6].u_obj));
     }
+
+		// output
+		if (MP_OBJ_IS_FUN(vals[9].u_obj)) {
+			// TODO where to keep this reference so we can clean it up afterwards?
+			// Perhaps pass our own structure to gwinButtonCreate?
+			GListener* pl = malloc(sizeof(GListener));
+			printf("Created GListener at %x\n", pl);
+			geventListenerInit(pl);
+			pl->callback = ugfx_button_gevent_handler;
+			// TODO do we need to copy this value to make sure it doesn't get freed?
+			pl->param = vals[9].u_obj;
+			geventAttachSource(pl, GWIDGET_SOURCE, GEVENT_GWIN_BUTTON);
+			printf("Attached ghButton to our listener\n");
+		}
 
 	return btn;
 }
