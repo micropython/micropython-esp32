@@ -205,11 +205,11 @@ STATIC const mp_arg_t ugfx_button_make_new_args[] = {
     { MP_QSTR_y, MP_ARG_REQUIRED | MP_ARG_INT, {.u_int = 0} },
     { MP_QSTR_a, MP_ARG_REQUIRED | MP_ARG_INT, {.u_int = 0} },
     { MP_QSTR_b, MP_ARG_REQUIRED | MP_ARG_INT, {.u_int = 0} },
-    { MP_QSTR_text, MP_ARG_REQUIRED | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
-    { MP_QSTR_parent, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
-    { MP_QSTR_trigger, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
+    { MP_QSTR_text, MP_ARG_REQUIRED | MP_ARG_OBJ, },
+    { MP_QSTR_parent, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_const_none} },
+    { MP_QSTR_trigger, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_const_none} },
     { MP_QSTR_shape, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = BUTTON_RECT} },
-    { MP_QSTR_style, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
+    { MP_QSTR_style, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_const_none} },
 };
 #define UGFX_BUTTON_MAKE_NEW_NUM_ARGS MP_ARRAY_SIZE(ugfx_button_make_new_args)
 
@@ -236,7 +236,6 @@ STATIC mp_obj_t ugfx_button_make_new(const mp_obj_type_t *type, mp_uint_t n_args
     wi.g.x = vals[0].u_int;
 	wi.text = 0;
 
-    if(n_args > 7)
 	switch (vals[7].u_int){
 		case BUTTON_ROUNDED:
 			wi.customDraw = gwinButtonDraw_Rounded;
@@ -262,14 +261,14 @@ STATIC mp_obj_t ugfx_button_make_new(const mp_obj_type_t *type, mp_uint_t n_args
 
 	// Apply parent
     wi.g.parent = NULL;
-    if (n_args > 5 && MP_OBJ_IS_TYPE(vals[5].u_obj, &ugfx_container_type)) {
+    if (MP_OBJ_IS_TYPE(vals[5].u_obj, &ugfx_container_type)) {
         ugfx_container_obj_t *container = vals[5].u_obj;
         wi.g.parent = container->ghContainer;
         wi.customStyle = container->style;
     }
 
 	// Apply style
-    if (n_args > 8 && MP_OBJ_IS_TYPE(vals[8].u_obj, &ugfx_style_type)) {
+    if (MP_OBJ_IS_TYPE(vals[8].u_obj, &ugfx_style_type)) {
         ugfx_style_obj_t *sty = vals[8].u_obj;
         wi.customStyle = &(sty->style);
     }
@@ -281,7 +280,7 @@ STATIC mp_obj_t ugfx_button_make_new(const mp_obj_type_t *type, mp_uint_t n_args
 	gwinSetText(btn->ghButton,mp_obj_str_get_str(vals[4].u_obj),TRUE);
 
     // input
-    if (n_args > 6 && MP_OBJ_IS_INT(vals[6].u_obj)) {
+    if (MP_OBJ_IS_INT(vals[6].u_obj)) {
         gwinAttachToggle(btn->ghButton, 0, mp_obj_get_int(vals[6].u_obj));
     }
 
@@ -355,10 +354,10 @@ STATIC const mp_arg_t ugfx_textbox_make_new_args[] = {
     { MP_QSTR_y, MP_ARG_REQUIRED | MP_ARG_INT, {.u_int = 0} },
     { MP_QSTR_a, MP_ARG_REQUIRED | MP_ARG_INT, {.u_int = 0} },
     { MP_QSTR_b, MP_ARG_REQUIRED | MP_ARG_INT, {.u_int = 0} },
-    { MP_QSTR_text, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
-    { MP_QSTR_parent, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
+    { MP_QSTR_text, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_const_none} },
+    { MP_QSTR_parent, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_const_none} },
     { MP_QSTR_maxlen, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 255} },
-	{ MP_QSTR_style, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
+	{ MP_QSTR_style, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_const_none} },
 };
 #define UGFX_TEXTBOX_MAKE_NEW_NUM_ARGS MP_ARRAY_SIZE(ugfx_textbox_make_new_args)
 
@@ -391,14 +390,14 @@ STATIC mp_obj_t ugfx_textbox_make_new(const mp_obj_type_t *type, mp_uint_t n_arg
 
 	// Apply parent
     wi.g.parent = NULL;
-    if (n_args > 5 && MP_OBJ_IS_TYPE(vals[5].u_obj, &ugfx_container_type)) {
+    if (MP_OBJ_IS_TYPE(vals[5].u_obj, &ugfx_container_type)) {
         ugfx_container_obj_t *container = vals[5].u_obj;
         wi.g.parent = container->ghContainer;
         wi.customStyle = container->style;
     }
 
 	// Apply style
-    if (n_args > 7 && MP_OBJ_IS_TYPE(vals[7].u_obj, &ugfx_style_type)) {
+    if (MP_OBJ_IS_TYPE(vals[7].u_obj, &ugfx_style_type)) {
         ugfx_style_obj_t *sty = vals[7].u_obj;
         wi.customStyle = &(sty->style);
     }
@@ -495,10 +494,10 @@ STATIC const mp_arg_t ugfx_list_make_new_args[] = {
     { MP_QSTR_y, MP_ARG_REQUIRED | MP_ARG_INT, {.u_int = 0} },
     { MP_QSTR_a, MP_ARG_REQUIRED | MP_ARG_INT, {.u_int = 0} },
     { MP_QSTR_b, MP_ARG_REQUIRED | MP_ARG_INT, {.u_int = 0} },
-    { MP_QSTR_parent, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
+    { MP_QSTR_parent, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_const_none} },
     { MP_QSTR_up, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = BADGE_BUTTON_UP} },
     { MP_QSTR_down, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = BADGE_BUTTON_DOWN} },
-	{ MP_QSTR_style, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
+	{ MP_QSTR_style, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_const_none} },
 };
 #define UGFX_LIST_MAKE_NEW_NUM_ARGS MP_ARRAY_SIZE(ugfx_list_make_new_args)
 
@@ -633,14 +632,14 @@ STATIC mp_obj_t ugfx_list_make_new(const mp_obj_type_t *type, mp_uint_t n_args, 
     // Apply parent
     wi.g.parent = NULL;
 
-    if (n_args > 4 && MP_OBJ_IS_TYPE(vals[4].u_obj, &ugfx_container_type)) {
+    if (MP_OBJ_IS_TYPE(vals[4].u_obj, &ugfx_container_type)) {
         ugfx_container_obj_t *container = vals[4].u_obj;
         wi.g.parent = container->ghContainer;
         wi.customStyle = container->style;
     }
 
     // Apply style
-    if (n_args > 7 && MP_OBJ_IS_TYPE(vals[7].u_obj, &ugfx_style_type)) {
+    if (MP_OBJ_IS_TYPE(vals[7].u_obj, &ugfx_style_type)) {
         ugfx_style_obj_t *sty = vals[7].u_obj;
         wi.customStyle = &(sty->style);
     }
@@ -840,13 +839,13 @@ STATIC const mp_arg_t ugfx_keyboard_make_new_args[] = {
     { MP_QSTR_y, MP_ARG_REQUIRED | MP_ARG_INT, {.u_int = 0} },
     { MP_QSTR_a, MP_ARG_REQUIRED | MP_ARG_INT, {.u_int = 0} },
     { MP_QSTR_b, MP_ARG_REQUIRED | MP_ARG_INT, {.u_int = 0} },
-    { MP_QSTR_parent, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
+    { MP_QSTR_parent, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_const_none} },
     { MP_QSTR_up, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = BADGE_BUTTON_UP} },
     { MP_QSTR_down, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = BADGE_BUTTON_DOWN} },
     { MP_QSTR_right, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = BADGE_BUTTON_RIGHT} },
     { MP_QSTR_left, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = BADGE_BUTTON_LEFT} },
     { MP_QSTR_select, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = BADGE_BUTTON_A} },
-	{ MP_QSTR_style, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
+	{ MP_QSTR_style, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_const_none} },
 };
 #define UGFX_KEYBOARD_MAKE_NEW_NUM_ARGS MP_ARRAY_SIZE(ugfx_keyboard_make_new_args)
 
@@ -875,14 +874,14 @@ STATIC mp_obj_t ugfx_keyboard_make_new(const mp_obj_type_t *type, mp_uint_t n_ar
 
 	// Apply parent
     wi.g.parent = NULL;
-    if (n_args > 4 && MP_OBJ_IS_TYPE(vals[4].u_obj, &ugfx_container_type)) {
+    if (MP_OBJ_IS_TYPE(vals[4].u_obj, &ugfx_container_type)) {
         ugfx_container_obj_t *container = vals[4].u_obj;
         wi.g.parent = container->ghContainer;
         wi.customStyle = container->style;
     }
 
 	// Apply style
-    if (n_args > 10 && MP_OBJ_IS_TYPE(vals[10].u_obj, &ugfx_style_type)) {
+    if (MP_OBJ_IS_TYPE(vals[10].u_obj, &ugfx_style_type)) {
         ugfx_style_obj_t *sty = vals[10].u_obj;
         wi.customStyle = &(sty->style);
     }
@@ -1085,10 +1084,10 @@ STATIC const mp_arg_t ugfx_imagebox_make_new_args[] = {
     { MP_QSTR_y, MP_ARG_REQUIRED | MP_ARG_INT, {.u_int = 0} },
     { MP_QSTR_a, MP_ARG_REQUIRED | MP_ARG_INT, {.u_int = 0} },
     { MP_QSTR_b, MP_ARG_REQUIRED | MP_ARG_INT, {.u_int = 0} },
-	{ MP_QSTR_text, MP_ARG_REQUIRED | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
-    { MP_QSTR_parent, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
+	{ MP_QSTR_text, MP_ARG_REQUIRED | MP_ARG_OBJ, },
+    { MP_QSTR_parent, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_const_none} },
     { MP_QSTR_cache, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 0} },
-	{ MP_QSTR_style, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
+	{ MP_QSTR_style, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_const_none} },
 };
 #define UGFX_IMAGEBOX_MAKE_NEW_NUM_ARGS MP_ARRAY_SIZE(ugfx_imagebox_make_new_args)
 
@@ -1119,14 +1118,14 @@ STATIC mp_obj_t ugfx_imagebox_make_new(const mp_obj_type_t *type, mp_uint_t n_ar
 	wi.g.x = vals[0].u_int;
 
 	wi.g.parent = NULL;
-    if (n_args > 5 && MP_OBJ_IS_TYPE(vals[5].u_obj, &ugfx_container_type)) {
+    if (MP_OBJ_IS_TYPE(vals[5].u_obj, &ugfx_container_type)) {
         ugfx_container_obj_t *container = vals[5].u_obj;
         wi.g.parent = container->ghContainer;
         wi.customStyle = container->style;
     }
 
 	// Apply style
-    if (n_args > 7 && MP_OBJ_IS_TYPE(vals[7].u_obj, &ugfx_style_type)) {
+    if (MP_OBJ_IS_TYPE(vals[7].u_obj, &ugfx_style_type)) {
         ugfx_style_obj_t *sty = vals[7].u_obj;
         wi.customStyle = &(sty->style);
     }
@@ -1241,9 +1240,9 @@ STATIC const mp_arg_t ugfx_label_make_new_args[] = {
     { MP_QSTR_y, MP_ARG_REQUIRED | MP_ARG_INT, {.u_int = 0} },
     { MP_QSTR_a, MP_ARG_REQUIRED | MP_ARG_INT, {.u_int = 0} },
     { MP_QSTR_b, MP_ARG_REQUIRED | MP_ARG_INT, {.u_int = 0} },
-    { MP_QSTR_text, MP_ARG_REQUIRED | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
-    { MP_QSTR_parent, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
-	{ MP_QSTR_style, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
+    { MP_QSTR_text, MP_ARG_REQUIRED | MP_ARG_OBJ, },
+    { MP_QSTR_parent, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_const_none} },
+	{ MP_QSTR_style, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_const_none} },
 	{ MP_QSTR_justification, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 0} },
 };
 #define UGFX_LABEL_MAKE_NEW_NUM_ARGS MP_ARRAY_SIZE(ugfx_label_make_new_args)
@@ -1273,14 +1272,14 @@ STATIC mp_obj_t ugfx_label_make_new(const mp_obj_type_t *type, mp_uint_t n_args,
 
 	// Apply parent
     wi.g.parent = NULL;
-    if (n_args > 6 && MP_OBJ_IS_TYPE(vals[5].u_obj, &ugfx_container_type)) {
+    if (MP_OBJ_IS_TYPE(vals[5].u_obj, &ugfx_container_type)) {
         ugfx_container_obj_t *container = vals[5].u_obj;
         wi.g.parent = container->ghContainer;
         wi.customStyle = container->style;
     }
 
 	// Apply style
-    if (n_args > 6 && MP_OBJ_IS_TYPE(vals[6].u_obj, &ugfx_style_type)) {
+    if (MP_OBJ_IS_TYPE(vals[6].u_obj, &ugfx_style_type)) {
         ugfx_style_obj_t *sty = vals[6].u_obj;
         wi.customStyle = &(sty->style);
     }
@@ -1454,10 +1453,10 @@ STATIC const mp_arg_t ugfx_checkbox_make_new_args[] = {
     { MP_QSTR_y, MP_ARG_REQUIRED | MP_ARG_INT, {.u_int = 0} },
     { MP_QSTR_a, MP_ARG_REQUIRED | MP_ARG_INT, {.u_int = 0} },
     { MP_QSTR_b, MP_ARG_REQUIRED | MP_ARG_INT, {.u_int = 0} },
-    { MP_QSTR_text, MP_ARG_REQUIRED | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
-    { MP_QSTR_parent, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
-    { MP_QSTR_trigger, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
-	{ MP_QSTR_style, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
+    { MP_QSTR_text, MP_ARG_REQUIRED | MP_ARG_OBJ, },
+    { MP_QSTR_parent, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_const_none} },
+    { MP_QSTR_trigger, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_const_none} },
+	{ MP_QSTR_style, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_const_none} },
 };
 #define UGFX_CHECKBOX_MAKE_NEW_NUM_ARGS MP_ARRAY_SIZE(ugfx_checkbox_make_new_args)
 
@@ -1491,14 +1490,14 @@ STATIC mp_obj_t ugfx_checkbox_make_new(const mp_obj_type_t *type, mp_uint_t n_ar
 
 	// Apply parent
     wi.g.parent = NULL;
-    if (n_args > 5 && MP_OBJ_IS_TYPE(vals[5].u_obj, &ugfx_container_type)) {
+    if (MP_OBJ_IS_TYPE(vals[5].u_obj, &ugfx_container_type)) {
         ugfx_container_obj_t *container = vals[5].u_obj;
         wi.g.parent = container->ghContainer;
         wi.customStyle = container->style;
     }
 
 	// Apply style
-    if (n_args > 7 && MP_OBJ_IS_TYPE(vals[7].u_obj, &ugfx_style_type)) {
+    if (MP_OBJ_IS_TYPE(vals[7].u_obj, &ugfx_style_type)) {
         ugfx_style_obj_t *sty = vals[7].u_obj;
         wi.customStyle = &(sty->style);
     }
