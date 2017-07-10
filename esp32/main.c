@@ -33,7 +33,6 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_system.h"
-#include "nvs_flash.h"
 #include "esp_task.h"
 #include "soc/cpu.h"
 
@@ -134,8 +133,6 @@ void app_main(void) {
             sha2017_ota_update();
         }
     } else {
-      nvs_flash_init();
-
       xTaskCreateStaticPinnedToCore(mp_task, "mp_task", MP_TASK_STACK_LEN, NULL, MP_TASK_PRIORITY,
                                     &mp_task_stack[0], &mp_task_tcb, 0);
     }
