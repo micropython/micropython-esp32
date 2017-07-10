@@ -2874,6 +2874,17 @@ STATIC void network_bluetooth_connection_attr(mp_obj_t self_in, qstr attr, mp_ob
     }
 }
 
+STATIC mp_obj_t network_bluetooth_connection_disconnect(mp_obj_t self_in) {
+    network_bluetooth_obj_t * bluetooth = network_bluetooth_get_singleton();
+    network_bluetooth_connection_obj_t* connection = (network_bluetooth_connection_obj_t*) self_in;
+    if (connection->conn_id != -1) {
+        esp_ble_gattc_close(bluetooth->gattc_interface, connection->conn_id);
+        connection->conn_id = -1;
+    }
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(network_bluetooth_connection_disconnect_obj, network_bluetooth_connection_disconnect);
+
 STATIC mp_obj_t network_bluetooth_callback(size_t n_args, const mp_obj_t *args) {
     network_bluetooth_obj_t * self = network_bluetooth_get_singleton();
     return network_bluetooth_callback_helper(&self->callback, &self->callback_userdata, n_args, args);
@@ -3595,6 +3606,7 @@ const mp_obj_type_t network_bluetooth_type = {
 STATIC const mp_rom_map_elem_t network_bluetooth_connection_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_services), NULL },  // Handled by attr method
     { MP_ROM_QSTR(MP_QSTR_is_connected), NULL },  // Handled by attr method
+    { MP_ROM_QSTR(MP_QSTR_disconnect), MP_ROM_PTR(&network_bluetooth_connection_disconnect_obj) }, 
 };
 
 STATIC MP_DEFINE_CONST_DICT(network_bluetooth_connection_locals_dict, network_bluetooth_connection_locals_dict_table);
