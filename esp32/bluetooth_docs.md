@@ -15,7 +15,7 @@
 
 ## General
 
-### Bluetooth Objects
+### Bluetooth objects
 
 The Bluetooth object is a global singleton.
 
@@ -103,7 +103,7 @@ bluetooth.ble_settings(int_min = 1280, int_max = 1280,
 
 `bluetooth.deinit()` shutdown Bluetooth.  Due to present limitations in the IDF, this does _not_ return the BT stack to a lower powered state.
 
-`bluetooth.connect(bda)` GATTC - connect to a remote GATTS server.  BDA is the remote address, as a `bytes(6)`.  See [GATTC](#gattc) for more information
+`bluetooth.connect(bda)` GATTC - connect to a remote GATTS server.  BDA is the remote address, as a `bytes(6)`.  Returns a [GATTCConn](#gattcconn-objects) object.
 
 `bluetooth.Service(uuid, is_primary = True)` GATTS - create a new GATTSService object. `uuid` is either an integer or a `bytes(16)`. UUIDs are globally unique with in GATTS.  If you attempt to create a service with a UUID that is the same as an existing (but not closed) service, you will receive the same service object, and no new service will be created.
 
@@ -161,7 +161,7 @@ When a GATTC connects, advertising ends.  After disconnect, then advertising mus
 
 ## GATTS
 
-### GATTSService Objects
+### GATTSService objects
 
 GATTSService objects are created by calling the `bluetooth.Service()` constructor.
 
@@ -245,7 +245,7 @@ In the absence of a callback, then the characteristic value is return for a read
 
 ## GATTC
 
-Use `bluetooth.scan_start()`, to find GATTS devices.  You'll need to set up a Bluetooth object callback to get scan results. You can then use `bluetooth.connect()` to connec to a GATTS device:
+Use `bluetooth.scan_start()`, to find GATTS devices.  You'll need to set up a Bluetooth object callback to get scan results. You can then use `bluetooth.connect()` to connect to a GATTS device:
 
 `bluetooth.connect(<bda>)` Returns a `GATTCConn` object.
 
@@ -254,6 +254,8 @@ Use `bluetooth.scan_start()`, to find GATTS devices.  You'll need to set up a Bl
 `conn.services` Returns the services associated with the connection.  This is a list of [`GATTCService`](#gattcservice-objects) objects.
 
 `conn.is_connected` Returns whether the connection is active or not.
+
+`conn.disconnect()` Disconnect 
 
 ### GATTCService objects
 
