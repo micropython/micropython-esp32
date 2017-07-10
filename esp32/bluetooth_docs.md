@@ -231,6 +231,8 @@ In the absence of a callback, then the characteristic value is return for a read
 
 `char.Descr(uuid, value = None, perm = bluetooth.PERM_READ | bluetooth.PERM_WRITE)` Create a new descriptor for a characteristic.  
 
+`char.descrs` Get the descriptors associated with the characteristic
+
 ### GATTSDescr objects
 
 `descr.uuid` Get the descriptor UUID.
@@ -273,7 +275,7 @@ When the callback is called, it will be called with 4 parameters:
 3. The value of the notify/indicate
 4. the `<callback_data>`
 
-`char.descriptors` Returns a list of [`GATTCDescr`](#gattcdescr-objects) associated with this characteristic.
+`char.descrs` Returns a list of [`GATTCDescr`](#gattcdescr-objects) associated with this characteristic.
 
 `char.read()` Read the characteristic value
 
@@ -281,7 +283,7 @@ When the callback is called, it will be called with 4 parameters:
 
 ### GATTCDescr objects
 
-`GATTCChar` objects often have associated BLE desriptor objects.  These can be obtained by accessing the `char.descriptors` property of [`GATTCChar`](#gattcchar-objects) objects.
+`GATTCChar` objects often have associated BLE desriptor objects.  These can be obtained by accessing the `char.descrs` property of [`GATTCChar`](#gattcchar-objects) objects.
 
 `descr.read()` Read from the descriptor.
 
@@ -369,7 +371,7 @@ def hr(bda):
     if service:
         char = ([c for c in service.chars if c.uuid[0:4] == b'\x00\x00\x2a\x37'] + [None])[0]
         if char:
-            descr = ([d for d in char.descriptors if d.uuid[0:4] == b'\x00\x00\x29\x02'] + [None])[0]
+            descr = ([d for d in char.descrs if d.uuid[0:4] == b'\x00\x00\x29\x02'] + [None])[0]
             if descr:
                 char.callback(cb)
                 descr.write(b'\x01\x00') # Turn on notify
