@@ -177,6 +177,7 @@ STATIC mp_obj_t badge_wifi_init_() {
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_wifi_init_obj, badge_wifi_init_);
 
 STATIC mp_obj_t badge_wifi_wait_() {
+  // TODO optional settable delay
   xEventGroupWaitBits(wifi_event_group, CONNECTED_BIT, false, true,
                     portMAX_DELAY);
   return mp_const_none;
