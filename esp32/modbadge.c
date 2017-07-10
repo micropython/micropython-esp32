@@ -36,18 +36,33 @@
 
 // INIT
 
-static bool badge_initialised = false;
-static bool badge_leds_initialised = false;
 STATIC mp_obj_t badge_init_() {
-  if (!badge_initialised)
-  {
-      badge_initialised = true;
-      badge_leds_initialised = true;
-      badge_init();
-  }
+  badge_init();
   return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_init_obj, badge_init_);
+
+// NVS
+
+STATIC mp_obj_t badge_nvs_get_str_(mp_obj_t namespace, mp_obj_t key) {
+  char value[1024]; // TODO wut?
+  size_t length;
+  esp_err_t err = badge_nvs_get_str(mp_obj_str_get_str(namespace), mp_obj_str_get_str(key), value, &length);
+  if (err != ESP_OK) {
+    mp_raise_msg(&mp_type_ValueError, "TODO error things");
+  }
+  return mp_obj_new_str(value, length-1, false);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_2(badge_nvs_get_str_obj, badge_nvs_get_str_);
+
+STATIC mp_obj_t badge_nvs_set_str_(mp_obj_t namespace, mp_obj_t key, mp_obj_t value) {
+  esp_err_t err = badge_nvs_set_str(mp_obj_str_get_str(namespace), mp_obj_str_get_str(key), mp_obj_str_get_str(value));
+  if (err != ESP_OK) {
+    mp_raise_msg(&mp_type_ValueError, "TODO error things");
+  }
+  return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_3(badge_nvs_set_str_obj, badge_nvs_set_str_);
 
 // EINK
 
@@ -120,10 +135,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_0(usb_volt_sense_obj, usb_volt_sense_);
 
 #if defined(PIN_NUM_LED) || defined(MPR121_PIN_NUM_LEDS)
 STATIC mp_obj_t badge_leds_init_() {
-  if (!badge_leds_initialised) {
-    badge_leds_initialised = true;
-    badge_leds_init();
-  }
+  badge_leds_init();
   return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_leds_init_obj, badge_leds_init_);
@@ -193,6 +205,10 @@ STATIC const mp_rom_map_elem_t badge_module_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR_init), MP_ROM_PTR(&badge_init_obj)},
     {MP_ROM_QSTR(MP_QSTR_eink_init), MP_ROM_PTR(&badge_eink_init_obj)},
     {MP_OBJ_NEW_QSTR(MP_QSTR_power_init), (mp_obj_t)&badge_power_init_obj},
+
+    {MP_ROM_QSTR(MP_QSTR_nvs_get_str), MP_ROM_PTR(&badge_nvs_get_str_obj)},
+    {MP_ROM_QSTR(MP_QSTR_nvs_set_str), MP_ROM_PTR(&badge_nvs_set_str_obj)},
+
 
 #if defined(PIN_NUM_LED) || defined(MPR121_PIN_NUM_LEDS)
     {MP_OBJ_NEW_QSTR(MP_QSTR_leds_init), (mp_obj_t)&badge_leds_init_obj},
