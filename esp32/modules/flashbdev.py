@@ -3,7 +3,7 @@ import esp
 class FlashBdev:
 
     FS_SIZE = esp.flash_size()
-    SEC_SIZE = 4096
+    SEC_SIZE = esp.flash_sec_size()
     START_SEC = esp.flash_user_start() // SEC_SIZE
 
     def __init__(self, blocks):
