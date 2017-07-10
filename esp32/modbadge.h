@@ -10,7 +10,6 @@
 #include "badge_power.h"
 #include "badge_leds.h"
 #include "badge_vibrator.h"
-#include "badge_wifi.h"
 #include "badge_nvs.h"
 
 #include "font.h"

@@ -44,16 +44,22 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_init_obj, badge_init_);
 
 // NVS
 
-STATIC mp_obj_t badge_nvs_get_str_(mp_obj_t namespace, mp_obj_t key) {
+STATIC mp_obj_t badge_nvs_get_str_(mp_uint_t n_args, const mp_obj_t *args) {
+  mp_uint_t len;
+  const char *namespace = mp_obj_str_get_data(args[0], &len);
+  const char *key = mp_obj_str_get_data(args[1], &len);
   char value[1024]; // TODO wut?
   size_t length;
-  esp_err_t err = badge_nvs_get_str(mp_obj_str_get_str(namespace), mp_obj_str_get_str(key), value, &length);
+  esp_err_t err = badge_nvs_get_str(namespace, key, value, &length);
   if (err != ESP_OK) {
-    mp_raise_msg(&mp_type_ValueError, "TODO error things");
+    if (n_args > 2) {
+      return args[2];
+    }
+    return mp_const_none;
   }
   return mp_obj_new_str(value, length-1, false);
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(badge_nvs_get_str_obj, badge_nvs_get_str_);
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(badge_nvs_get_str_obj, 2, 3, badge_nvs_get_str_);
 
 STATIC mp_obj_t badge_nvs_set_str_(mp_obj_t namespace, mp_obj_t key, mp_obj_t value) {
   esp_err_t err = badge_nvs_set_str(mp_obj_str_get_str(namespace), mp_obj_str_get_str(key), mp_obj_str_get_str(value));
@@ -179,23 +185,6 @@ STATIC mp_obj_t badge_vibrator_activate_(mp_uint_t n_args, const mp_obj_t *args)
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(badge_vibrator_activate_obj, 1,1 ,badge_vibrator_activate_);
 #endif
 
-// WIFI
-
-#ifdef CONFIG_WIFI_USE
-STATIC mp_obj_t badge_wifi_init_() {
-  badge_wifi_init();
-  return mp_const_none;
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_wifi_init_obj, badge_wifi_init_);
-
-STATIC mp_obj_t badge_wifi_wait_() {
-  // TODO optional settable delay
-  badge_wifi_wait();
-  return mp_const_none;
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_wifi_wait_obj, badge_wifi_wait_);
-#endif // CONFIG_WIFI_USE
-
 // Module globals
 
 STATIC const mp_rom_map_elem_t badge_module_globals_table[] = {
@@ -241,12 +230,6 @@ STATIC const mp_rom_map_elem_t badge_module_globals_table[] = {
 #ifdef ADC1_CHAN_VUSB_SENSE
     {MP_OBJ_NEW_QSTR(MP_QSTR_usb_volt_sense), (mp_obj_t)&usb_volt_sense_obj},
 #endif
-
-#ifdef CONFIG_WIFI_USE
-  {MP_OBJ_NEW_QSTR(MP_QSTR_wifi_init), (mp_obj_t)&badge_wifi_init_obj},
-  {MP_ROM_QSTR(MP_QSTR_wifi_wait), MP_ROM_PTR(&badge_wifi_wait_obj)},
-#endif
-
 };
 
 STATIC MP_DEFINE_CONST_DICT(badge_module_globals, badge_module_globals_table);

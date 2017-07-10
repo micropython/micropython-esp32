@@ -2,17 +2,18 @@ import ugfx, badge, sys, gc
 import uos as os
 import uerrno as errno
 import ujson as json
-import network
+import network, wifi
 import machine, esp, time
 import urequests as requests
 
-sta_if = network.WLAN(network.STA_IF)
-badge.wifi_init()
+wifi.init()
 
 ugfx.clear(ugfx.BLACK)
 ugfx.string(20,25,"Connecting to:","Roboto_BlackItalic24",ugfx.WHITE)
 ugfx.string(140,75, "WiFi","PermanentMarker22",ugfx.WHITE)
 ugfx.flush()
+
+sta_if = network.WLAN(network.STA_IF)
 
 while not sta_if.isconnected():
     time.sleep(0.1)
