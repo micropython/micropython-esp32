@@ -175,6 +175,13 @@ STATIC mp_obj_t badge_wifi_init_() {
   return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_wifi_init_obj, badge_wifi_init_);
+
+STATIC mp_obj_t badge_wifi_wait_() {
+  xEventGroupWaitBits(wifi_event_group, CONNECTED_BIT, false, true,
+                    portMAX_DELAY);
+  return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_wifi_wait_obj, badge_wifi_wait_);
 #endif // CONFIG_WIFI_USE
 
 // Module globals
@@ -221,6 +228,7 @@ STATIC const mp_rom_map_elem_t badge_module_globals_table[] = {
 
 #ifdef CONFIG_WIFI_USE
   {MP_OBJ_NEW_QSTR(MP_QSTR_wifi_init), (mp_obj_t)&badge_wifi_init_obj},
+  {MP_ROM_QSTR(MP_QSTR_wifi_wait), MP_ROM_PTR(&badge_wifi_wait_obj)},
 #endif
 
 };
