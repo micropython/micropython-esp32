@@ -1,5 +1,4 @@
-import gc
-import uos
+import gc, uos
 from flashbdev import bdev
 
 try:
