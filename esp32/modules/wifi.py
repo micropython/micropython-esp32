@@ -1,4 +1,4 @@
-import network, badge
+import network, badge, gc
 
 sta_if = False
 
@@ -12,3 +12,5 @@ def init():
         sta_if.connect(ssid, password)
     else:
         sta_if.connect(ssid)
+
+gc.collect()

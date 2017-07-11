@@ -68,6 +68,11 @@ const char *esp32_help_text =
 "esp.rtcmem_write_string('name')"
 "esp.start_sleeping(1)"
 "\n"
+"Getting and setting configuration:\n"
+"\n"
+"esp.nvs_set_str('namespace', 'key', 'value')\n"
+"esp.nvs_get_str('namespace', 'key', 'default_value')\n"
+"\n"
 "For further help on a specific object, type help(obj)\n"
 "For a list of available modules, type help('modules')\n"
 ;
