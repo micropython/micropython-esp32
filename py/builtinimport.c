@@ -109,7 +109,7 @@ STATIC mp_import_stat_t find_file(const char *file_str, uint file_len, vstr_t *d
 #if MICROPY_PY_SYS
     } else {
         // go through each path looking for a directory or file
-        for (mp_uint_t i = 0; i < path_num; i++) {
+        for (size_t i = 0; i < path_num; i++) {
             vstr_reset(dest);
             size_t p_len;
             const char *p = mp_obj_str_get_data(path_items[i], &p_len);
@@ -227,10 +227,11 @@ STATIC void do_load(mp_obj_t module_obj, vstr_t *file) {
         do_load_from_lexer(module_obj, lex);
         return;
     }
-    #endif
+    #else
 
     // If we get here then the file was not frozen and we can't compile scripts.
     mp_raise_msg(&mp_type_ImportError, "script compilation not supported");
+    #endif
 }
 
 STATIC void chop_component(const char *start, const char **end) {
@@ -247,7 +248,7 @@ STATIC void chop_component(const char *start, const char **end) {
 mp_obj_t mp_builtin___import__(size_t n_args, const mp_obj_t *args) {
 #if DEBUG_PRINT
     DEBUG_printf("__import__:\n");
-    for (mp_uint_t i = 0; i < n_args; i++) {
+    for (size_t i = 0; i < n_args; i++) {
         DEBUG_printf("  ");
         mp_obj_print(args[i], PRINT_REPR);
         DEBUG_printf("\n");

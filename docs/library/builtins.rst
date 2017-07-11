@@ -4,8 +4,8 @@ Builtin functions and exceptions
 All builtin functions and exceptions are described here. They are also
 available via ``builtins`` module.
 
-Functions and classes
----------------------
+Functions and types
+-------------------
 
 .. function:: abs()
 
@@ -20,6 +20,8 @@ Functions and classes
 .. class:: bytearray()
 
 .. class:: bytes()
+
+    |see_cpython| `python:bytes`.
 
 .. function:: callable()
 
@@ -152,6 +154,8 @@ Functions and classes
 Exceptions
 ----------
 
+.. exception:: AssertionError
+
 .. exception:: AttributeError
 
 .. exception:: Exception
@@ -172,12 +176,24 @@ Exceptions
 
 .. exception:: OSError
 
+    |see_cpython| `python:OSError`. MicroPython doesn't implement ``errno``
+    attribute, instead use the standard way to access exception arguments:
+    ``exc.args[0]``.
+
 .. exception:: RuntimeError
 
 .. exception:: StopIteration
 
+.. exception:: SyntaxError
+
 .. exception:: SystemExit
+
+    |see_cpython| `python:SystemExit`.
 
 .. exception:: TypeError
 
+    |see_cpython| `python:TypeError`.
+
 .. exception:: ValueError
+
+.. exception:: ZeroDivisionError
