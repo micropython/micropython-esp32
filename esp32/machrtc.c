@@ -107,6 +107,7 @@ uint64_t mach_rtc_get_us_since_epoch(void) {
 STATIC uint64_t mach_rtc_datetime_us(const mp_obj_t datetime) {
     timeutils_struct_time_t tm;
     uint64_t useconds;
+    uint32_t seconds;
 
     // set date and time
     mp_obj_t *items;
@@ -141,7 +142,14 @@ STATIC uint64_t mach_rtc_datetime_us(const mp_obj_t datetime) {
     } else {
         tm.tm_hour = mp_obj_get_int(items[3]);
     }
-    useconds += 1000000ull * timeutils_seconds_since_epoch(tm.tm_year, tm.tm_mon, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+    seconds = timeutils_seconds_since_epoch(tm.tm_year, tm.tm_mon, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+    useconds += 1000000ull * seconds;
+
+    struct timeval now;
+    now.tv_sec = seconds;
+    now.tv_usec = 0;
+    settimeofday(&now, NULL);
+
     return useconds;
 }
 
@@ -251,15 +259,17 @@ STATIC mp_obj_t mach_rtc_ntp_sync(size_t n_args, const mp_obj_t *pos_args, mp_ma
         sntp_stop();
     }
 
+    sntp_setoperatingmode(SNTP_OPMODE_POLL);
     self->sntp_server_name = args[0].u_obj;
     sntp_setservername(0, (char *)mp_obj_str_get_str(self->sntp_server_name));
     if (strlen(sntp_getservername(0)) == 0) {
         sntp_setservername(0, DEFAULT_SNTP_SERVER);
     }
 
-    // set datetime to 2000/01/01 for 'synced' method to corectly detect synchronization
+    // set datetime to 1970/01/01 (epoch=0)
+    // for 'synced' method to corectly detect synchronization
     mp_obj_t tuple[8] = {
-        mp_obj_new_int(2000),
+        mp_obj_new_int(1970),
         mp_obj_new_int(1),
         mp_obj_new_int(1),
         mp_obj_new_int(0),
@@ -279,12 +289,13 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_KW(mach_rtc_ntp_sync_obj, 1, mach_rtc_ntp_sync);
 
 //------------------------------------------------------
 STATIC mp_obj_t mach_rtc_has_synced (mp_obj_t self_in) {
-    time_t now;
-    struct tm timeinfo;
-    time(&now);
-    localtime_r(&now, &timeinfo);
-    // Is time set? If not, tm_year will be (1970 - 1900).
-    if (timeinfo.tm_year > (2016 - 1900)) {
+    uint32_t seconds;
+
+    // get the time from the RTC
+    seconds = mach_rtc_get_us_since_epoch() / 1000000ull;
+
+    // check if date > 2017/01/01
+    if (seconds > 1483228800) {
         mach_rtc_obj.synced = true;
     }
     else {
