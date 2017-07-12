@@ -48,6 +48,8 @@
 #include "uart.h"
 #include "modmachine.h"
 #include "mpthreadport.h"
+#include "mpsleep.h"
+#include "machrtc.h"
 
 // MicroPython runs as a task under FreeRTOS
 #define MP_TASK_PRIORITY        (ESP_TASK_PRIO_MIN + 1)
@@ -65,6 +67,8 @@ void mp_task(void *pvParameter) {
     mp_thread_init(&mp_task_stack[0], MP_TASK_STACK_LEN);
     #endif
     uart_init();
+
+    mpsleep_init0(); // to get reset reason
 
 soft_reset:
     // initialise the stack pointer for the main thread
@@ -105,6 +109,7 @@ soft_reset:
     #endif
 
     mp_hal_stdout_tx_str("PYB: soft reboot\r\n");
+    mpsleep_signal_soft_reset();
 
     // deinitialise peripherals
     machine_pins_deinit();

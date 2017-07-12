@@ -29,6 +29,7 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -42,8 +43,13 @@
 #include "extmod/machine_i2c.h"
 #include "extmod/machine_spi.h"
 #include "modmachine.h"
+#include "esp_deep_sleep.h"
+#include "mpsleep.h"
+#include "machrtc.h"
 
 #if MICROPY_PY_MACHINE
+
+extern machine_rtc_config_t machine_rtc_config;
 
 STATIC mp_obj_t machine_freq(size_t n_args, const mp_obj_t *args) {
     if (n_args == 0) {
@@ -96,6 +102,70 @@ STATIC mp_obj_t machine_enable_irq(mp_obj_t state_in) {
 }
 MP_DEFINE_CONST_FUN_OBJ_1(machine_enable_irq_obj, machine_enable_irq);
 
+
+//--------------------------------------------------------------------
+STATIC mp_obj_t machine_deepsleep(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+
+    enum {ARG_sleep_ms};
+    const mp_arg_t allowed_args[] = {
+        { MP_QSTR_sleep_ms, MP_ARG_INT, { .u_int = 0 } },
+    };
+
+    mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
+    mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
+
+
+    mp_int_t expiry = args[ARG_sleep_ms].u_int;
+
+    if (expiry != 0) {
+        esp_deep_sleep_enable_timer_wakeup(expiry * 1000);
+    }
+
+    if (machine_rtc_config.ext0_pin != -1) {
+        esp_deep_sleep_enable_ext0_wakeup(machine_rtc_config.ext0_pin, machine_rtc_config.ext0_level ? 1 : 0);
+    }
+
+    if (machine_rtc_config.ext1_pins != 0) {
+        esp_deep_sleep_enable_ext1_wakeup(
+            machine_rtc_config.ext1_pins,
+            machine_rtc_config.ext1_level ? ESP_EXT1_WAKEUP_ANY_HIGH : ESP_EXT1_WAKEUP_ALL_LOW);
+    }
+
+    if (machine_rtc_config.wake_on_touch) {
+        esp_deep_sleep_enable_touchpad_wakeup();
+    }
+
+    esp_deep_sleep_start();
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_KW(machine_deepsleep_obj, 0,  machine_deepsleep);
+
+//------------------------------------------
+STATIC mp_obj_t machine_wake_reason (void) {
+    mpsleep_reset_cause_t reset_reason = mpsleep_get_reset_cause ();
+    mpsleep_wake_reason_t wake_reason = mpsleep_get_wake_reason();
+    mp_obj_t tuple[2];
+
+    tuple[0] = mp_obj_new_int(wake_reason);
+    tuple[1] = mp_obj_new_int(reset_reason);
+    return mp_obj_new_tuple(2, tuple);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(machine_wake_reason_obj, machine_wake_reason);
+
+//----------------------------------------
+STATIC mp_obj_t machine_wake_desc (void) {
+    char reason[24] = { 0 };
+    mp_obj_t tuple[2];
+
+    mpsleep_get_reset_desc(reason);
+    tuple[0] = mp_obj_new_str(reason, strlen(reason), 0);
+    mpsleep_get_wake_desc(reason);
+    tuple[1] = mp_obj_new_str(reason, strlen(reason), 0);
+    return mp_obj_new_tuple(2, tuple);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(machine_wake_desc_obj, machine_wake_desc);
+
+
 STATIC const mp_rom_map_elem_t machine_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_umachine) },
 
@@ -107,6 +177,9 @@ STATIC const mp_rom_map_elem_t machine_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_reset), MP_ROM_PTR(&machine_reset_obj) },
     { MP_ROM_QSTR(MP_QSTR_unique_id), MP_ROM_PTR(&machine_unique_id_obj) },
     { MP_ROM_QSTR(MP_QSTR_idle), MP_ROM_PTR(&machine_idle_obj) },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_deepsleep), MP_ROM_PTR(&machine_deepsleep_obj) },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_wake_reason), MP_ROM_PTR(&machine_wake_reason_obj) },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_wake_description), MP_ROM_PTR(&machine_wake_desc_obj) },
 
     { MP_ROM_QSTR(MP_QSTR_disable_irq), MP_ROM_PTR(&machine_disable_irq_obj) },
     { MP_ROM_QSTR(MP_QSTR_enable_irq), MP_ROM_PTR(&machine_enable_irq_obj) },
@@ -122,6 +195,7 @@ STATIC const mp_rom_map_elem_t machine_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_PWM), MP_ROM_PTR(&machine_pwm_type) },
     { MP_ROM_QSTR(MP_QSTR_SPI), MP_ROM_PTR(&mp_machine_soft_spi_type) },
     { MP_ROM_QSTR(MP_QSTR_UART), MP_ROM_PTR(&machine_uart_type) },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_RTC), MP_ROM_PTR(&mach_rtc_type) },
 };
 
 STATIC MP_DEFINE_CONST_DICT(machine_module_globals, machine_module_globals_table);
