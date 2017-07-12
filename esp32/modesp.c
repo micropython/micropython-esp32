@@ -224,7 +224,7 @@ STATIC mp_obj_t esp_sdcard_init(mp_obj_t mode) {
     sdmmc_host_init_slot(SDMMC_HOST_SLOT_1, &slot_config);
 
     // Initialize the sd card
-    esp_log_level_set("*", ESP_LOG_VERBOSE);
+    esp_log_level_set("*", ESP_LOG_NONE);
     #if MICROPY_SDMMC_SHOW_INFO
 	printf("---------------------\n");
     printf("Initializing SD Card: ");

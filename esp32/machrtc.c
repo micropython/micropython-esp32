@@ -268,7 +268,8 @@ STATIC mp_obj_t mach_rtc_ntp_sync(size_t n_args, const mp_obj_t *pos_args, mp_ma
         mp_obj_new_int(0),
         mp_const_none
     };
-    mach_rtc_datetime(tuple);
+    mp_obj_t settime = mp_obj_new_tuple(8, tuple);
+    mach_rtc_datetime(settime);
 
     sntp_init();
 
