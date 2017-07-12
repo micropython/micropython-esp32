@@ -1,11 +1,10 @@
 /*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * Development of the code in this file was sponsored by Microbric Pty Ltd
+ * This file is part of the Micro Python project, http://micropython.org/
  *
  * The MIT License (MIT)
  *
- * Copyright (c) 2013, 2014, 2016 Damien P. George
+ * Copyright (c) 2013, 2014 Damien P. George
+ * Copyright (c) 2015 Daniel Campora
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,18 +25,30 @@
  * THE SOFTWARE.
  */
 
-#include "py/obj.h"
-#include "lib/oofatfs/ff.h"
-#include "timeutils_epoch.h"
-#include "machrtc.h"
+#ifndef __MICROPY_INCLUDED_LIB_TIMEUTILS_H__
+#define __MICROPY_INCLUDED_LIB_TIMEUTILS_H__
 
-DWORD get_fattime(void) {
+typedef struct _timeutils_struct_time_t {
+    uint16_t    tm_year;    // i.e. 2014
+    uint8_t     tm_mon;     // 1..12
+    uint8_t     tm_mday;    // 1..31
+    uint8_t     tm_hour;    // 0..23
+    uint8_t     tm_min;     // 0..59
+    uint8_t     tm_sec;     // 0..59
+    uint8_t     tm_wday;    // 0..6  0 = Monday
+    uint16_t    tm_yday;    // 1..366
+} timeutils_struct_time_t;
 
-    uint32_t secs = (uint32_t)(mach_rtc_get_us_since_epoch() / 1000000);
+typedef int64_t mp_time_t;
 
-    timeutils_struct_time_t tm;
-    timeutils_seconds_since_epoch_to_struct_time(secs, &tm);
+void timeutils_seconds_since_epoch_to_struct_time(mp_time_t t,
+    timeutils_struct_time_t *tm);
 
-    return (((DWORD)(tm.tm_year - 1980) << 25) | ((DWORD)tm.tm_mon << 21) | ((DWORD)tm.tm_mday << 16) |
-           ((DWORD)tm.tm_hour << 11) | ((DWORD)tm.tm_min << 5) | ((DWORD)tm.tm_sec >> 1));
-}
+mp_time_t timeutils_seconds_since_epoch(mp_uint_t year, mp_uint_t month,
+    mp_uint_t date, mp_uint_t hour, mp_uint_t minute, mp_uint_t second);
+
+mp_time_t timeutils_mktime_64(mp_uint_t year, mp_int_t month, mp_int_t mday,
+    mp_int_t hours, mp_int_t minutes, mp_int_t seconds);
+
+
+#endif // __MICROPY_INCLUDED_LIB_TIMEUTILS_H__
