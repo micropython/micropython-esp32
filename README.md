@@ -1,3 +1,12 @@
+SHA2017 Badge MicroPython
+=========================
+
+NOTE: This repository is part of the [SHA2017Badge Firmware](https://github.com/SHA2017-badge/Firmware) and will probably not work stand-alone as-is.
+
+For a clean repository please refer to [micropython/micropython-esp32](https://github.com/micropython/micropython-esp32)..
+
+---
+
 [![Build Status](https://travis-ci.org/micropython/micropython.png?branch=master)](https://travis-ci.org/micropython/micropython) [![Coverage Status](https://coveralls.io/repos/micropython/micropython/badge.png?branch=master)](https://coveralls.io/r/micropython/micropython?branch=master)
 
 The MicroPython project
@@ -47,12 +56,18 @@ Builtin modules include `sys`, `time`, and `struct`, etc. Select ports have
 support for `_thread` module (multithreading). Note that only a subset of
 Python 3 functionality is implemented for the data types and modules.
 
-See the repository www.github.com/micropython/pyboard for the MicroPython
+MicroPython can execute scripts in textual source form or from precompiled
+bytecode, in both cases either from an on-device filesystem or "frozen" into
+the MicroPython executable.
+
+See the repository http://github.com/micropython/pyboard for the MicroPython
 board (PyBoard), the officially supported reference electronic circuit board.
 
 Major components in this repository:
 - py/ -- the core Python implementation, including compiler, runtime, and
   core library.
+- mpy-cross/ -- the MicroPython cross-compiler which is used to turn scripts
+  into precompiled bytecode.
 - unix/ -- a version of MicroPython that runs on Unix.
 - stmhal/ -- a version of MicroPython that runs on the PyBoard and similar
   STM32 boards (using ST's Cube HAL drivers).
