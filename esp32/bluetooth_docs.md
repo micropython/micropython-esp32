@@ -107,7 +107,7 @@ bluetooth.ble_settings(int_min = 1280, int_max = 1280,
 
 `bluetooth.Service(uuid, is_primary = True)` GATTS - create a new GATTSService object. `uuid` is either an integer or a `bytes(16)`. UUIDs are globally unique with in GATTS.  If you attempt to create a service with a UUID that is the same as an existing (but not closed) service, you will receive the same service object, and no new service will be created.
 
-`bluetooth.services` GATTS - returns the existing GATTS services.
+`bluetooth.services()` GATTS - returns the existing GATTS services.
 
 `bluetooth.callback(<callback>, <callback_data>)` used to set the callback function for bluetooth-object-level callbacks.  `<callback>` can be set to None.  If `<callback_data>` is not specified, it will be set to None.  Always returns a 2-tuple of the present `<callback>` and `<callback_data>`.  If called with no parameters, the values remain unchanged.  `<callback>` will be called with 4 parameters:
 
@@ -147,7 +147,7 @@ bluetooth.ble_settings(int_min = 1280, int_max = 1280,
 
 `bluetooth.scan_stop()` GATTC - terminate scanning early.  If called before the scan timeout, you will _not_ receive a `bluetooth.SCAN_CMPL` event.
 
-`bluetooth.is_scanning` GATTC - returns `True` if the scan is still active
+`bluetooth.is_scanning()` GATTC - returns `True` if the scan is still active
 
 ## GAP
 
@@ -190,11 +190,11 @@ GATTSService objects are created by calling the `bluetooth.Service()` constructo
 * `bluetooth.PROP_AUTH`
 * `bluetooth.PROP_EXT_PROP`
 
-`service.chars` Get the characteristics attached to this service.
+`service.chars()` Get the characteristics attached to this service.
 
-`service.is_primary` Get the value of the srvice `primary` flag.
+`service.is_primary()` Get the value of the srvice `primary` flag.
 
-`char.uuid` Get the service UUID.
+`char.uuid()` Get the service UUID.
 
 `service.start()` Start the service; it will be visible to any connecting GATTC.
 
@@ -223,11 +223,11 @@ In the absence of a callback, then the characteristic value is return for a read
 
 `char.notify(<value>)` Send a notify value.  `<value>` is `string`, `bytearray`, `bytes` or `None`.
 
-`char.uuid` Get the characteristic UUID.
+`char.uuid()` Get the characteristic UUID.
 
-`char.value` Get or set the characteristic value.
+`char.value([value])` Get or set the characteristic value.
 
-`char.service` Get the parent service.
+`char.service()` Get the parent service.
 
 `char.Descr(uuid, value = None, perm = bluetooth.PERM_READ | bluetooth.PERM_WRITE)` Create a new descriptor for a characteristic.  
 
@@ -235,11 +235,11 @@ In the absence of a callback, then the characteristic value is return for a read
 
 ### GATTSDescr objects
 
-`descr.uuid` Get the descriptor UUID.
+`descr.uuid()` Get the descriptor UUID.
 
-`descr.value` Get or set the value.
+`descr.value([value])` Get or set the value.
 
-`descr.char` Get the parent characteristic.
+`descr.char()` Get the parent characteristic.
 
 `descr.callback(<callback>, <callback_data>)` See `char.callback()`, above.
 
@@ -251,19 +251,19 @@ Use `bluetooth.scan_start()`, to find GATTS devices.  You'll need to set up a Bl
 
 ### GATTCConn objects
 
-`conn.services` Returns the services associated with the connection.  This is a list of [`GATTCService`](#gattcservice-objects) objects.
+`conn.services()` Returns the services associated with the connection.  This is a list of [`GATTCService`](#gattcservice-objects) objects.
 
-`conn.is_connected` Returns whether the connection is active or not.
+`conn.is_connected()` Returns whether the connection is active or not.
 
-`conn.disconnect()` Disconnect 
+`conn.disconnect()` Disconnect
 
 ### GATTCService objects
 
-`service.is_primary` Returns a boolean indicating if the service is a primary service or not.
+`service.is_primary()` Returns a boolean indicating if the service is a primary service or not.
 
-`service.uuid` Returns the service UUID
+`service.uuid()` Returns the service UUID
 
-`service.chars` Returns a list of [`GATTCChar`](#gattcchar-objects) objects associated with this service
+`service.chars()` Returns a list of [`GATTCChar`](#gattcchar-objects) objects associated with this service
 
 ### GATTCChar objects
 
@@ -277,7 +277,7 @@ When the callback is called, it will be called with 4 parameters:
 3. The value of the notify/indicate
 4. the `<callback_data>`
 
-`char.descrs` Returns a list of [`GATTCDescr`](#gattcdescr-objects) associated with this characteristic.
+`char.descrs()` Returns a list of [`GATTCDescr`](#gattcdescr-objects) associated with this characteristic.
 
 `char.read()` Read the characteristic value
 
@@ -285,15 +285,15 @@ When the callback is called, it will be called with 4 parameters:
 
 ### GATTCDescr objects
 
-`GATTCChar` objects often have associated BLE desriptor objects.  These can be obtained by accessing the `char.descrs` property of [`GATTCChar`](#gattcchar-objects) objects.
+`GATTCChar` objects often have associated BLE desriptor objects.  These can be obtained by calling `char.descrs()` function of [`GATTCChar`](#gattcchar-objects) objects.
 
 `descr.read()` Read from the descriptor.
 
 `descr.write(<value>)` Write a value to the characteristic.  `<value>` can be `str`, `bytearray`, `bytes`, or `None`
 
-`descr.uuid` Get the descriptor UUID.
+`descr.uuid()` Get the descriptor UUID.
 
-`descr.char` Get the [`GATTCChar`](#gattcchar-objects) the descriptor is attached to
+`descr.char()` Get the [`GATTCChar`](#gattcchar-objects) the descriptor is attached to
 
 ## Examples
 
@@ -364,19 +364,23 @@ def hr(bda):
     ''' Will connect to a BLE heartrate monitor, and enable HR notifications '''
 
     conn = b.connect(bda)
-    while not conn.is_connected:
+    while not conn.is_connected():
         time.sleep(.1)
+
+    print ('Connected')
 
     time.sleep(2) # Wait for services
 
-    service = ([s for s in conn.services if s.uuid[0:4] == b'\x00\x00\x18\x0d'] + [None])[0]
+    service = ([s for s in conn.services() if s.uuid()[0:4] == b'\x00\x00\x18\x0d'] + [None])[0]
     if service:
-        char = ([c for c in service.chars if c.uuid[0:4] == b'\x00\x00\x2a\x37'] + [None])[0]
+        char = ([c for c in service.chars() if c.uuid()[0:4] == b'\x00\x00\x2a\x37'] + [None])[0]
         if char:
-            descr = ([d for d in char.descrs if d.uuid[0:4] == b'\x00\x00\x29\x02'] + [None])[0]
+            descr = ([d for d in char.descrs() if d.uuid()[0:4] == b'\x00\x00\x29\x02'] + [None])[0]
             if descr:
                 char.callback(cb)
                 descr.write(b'\x01\x00') # Turn on notify
+
+    return conn
 
 
 def gatts():
