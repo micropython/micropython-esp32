@@ -41,7 +41,7 @@ esp.rtcmem_write(0,0)
 esp.rtcmem_write(1,0)
 if machine.reset_cause() != machine.DEEPSLEEP_RESET:
     print("cold boot")
-    import launcher
+    import splash
 else:
     print("wake from sleep")
     load_me = esp.rtcmem_read_string()
@@ -50,6 +50,6 @@ else:
         esp.rtcmem_write_string("")
         __import__(load_me)
     else:
-        import launcher
+        import splash
 """)
     return vfs
