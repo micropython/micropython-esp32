@@ -793,7 +793,13 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(ugfx_list_selected_obj, ugfx_list_selected_text
 STATIC mp_obj_t ugfx_list_selected_index(mp_uint_t n_args, const mp_obj_t *args) {
 	if (n_args > 1){
 		ugfx_list_obj_t *self = args[0];
-		gwinListSetSelected(self->ghList, mp_obj_get_int(args[1]), TRUE);
+
+		bool do_select = TRUE;
+		if (n_args > 2) {
+			do_select = mp_obj_get_int(args[2]);
+		}
+
+		gwinListSetSelected(self->ghList, mp_obj_get_int(args[1]), do_select);
 		return mp_const_none;
 	}
 	else
@@ -802,7 +808,7 @@ STATIC mp_obj_t ugfx_list_selected_index(mp_uint_t n_args, const mp_obj_t *args)
 		return mp_obj_new_int(gwinListGetSelected(self->ghList));
 	}
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ugfx_list_selected_index_obj, 1, 2, ugfx_list_selected_index);
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ugfx_list_selected_index_obj, 1, 3, ugfx_list_selected_index);
 
 
 
