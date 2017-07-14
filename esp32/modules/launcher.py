@@ -24,11 +24,11 @@ try:
 except OSError:
     apps = []
 
-for app in apps:
-    options.add_item(app)
-
 options.add_item('installer')
 options.add_item('ota_update')
+
+for app in apps:
+    options.add_item(app)
 
 def run_it(pushed):
     if (pushed):
