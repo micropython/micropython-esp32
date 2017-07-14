@@ -93,24 +93,20 @@ STATIC mp_obj_t machine_deepsleep(size_t n_args, const mp_obj_t *pos_args, mp_ma
 
     if (expiry != 0) {
         esp_deep_sleep_enable_timer_wakeup(expiry * 1000);
-        printf("SLEEP EXPIRY\n");
     }
 
     if (machine_rtc_config.ext0_pin != -1) {
         esp_deep_sleep_enable_ext0_wakeup(machine_rtc_config.ext0_pin, machine_rtc_config.ext0_level ? 1 : 0);
-        printf("SLEEP EXT0\n");
     }
 
     if (machine_rtc_config.ext1_pins != 0) {
         esp_deep_sleep_enable_ext1_wakeup(
             machine_rtc_config.ext1_pins,
             machine_rtc_config.ext1_level ? ESP_EXT1_WAKEUP_ANY_HIGH : ESP_EXT1_WAKEUP_ALL_LOW);
-        printf("SLEEP EXT1\n");
     }
 
     if (machine_rtc_config.wake_on_touch) {
         esp_deep_sleep_enable_touchpad_wakeup();
-        printf("SLEEP TOUCHPAD\n");
     }
 
     esp_deep_sleep_start();
