@@ -3,7 +3,7 @@
 ### Description: Some basic UGFX powered dialogs
 ### License: MIT
 
-import ugfx, badge, utime as time
+import machine, ugfx, badge, utime as time
 
 wait_for_interrupt = True
 button_pushed = ''
@@ -240,9 +240,8 @@ class WaitingMessage:
 
 		# Indicator to show something is going on
 		self.indicator = ugfx.Label(ugfx.width() - 100, 0, 20, 20, text = "...", parent=self.window)
-		self.timer = pyb.Timer(3)
-		self.timer.init(freq=3)
-		self.timer.callback(lambda t: self.indicator.visible(not self.indicator.visible()))
+		self.timer = machine.Timer(-1)
+		self.timer.init(period=2000, mode=Timer.PERIODIC, callback=lambda t:self.indicator.visible(not self.indicator.visible()))
 
 	def destroy(self):
 		self.timer.deinit()
