@@ -95,6 +95,7 @@ INC += -I$(ESPCOMP)/app_trace/include
 INC += -I$(ESPCOMP)/freertos/include/freertos
 INC += -I$(ESPCOMP)/app_update/include
 INC += -I$(ESPCOMP)/bootloader_support/include_priv
+INC += -I$(ESPCOMP)/sdmmc/include
 
 CFLAGS = -std=gnu99 -Os -ffunction-sections -fdata-sections -fstrict-volatile-bitfields -mlongcalls -nostdlib -Wall -Wno-error=unused-function -Wno-error=unused-but-set-variable -Wno-error=unused-variable -Wno-error=deprecated-declarations -DMBEDTLS_CONFIG_FILE='"mbedtls/esp_config.h"' -DHAVE_CONFIG_H -DESP_PLATFORM  $(INC)
 CFLAGS += -DIDF_VER=\"$(IDF_VER)\"
@@ -236,6 +237,8 @@ ESPIDF_DRIVER_O = $(addprefix $(ESPCOMP)/driver/,\
 	spi_master.o \
 	spi_common.o \
 	rtc_module.o \
+	sdmmc_host.o \
+  sdmmc_transaction.o \
 	)
 
 $(BUILD)/$(ESPCOMP)/esp32/dport_access.o: CFLAGS += -Wno-array-bounds
@@ -418,6 +421,10 @@ ESPIDF_SPI_FLASH_O = $(addprefix $(ESPCOMP)/spi_flash/,\
 	cache_utils.o \
 	flash_ops.o \
 	)
+
+ESPIDF_SDMMC_O = $(addprefix $(ESPCOMP)/sdmmc/,\
+  sdmmc_cmd.o \
+  )
 
 ESPIDF_WEAR_LEVELLING_O = $(addprefix $(ESPCOMP)/wear_levelling/,\
 	wear_levelling.o \
@@ -614,6 +621,7 @@ OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_WEAR_LEVELLING_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_WPA_SUPPLICANT_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_APP_UPDATE_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_BOOTLOADER_O))
+OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_SDMMC_O))
 
 ####################
 # Badge magic

@@ -38,7 +38,7 @@ const char *esp32_help_text =
 "\n"
 "import network\n"
 "sta_if = network.WLAN(network.STA_IF); sta_if.active(True)       # Activate standalone interface\n"
-"sta_if.scan()                                                    # Scan for available access points\n"
+"sta_if.c                                                    # Scan for available access points\n"
 "sta_if.connect(\"SHA2017-insecure\")                             # Connect to the public SHA2017 AP without a password\n"
 "sta_if.isconnected()                                             # Check for successful connection\n"
 "sta_if.ifconfig()                                                # Print connection information\n"
