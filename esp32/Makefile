@@ -777,7 +777,7 @@ $(BUILD)/bootloader.elf: $(BOOTLOADER_OBJ)
 # Declarations to build the partitions
 
 PYTHON2 ?= python2
-PART_SRC = ../../partitions.csv
+PART_SRC = ../../partitions-16MB.csv
 
 $(BUILD)/partitions.bin: $(PART_SRC)
 	$(ECHO) "Create $@"

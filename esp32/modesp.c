@@ -42,7 +42,7 @@
 STATIC wl_handle_t fs_handle = WL_INVALID_HANDLE;
 STATIC size_t wl_sect_size = 4096;
 
-STATIC const esp_partition_t fs_part;
+STATIC esp_partition_t fs_part;
 
 STATIC mp_obj_t esp_flash_read(mp_obj_t offset_in, mp_obj_t buf_in) {
     mp_int_t offset = mp_obj_get_int(offset_in);
@@ -83,15 +83,17 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(esp_flash_erase_obj, esp_flash_erase);
 
 STATIC mp_obj_t esp_flash_size(void) {
   if (fs_handle == WL_INVALID_HANDLE) {
-      esp_partition_t *part
+      const esp_partition_t *part
           = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_ANY, "locfd");
       if (part == NULL) {
+        printf("No part\n");
           return mp_obj_new_int_from_uint(0);
       }
       memcpy(&fs_part, part, sizeof(esp_partition_t));
 
       esp_err_t res = wl_mount(&fs_part, &fs_handle);
       if (res != ESP_OK) {
+        printf("No mount\n");
           return mp_obj_new_int_from_uint(0);
       }
       wl_sect_size = wl_sector_size(fs_handle);
