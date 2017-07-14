@@ -150,6 +150,10 @@
 #define mp_type_fileio                      fatfs_type_fileio
 #define mp_type_textio                      fatfs_type_textio
 
+// sdcard using ESP32 sdmmc driver configuration
+#define MICROPY_SDMMC_USE_DRIVER            (1)
+#define MICROPY_SDMMC_SHOW_INFO             (1)
+
 // use vfs's functions for import stat and builtin open
 #define mp_import_stat mp_vfs_import_stat
 #define mp_builtin_open mp_vfs_open
