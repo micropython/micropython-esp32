@@ -40,6 +40,7 @@
 #include "rom/rtc.h"
 
 #if MICROPY_SDMMC_USE_DRIVER
+#include "badge_sdcard.h"
 #include "driver/sdmmc_host.h"
 #include "driver/sdmmc_defs.h"
 #include "sdmmc_cmd.h"
@@ -237,6 +238,9 @@ STATIC void sdcard_print_info(const sdmmc_card_t* card, int mode)
 
 //----------------------------------------------
 STATIC mp_obj_t esp_sdcard_init(mp_obj_t mode) {
+
+    badge_sdcard_init();
+
     mp_int_t card_mode = mp_obj_get_int(mode);
 
     if (sdcard_status == 0) {
