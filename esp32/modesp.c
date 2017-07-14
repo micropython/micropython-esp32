@@ -40,6 +40,7 @@
 #include "rom/rtc.h"
 
 #if MICROPY_SDMMC_USE_DRIVER
+#include "badge_power.h"
 #include "badge_sdcard.h"
 #include "driver/sdmmc_host.h"
 #include "driver/sdmmc_defs.h"
@@ -176,42 +177,6 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(esp_start_sleeping_obj, esp_start_sleeping_);
 
 // ======== SD Card support ===========================================================================
 
-/*
- * ##### Using SDCard with sdmmc driver connection: ###################################################
-
-1-bit	ESP32 pin     | SDc SD     uSD | Notes
-----------------------|----------------|------------
-SCLK	GPIO14 (MTMS) | CLK  5      5  | 10k pullup
-MOSI	GPIO15 (MTDO) | CMD  2      3  | 10k pullup
-MISO	GPIO2         | D0   7      7  | 10k pullup, pull low to go into download mode
-		GPIO4         | D1   8      8  | 10k pullup; not used in 1-line mode
-		GPIO12 (MTDI) | D2   9      1  | otherwise 10k pullup (see note below!); not used in 1-line mode
-CS		GPIO13 (MTCK) | D3   1      2  | 10k pullup needed at card side, even in 1-line mode
-VDD     3.3V          | VSS  4      4  |
-GND     GND           | GND  3&6    6  |
-		N/C           | CD             |
-		N/C           | WP             |
-
-SDcard pinout                 uSDcard pinout
-                 Contacts view
- _________________             1 2 3 4 5 6 7 8
-|                 |            _______________
-|                 |           |# # # # # # # #|
-|                 |           |               |
-|                 |           |               |
-|                 |           /               |
-|                 |          /                |
-|                 |         |_                |
-|                 |           |               |
-|                #|          /                |
-|# # # # # # # # /          |                 |
-|_______________/           |                 |
- 8 7 6 5 4 3 2 1 9          |_________________|
-
- * ####################################################################################################
-*/
-
-
 STATIC sdmmc_card_t sdmmc_card;
 STATIC uint8_t sdcard_status = 1;
 
@@ -219,8 +184,8 @@ STATIC uint8_t sdcard_status = 1;
 STATIC void sdcard_print_info(const sdmmc_card_t* card, int mode)
 {
     #if MICROPY_SDMMC_SHOW_INFO
-	printf("---------------------\n");
-	if (mode == 1) {
+    printf("---------------------\n");
+    if (mode == 1) {
         printf(" Mode: 1-line mode\n");
     } else {
         printf(" Mode:  SD (4bit)\n");
@@ -238,7 +203,7 @@ STATIC void sdcard_print_info(const sdmmc_card_t* card, int mode)
 
 //----------------------------------------------
 STATIC mp_obj_t esp_sdcard_init(mp_obj_t mode) {
-
+    badge_power_sdcard_enable();
     badge_sdcard_init();
 
     mp_int_t card_mode = mp_obj_get_int(mode);
@@ -255,21 +220,10 @@ STATIC mp_obj_t esp_sdcard_init(mp_obj_t mode) {
     sdmmc_host_t host = SDMMC_HOST_DEFAULT();
     sdmmc_slot_config_t slot_config = SDMMC_SLOT_CONFIG_DEFAULT();
 
-    // Enable pull-ups on the SD card pins
-    // ** It is recommended to use external 10K pull-ups **
-    gpio_set_pull_mode(2, GPIO_PULLUP_ONLY);
-    gpio_set_pull_mode(14, GPIO_PULLUP_ONLY);
-    gpio_set_pull_mode(15, GPIO_PULLUP_ONLY);
-
-	if (card_mode == 1) {
+	  if (card_mode == 1) {
         // Use 1-line SD mode
         host.flags = SDMMC_HOST_FLAG_1BIT;
         slot_config.width = 1;
-    }
-    else {
-        gpio_set_pull_mode(4, GPIO_PULLUP_ONLY);
-        gpio_set_pull_mode(12, GPIO_PULLUP_ONLY);
-        gpio_set_pull_mode(13, GPIO_PULLUP_ONLY);
     }
 
     sdmmc_host_init();
@@ -278,11 +232,11 @@ STATIC mp_obj_t esp_sdcard_init(mp_obj_t mode) {
     // Initialize the sd card
     esp_log_level_set("*", ESP_LOG_NONE);
     #if MICROPY_SDMMC_SHOW_INFO
-	printf("---------------------\n");
+	  printf("---------------------\n");
     printf("Initializing SD Card: ");
     #endif
     esp_err_t res = sdmmc_card_init(&host, &sdmmc_card);
-	esp_log_level_set("*", ESP_LOG_ERROR);
+	  esp_log_level_set("*", ESP_LOG_ERROR);
 
     if (res == ESP_OK) {
         sdcard_status = ESP_OK;

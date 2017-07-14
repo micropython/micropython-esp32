@@ -6,10 +6,10 @@ Example usage on ESP32:
     import sdcard, uos, esp
     sd = sdcard.SDCard(esp.SD_1LINE)
     vfs = uos.VfsFat(sd)
-    uos.mount(vfs, '/sd')
-    uos.chdir('/sd')
+    uos.mount(vfs, '/sdcard')
+    uos.chdir('/sdcard')
     uos.listdir()
-    
+
 If 'automount' is used
 
     import sdcard, uos
@@ -30,8 +30,8 @@ class SDCard:
         if self.SD_FOUND == 0 and automount:
             import uos
             vfs = uos.VfsFat(self)
-            uos.mount(vfs, '/sd')
-            uos.chdir('/sd')
+            uos.mount(vfs, '/sdcard')
+            uos.chdir('/sdcard')
 
     def count(self):
         return esp.sdcard_sect_count()
@@ -43,4 +43,3 @@ class SDCard:
     def writeblocks(self, block_num, buf):
         esp.sdcard_write(block_num, buf)
         return 0
-
