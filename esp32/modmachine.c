@@ -88,7 +88,7 @@ STATIC mp_obj_t machine_deepsleep(size_t n_args, const mp_obj_t *pos_args, mp_ma
 
 
     mp_int_t expiry = args[ARG_sleep_ms].u_int;
-    
+
     if (expiry != 0) {
         esp_deep_sleep_enable_timer_wakeup(expiry * 1000);
     }
