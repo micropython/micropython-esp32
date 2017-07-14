@@ -4,7 +4,7 @@ Micro Python driver for SD cards using esp-idf sd_emmc driver.
 Example usage on ESP32:
 
     import sdcard, uos, esp
-    sd = sdcard.SDCard(esp.SD_1LINE)
+    sd = sdcard.SDCard(False)
     vfs = uos.VfsFat(sd)
     uos.mount(vfs, '/sdcard')
     uos.chdir('/sdcard')
@@ -13,7 +13,7 @@ Example usage on ESP32:
 If 'automount' is used
 
     import sdcard, uos
-    sd = sdcard.SDCard(esp.SD_4LINE, True)
+    sd = sdcard.SDCard(True)
     uos.listdir()
 
 """
@@ -21,8 +21,8 @@ If 'automount' is used
 import esp
 
 class SDCard:
-    def __init__(self, mode, automount):
-        self.SD_FOUND = esp.sdcard_init(mode)
+    def __init__(self, automount):
+        self.SD_FOUND = esp.sdcard_init()
         self.SEC_COUNT = esp.sdcard_sect_count()
         self.SEC_SIZE = esp.sdcard_sect_size()
         self.SIZE = self.SEC_SIZE * self.SEC_COUNT

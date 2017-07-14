@@ -202,11 +202,11 @@ STATIC void sdcard_print_info(const sdmmc_card_t* card, int mode)
 }
 
 //----------------------------------------------
-STATIC mp_obj_t esp_sdcard_init(mp_obj_t mode) {
+STATIC mp_obj_t esp_sdcard_init() {
     badge_power_sdcard_enable();
     badge_sdcard_init();
 
-    mp_int_t card_mode = mp_obj_get_int(mode);
+    mp_int_t card_mode = 1;
 
     if (sdcard_status == 0) {
         #if MICROPY_SDMMC_SHOW_INFO
@@ -252,7 +252,7 @@ STATIC mp_obj_t esp_sdcard_init(mp_obj_t mode) {
     }
     return MP_OBJ_NEW_SMALL_INT(sdcard_status);
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(esp_sdcard_init_obj, esp_sdcard_init);
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(esp_sdcard_init_obj, esp_sdcard_init);
 
 //-------------------------------------------------------------------------
 STATIC mp_obj_t esp_sdcard_read(mp_obj_t ulSectorNumber, mp_obj_t buf_in) {
@@ -366,9 +366,9 @@ STATIC const mp_rom_map_elem_t esp_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_sdcard_init), MP_ROM_PTR(&esp_sdcard_init_obj) },
     { MP_ROM_QSTR(MP_QSTR_sdcard_sect_count), MP_ROM_PTR(&esp_sdcard_sect_count_obj) },
     { MP_ROM_QSTR(MP_QSTR_sdcard_sect_size), MP_ROM_PTR(&esp_sdcard_sect_size_obj) },
-    // class constants
-    { MP_ROM_QSTR(MP_QSTR_SD_1LINE), MP_ROM_INT(1) },
-    { MP_ROM_QSTR(MP_QSTR_SD_4LINE), MP_ROM_INT(4) },
+    // // class constants
+    // { MP_ROM_QSTR(MP_QSTR_SD_1LINE), MP_ROM_INT(1) },
+    // { MP_ROM_QSTR(MP_QSTR_SD_4LINE), MP_ROM_INT(4) },
     #endif
 
 };
