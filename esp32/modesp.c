@@ -42,14 +42,7 @@
 STATIC wl_handle_t fs_handle = WL_INVALID_HANDLE;
 STATIC size_t wl_sect_size = 4096;
 
-STATIC const esp_partition_t fs_part = {
-    ESP_PARTITION_TYPE_DATA,        //type
-    ESP_PARTITION_SUBTYPE_DATA_FAT, //subtype
-    0xB20000,                       // address
-    0x4E0000,                       // size 4992K
-    "locfd",                        // label
-    0                               // encrypted
-};
+STATIC const esp_partition_t fs_part;
 
 STATIC mp_obj_t esp_flash_read(mp_obj_t offset_in, mp_obj_t buf_in) {
     mp_int_t offset = mp_obj_get_int(offset_in);
@@ -90,13 +83,20 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(esp_flash_erase_obj, esp_flash_erase);
 
 STATIC mp_obj_t esp_flash_size(void) {
   if (fs_handle == WL_INVALID_HANDLE) {
+      esp_partition_t *part
+          = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_ANY, "locfd");
+      if (part == NULL) {
+          return mp_obj_new_int_from_uint(0);
+      }
+      memcpy(&fs_part, part, sizeof(esp_partition_t));
+
       esp_err_t res = wl_mount(&fs_part, &fs_handle);
       if (res != ESP_OK) {
-          return mp_obj_new_int_from_uint(0x010000);
+          return mp_obj_new_int_from_uint(0);
       }
       wl_sect_size = wl_sector_size(fs_handle);
   }
-  return mp_obj_new_int_from_uint(0x4E0000);
+  return mp_obj_new_int_from_uint(fs_part.size);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(esp_flash_size_obj, esp_flash_size);
 
