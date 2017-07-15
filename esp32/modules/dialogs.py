@@ -3,7 +3,7 @@
 ### Description: Some basic UGFX powered dialogs
 ### License: MIT
 
-import ugfx, badge, utime as time
+import ugfx, utime as time
 
 wait_for_interrupt = True
 button_pushed = ''

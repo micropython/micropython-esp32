@@ -46,7 +46,7 @@ else:
     print("wake from sleep")
     load_me = esp.rtcmem_read_string()
     if load_me != "":
-        print("starting %s", load_me)
+        print("starting %s" % load_me)
         esp.rtcmem_write_string("")
         __import__(load_me)
     else:
