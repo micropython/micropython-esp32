@@ -5,6 +5,7 @@ import ujson as json
 import network, wifi
 import machine, esp, time
 import urequests as requests
+import appglue
 
 wifi.init()
 
@@ -50,9 +51,7 @@ def start_app(pushed):
         ugfx.string(100,75, packages[options.selected_index()]["name"],"PermanentMarker22",ugfx.WHITE)
         ugfx.flush()
         selected = packages[options.selected_index()]["slug"]
-        esp.rtcmem_write_string(selected)
-        badge.eink_busy_wait()
-        esp.start_sleeping(1)
+        appglue.start_app(selected)
 
 ugfx.input_init()
 

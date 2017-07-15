@@ -4,6 +4,7 @@ import uerrno as errno
 import ujson as json
 import time
 import esp
+import appglue
 
 ugfx.init()
 ugfx.input_init()
@@ -45,8 +46,7 @@ def run_it(pushed):
         ugfx.string(100,75, selected,"PermanentMarker22",ugfx.WHITE)
         ugfx.flush()
         badge.eink_busy_wait()
-        esp.rtcmem_write_string(selected)
-        esp.start_sleeping(1)
+        appglue.start_app(selected)
 
 def expandhome(s):
     if "~/" in s:

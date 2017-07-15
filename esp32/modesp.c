@@ -167,12 +167,6 @@ STATIC mp_obj_t esp_rtc_get_reset_reason_(mp_obj_t cpu) {
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(esp_rtc_get_reset_reason_obj,
                                  esp_rtc_get_reset_reason_);
 
-STATIC mp_obj_t esp_start_sleeping_(mp_obj_t time) {
-  esp_start_sleeping(mp_obj_get_int(time));
-  return mp_const_none;
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(esp_start_sleeping_obj, esp_start_sleeping_);
-
 #if MICROPY_SDMMC_USE_DRIVER
 
 // ======== SD Card support ===========================================================================
@@ -355,8 +349,6 @@ STATIC const mp_rom_map_elem_t esp_module_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR_rtcmem_read_string), MP_ROM_PTR(&esp_rtcmem_read_string_obj)},
     {MP_ROM_QSTR(MP_QSTR_rtc_get_reset_reason),
      MP_ROM_PTR(&esp_rtc_get_reset_reason_obj)},
-
-    {MP_ROM_QSTR(MP_QSTR_start_sleeping), MP_ROM_PTR(&esp_start_sleeping_obj)},
 
     {MP_ROM_QSTR(MP_QSTR_dht_readinto), MP_ROM_PTR(&dht_readinto_obj)},
 
