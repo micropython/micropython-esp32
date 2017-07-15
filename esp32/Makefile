@@ -31,7 +31,7 @@ ESPTOOL ?= $(ESPCOMP)/esptool_py/esptool/esptool.py
 BADGE = $(IDF_PATH)/..
 
 # verify the ESP IDF version
-ESPIDF_SUPHASH := c9c8840c88f966e4c25e29051936abb46fac8bb3
+ESPIDF_SUPHASH := 4c62fb9c3f52bd3e753aed06208d14aef4d48a0b
 ESPIDF_CURHASH := $(shell git -C $(ESPIDF) show -s --pretty=format:'%H')
 ifneq ($(ESPIDF_CURHASH),$(ESPIDF_SUPHASH))
 $(info ** WARNING **)
@@ -96,6 +96,8 @@ INC += -I$(ESPCOMP)/freertos/include/freertos
 INC += -I$(ESPCOMP)/app_update/include
 INC += -I$(ESPCOMP)/bootloader_support/include_priv
 INC += -I$(ESPCOMP)/sdmmc/include
+INC += -I$(ESPCOMP)/heap/include
+INC += -I$(ESPCOMP)/soc/include
 
 CFLAGS = -std=gnu99 -Os -ffunction-sections -fdata-sections -fstrict-volatile-bitfields -mlongcalls -nostdlib -Wall -Wno-error=unused-function -Wno-error=unused-but-set-variable -Wno-error=unused-variable -Wno-error=deprecated-declarations -DMBEDTLS_CONFIG_FILE='"mbedtls/esp_config.h"' -DHAVE_CONFIG_H -DESP_PLATFORM  $(INC)
 CFLAGS += -DIDF_VER=\"$(IDF_VER)\"
@@ -252,7 +254,6 @@ ESPIDF_ESP32_O = $(addprefix $(ESPCOMP)/esp32/,\
 	gdbstub.o \
 	crosscore_int.o \
 	deep_sleep.o \
-	heap_alloc_caps.o \
 	ipc.o \
 	int_wdt.o \
 	event_loop.o \
@@ -265,16 +266,23 @@ ESPIDF_ESP32_O = $(addprefix $(ESPCOMP)/esp32/,\
 	phy_init.o \
 	intr_alloc.o \
 	dport_access.o \
+	brownout.o \
+	)
+
+ESPIDF_HEAP_O = $(addprefix $(ESPCOMP)/heap/,\
+	heap_caps.o \
+	heap_caps_init.o \
+	multi_heap.o \
 	)
 
 ESPIDF_SOC_O = $(addprefix $(ESPCOMP)/soc/,\
-	esp32/brownout.o \
 	esp32/cpu_util.o \
 	esp32/rtc_clk.o \
 	esp32/rtc_init.o \
 	esp32/rtc_pm.o \
 	esp32/rtc_sleep.o \
 	esp32/rtc_time.o \
+	esp32/soc_memory_layout.o \
 	)
 
 ESPIDF_CXX_O = $(addprefix $(ESPCOMP)/cxx/,\
@@ -324,8 +332,6 @@ ESPIDF_FREERTOS_O = $(addprefix $(ESPCOMP)/freertos/,\
 	croutine.o \
 	event_groups.o \
 	FreeRTOS-openocd.o \
-	heap_regions_debug.o \
-	heap_regions.o \
 	list.o \
 	portasm.o \
 	port.o \
@@ -621,6 +627,7 @@ OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_WPA_SUPPLICANT_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_APP_UPDATE_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_BOOTLOADER_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_SDMMC_O))
+OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_HEAP_O))
 
 ####################
 # Badge magic
