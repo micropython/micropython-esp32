@@ -151,8 +151,8 @@ def draw_home(percent, cstate, status):
     
 def draw_batterylow(percent):
     ugfx.clear(ugfx.WHITE)
-    ugfx.string(0, 0, str(percent)+"%  - BATTERY LOW, PLEASE CHARGE!","Roboto_Regular12",ugfx.BLACK)
-    nick = badge.nvs_get_str("owner", "name", "Hacker1337")
+    ugfx.string(0, 0, str(percent)+"%  - Battery empty. Please charge me!","Roboto_Regular12",ugfx.BLACK)
+    nick = badge.nvs_get_str("owner", "name", ":(           Zzzz...")
     ugfx.string(0, 40, nick, "PermanentMarker36", ugfx.BLACK)
     ugfx.set_lut(ugfx.LUT_FASTER)
     ugfx.flush()
@@ -169,6 +169,8 @@ def start_launcher(pushed):
 # SLEEP
             
 def badge_sleep():
+    print("Going to sleep now...")
+    badge.eink_busy_wait() #Always wait for e-ink
     deepsleep.start_sleeping(30000) #Sleep for 30 seconds
     
 # TIMER
@@ -180,11 +182,14 @@ def splashTimer_callback(tmr):
         cstate = badge.battery_charge_status()
         vbatt = badge.battery_volt_sense()
         percent = battery_percent(3800, 4300, vbatt)
-        if (cstate) or (percent>95):
-            draw_home(percent, cstate, "Press start to open launcher!")
+        if (cstate) or (percent>95) or (percent<1):
+            if (percent==0):
+                draw_home(percent, cstate, "Huh?! You removed the battery?")
+            else:
+                draw_home(percent, cstate, "Press start to open the launcher!")
         else:
             if (percent<10):
-                draw_batterylow(percent) 
+                draw_batterylow(percent)
                 ugfx.flush()
             else:
                 draw_home(percent, cstate, "Zzz...") 
@@ -234,6 +239,13 @@ def splash_main():
         global splashTimer
         setup_services()
         start_sleep_counter()
+    elif(percent==0):
+        ugfx.clear(ugfx.WHITE)
+        ugfx.string(0, 0, "Recovery mode", "PermanentMarker22", ugfx.BLACK)
+        ugfx.string(0, 25, "No battery. Dropping to shell...", "Roboto_Regular12", ugfx.BLACK)
+        ugfx.set_lut(ugfx.LUT_FASTER)
+        ugfx.flush()
+        
     else:
         draw_batterylow(percent)       
         badge_sleep()
