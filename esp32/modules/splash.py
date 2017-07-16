@@ -101,13 +101,20 @@ def getTimeNTP():
     
 # BATTERY
 
-def battery_percent(vempty, vfull, vbatt):
+def battery_percent_internal(vempty, vfull, vbatt):
     percent = round(((vbatt-vempty)*100)/(vfull-vempty))
     if (percent<0):
         percent = 0
     if (percent>100):
         percent = 100
     return percent
+
+def battery_percent():
+        vbatt = 0
+        for i in range(0,10):
+            vbatt = vbatt + badge.battery_volt_sense()
+        percent = battery_percent_internal(3800, 4300, round(vbatt/10))
+        return percent
 
 # GRAPHICS
 
@@ -134,33 +141,73 @@ def draw_logo(x,y,h):
     ugfx.line(x + 10 + len, y + 27, x + 10 + len, y + 45, ugfx.BLACK)
     ugfx.string(x + 10, y + 50,"Anyway","Roboto_BlackItalic24",ugfx.BLACK)
     
-def draw_home(percent, cstate, status):
+def draw_helper_clear(full):
+    if full:
+        ugfx.clear(ugfx.BLACK)
+        ugfx.flush()
     ugfx.clear(ugfx.WHITE)
-    if (cstate):
-        ugfx.string(0,  0, str(percent)+"% & Charging... | "+status,"Roboto_Regular12",ugfx.BLACK)
+    if full:
+        ugfx.flush()
+    
+def draw_helper_battery(percent,cstate):
+    ugfx.area(2,2,40,18,ugfx.WHITE)
+    ugfx.box(42,7,2,8,ugfx.WHITE)
+    if (percent>0):
+        if (cstate):
+            ugfx.string(5,5,"chrg","Roboto_Regular12",ugfx.BLACK)
+        else:
+            if (percent>10):
+                w = round((percent*38)/100)
+                ugfx.area(3,3,w,16,ugfx.BLACK)
+            else:
+                ugfx.string(5,5,"empty","Roboto_Regular12",ugfx.BLACK)
     else:
-        ugfx.string(0,  0, str(percent)+"% | "+status,"Roboto_Regular12",ugfx.BLACK)
+        ugfx.string(2,5,"no batt","Roboto_Regular12",ugfx.BLACK)
     
-    ugfx.string(0, 14, clockstring(), "Roboto_Regular12",ugfx.BLACK)
+def draw_helper_header(text):
+    ugfx.area(0,0,ugfx.width(),23,ugfx.BLACK)
+    ugfx.string(45, 1, text,"DejaVuSans20",ugfx.WHITE)
     
+def draw_helper_footer(text_l, text_r):
+    ugfx.string(0, ugfx.height()-13, text_l, "Roboto_Regular12",ugfx.BLACK)
+    l = ugfx.get_string_width(text_r,"Roboto_Regular12")
+    ugfx.string(ugfx.width()-l, ugfx.height()-13, text_r, "Roboto_Regular12",ugfx.BLACK)
+    
+def draw_helper_nick(default):
+    nick = badge.nvs_get_str("owner", "name", default)
+    ugfx.string(0, 40, nick, "PermanentMarker36", ugfx.BLACK)
     htext = badge.nvs_get_str("owner", "htext", "")
     if (htext!=""):
       draw_logo(160, 25, htext)
     
-    nick = badge.nvs_get_str("owner", "name", "Anonymous")
-    ugfx.string(0, 40, nick, "PermanentMarker36", ugfx.BLACK)
-    
-    ugfx.set_lut(ugfx.LUT_FULL)
+def draw_helper_flush(full):
+    if (full):
+        ugfx.set_lut(ugfx.LUT_FULL)
     ugfx.flush()
     ugfx.set_lut(ugfx.LUT_FASTER)
+    
+def draw_home(percent, cstate, status, full_clear, going_to_sleep):
+    draw_helper_clear(full_clear)
+    if (cstate):
+        draw_helper_header(status)
+    else:
+        draw_helper_header(status)
+    draw_helper_battery(percent, cstate)
+    if (going_to_sleep):
+        info = "[ ANY: Wake up ]"
+    else:
+        info = "[ START: LAUNCHER ]"
+    draw_helper_footer(clockstring(),info)
+    draw_helper_nick(":(")
+    draw_helper_flush(True)
     
 def draw_batterylow(percent):
-    ugfx.clear(ugfx.WHITE)
-    ugfx.string(0, 0, str(percent)+"%  - Battery empty. Please charge me!","Roboto_Regular12",ugfx.BLACK)
-    nick = badge.nvs_get_str("owner", "name", ":(           Zzzz...")
-    ugfx.string(0, 40, nick, "PermanentMarker36", ugfx.BLACK)
-    ugfx.set_lut(ugfx.LUT_FASTER)
-    ugfx.flush()
+    draw_helper_clear(True)
+    draw_helper_header("")
+    draw_helper_battery(percent, False)
+    draw_helper_footer("BATTERY LOW, CONNECT CHARGER!", "")
+    draw_helper_nick(":(           Zzzz...")
+    draw_helper_flush(False)
     
 # START LAUNCHER
     
@@ -178,6 +225,11 @@ def badge_sleep():
     badge.eink_busy_wait() #Always wait for e-ink
     deepsleep.start_sleeping(30000) #Sleep for 30 seconds
     
+def badge_sleep_forever():
+    print("[SPLASH] Going to sleep WITHOUT TIME WAKEUP now...")
+    badge.eink_busy_wait() #Always wait for e-ink
+    deepsleep.start_sleeping(0) #Sleep until button interrupt occurs
+    
 # TIMER
 
 def splashTimer_callback(tmr):
@@ -185,20 +237,20 @@ def splashTimer_callback(tmr):
     if loopCnt>9:
         loopCnt = 0
         cstate = badge.battery_charge_status()
-        vbatt = badge.battery_volt_sense()
-        percent = battery_percent(3800, 4300, vbatt)
+        percent = battery_percent()
         if (cstate) or (percent>95) or (percent<1):
             if (percent==0):
-                draw_home(percent, cstate, "Huh?! You removed the battery?")
+                draw_home(percent, cstate, "Huh?!", True, False)
             else:
-                draw_home(percent, cstate, "Press start to open the launcher!")
+                draw_home(percent, cstate, "", False, False)
         else:
             if (percent<10):
                 draw_batterylow(percent)
                 ugfx.flush()
+                badge_sleep_forever()
             else:
-                draw_home(percent, cstate, "Zzz...") 
-            badge_sleep()
+                draw_home(percent, cstate, "Zzz...", True, True)
+                badge_sleep()
     else:
         if (loop_services(loopCnt)):
             loopCnt = 0
@@ -235,21 +287,19 @@ def welcome():
   
 def splash_main():   
     cstate = badge.battery_charge_status()
-    vbatt = badge.battery_volt_sense()
-    percent = battery_percent(3800, 4290, vbatt)
+    percent = battery_percent()
     ugfx.init()
     if (cstate) or (percent>9) or (percent<1):
         ugfx.input_init()
         welcome()
-        draw_home(percent, cstate, "Press start to the open launcher!")
+        draw_home(percent, cstate, "", True, False)
         ugfx.input_attach(ugfx.BTN_START, start_launcher)
         global splashTimer
         setup_services()
         start_sleep_counter()
-        
     else:
         draw_batterylow(percent)       
-        badge_sleep()
+        badge_sleep_forever()
   
 #Global variables
 splashTimer = machine.Timer(0)

@@ -16,6 +16,13 @@ def store_settings():
     nickname_new = badge.nvs_set_str("owner", "name", nickname)
     if (nickname_new):
         nickname = nickname_new
+        
+def check_developer():
+    global nickname
+    if (nickname==""):
+        badge.nvs_set_str('badge', 'setup.state', '2') # Skip the sponsors
+        return True
+    return False
     
 def ask_nickname():
     global nickname
@@ -49,10 +56,11 @@ def program_main():
     ugfx.init()            # We need graphics
     load_settings()        # Load current settings
     ask_nickname()         # Ask the nickname
-    store_settings()       # Store the settings
-    set_setup_state()      # Do the firstboot magic
-    draw_setup_completed() # Show the user that we are done
-    utime.sleep(5)         # Sleep 2 seconds
+    if not check_developer():
+        store_settings()       # Store the settings
+        set_setup_state()      # Do the firstboot magic
+        draw_setup_completed() # Show the user that we are done
+        utime.sleep(2)         # Sleep 2 seconds
     return_to_home()       # Return to the splash app
     
 # Start main application
