@@ -45,6 +45,19 @@ def loop_services(loopCnt):
         except BaseException as msg:
             print("[SPLASH] Service loop exception: ", msg)
     return noSleep
+
+def draw_services():
+    noSleep = False
+    global services
+    x = 0
+    y = ugfx.height() - 14
+    for srv in services:
+        try:
+            space_used = srv.draw(x,y)
+            if (space_used>0):
+                y = y - abs(space_used)
+        except BaseException as msg:
+            print("[SPLASH] Service draw exception: ", msg)
         
 # RTC
 
@@ -198,7 +211,8 @@ def draw_home(percent, cstate, status, full_clear, going_to_sleep):
     else:
         info = "[ START: LAUNCHER ]"
     draw_helper_footer(clockstring(),info)
-    draw_helper_nick(":(")
+    draw_helper_nick("Unknown")
+    draw_services()
     draw_helper_flush(True)
     
 def draw_batterylow(percent):
