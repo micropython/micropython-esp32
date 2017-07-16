@@ -48,8 +48,8 @@ STATIC mp_obj_t badge_nvs_get_str_(mp_uint_t n_args, const mp_obj_t *args) {
   mp_uint_t len;
   const char *namespace = mp_obj_str_get_data(args[0], &len);
   const char *key = mp_obj_str_get_data(args[1], &len);
-  char value[1024]; // TODO wut?
-  size_t length;
+  char value[256]; // TODO wut?
+  size_t length = sizeof(value);
   esp_err_t err = badge_nvs_get_str(namespace, key, value, &length);
   if (err != ESP_OK) {
     if (n_args > 2) {
