@@ -1,4 +1,4 @@
-import ugfx, time, badge, machine, uos, appglue, deepsleep
+import ugfx, time, badge, machine, uos, appglue, deepsleep, network
 
 # SHA2017 badge home screen
 # Renze Nicolai 2017
@@ -9,20 +9,20 @@ def setup_services():
     try:
         apps = uos.listdir('lib')
     except OSError:
-        print("No lib folder!")
+        print("[SPLASH] Can't setup services: no lib folder!")
         return False
     for app in apps:
         try:
             files = uos.listdir('lib/'+app)
         except OSError:
-            print("Listing app files for '"+app+"' failed!")
+            print("[SPLASH] Listing app files for app '"+app+"' failed!")
             return False
         status = True
         found = False
         for f in files:
             if (f=="service.py"):
                 found = True
-                print("Running service "+app+"...")
+                print("[SPLASH] Running service "+app+"...")
                 try:
                     srv = __import__('lib/'+app+'/service')
                     services.append(srv) #Add to global list
@@ -32,7 +32,7 @@ def setup_services():
                     status = False
                 break
         if not found:
-            print("App '"+app+"' has no service")
+            print("[SPLASH] App '"+app+"' has no service")
     return status
 
 def loop_services(loopCnt):
@@ -43,7 +43,7 @@ def loop_services(loopCnt):
             if (srv.loop(loopCnt)):
                 noSleep = True
         except BaseException as msg:
-            print("Service loop exception: ", msg)
+            print("[SPLASH] Service loop exception: ", msg)
     return noSleep
         
 # RTC
@@ -64,6 +64,10 @@ def clockstring():
       minstr = "0"+minstr 
     return daystr+"-"+monthstr+"-"+str(year)+" "+hourstr+":"+minstr
 
+def disableWifi():
+    nw = network.WLAN(network.STA_IF)
+    nw.active(False)
+
 def getTimeNTP():
     import ntp
     import wifi
@@ -75,23 +79,24 @@ def getTimeNTP():
         wifi.init()
         ssid = badge.nvs_get_str('badge', 'wifi.ssid', 'SHA2017-insecure')
         draw_msg("Configuring clock...", "Connecting to '"+ssid+"'...")
-        timeout = 20
+        timeout = 30
         while not wifi.sta_if.isconnected():
             time.sleep(0.1)
             timeout = timeout - 1
             if (timeout<1):
                 draw_msg("Error", "Timeout while connecting!")
+                disableWifi()
                 time.sleep(1)
                 return False
             else:
-                print("Time to failure: "+str(timeout))
                 pass
         draw_msg("Configuring clock...", "NTP...")
         ntp.set_NTP_time()
         draw_msg("Configuring clock...", "Done!")
+        disableWifi()
         return True
-    else:
-        print("RTC already set.")
+    #else:
+    #    print("[SPLASH] RTC already set.")
     return True
     
 # BATTERY
@@ -160,7 +165,7 @@ def draw_batterylow(percent):
 # START LAUNCHER
     
 def start_launcher(pushed):
-    print("START LAUNCHER: ", pushed)
+    #print("START LAUNCHER: ", pushed)
     if(pushed):
         global splashTimer
         splashTimer.deinit()
@@ -169,7 +174,7 @@ def start_launcher(pushed):
 # SLEEP
             
 def badge_sleep():
-    print("Going to sleep now...")
+    print("[SPLASH] Going to sleep now...")
     badge.eink_busy_wait() #Always wait for e-ink
     deepsleep.start_sleeping(30000) #Sleep for 30 seconds
     
@@ -211,40 +216,36 @@ def restart_sleep_counter():
     stop_sleep_counter()
     start_sleep_counter()
     
-# WELCOME
+# WELCOME (SETUP, SPONSORS OR CLOCK)
 
 def welcome():
-    setupcompleted = badge.nvs_get_str('badge', 'setup.state', 'first')
-    if (setupcompleted=='first'):
-        #First boot!
-        draw_msg("Welcome to SHA2017!", "Hello and welcome to your new badge!")
-        time.sleep(1)
-        draw_msg("Welcome to SHA2017!", "Please configure your nickname in the settings.")
-        time.sleep(1)
-        badge.nvs_set_str('badge', 'setup.state', 'done')
+    setupcompleted = int(badge.nvs_get_str('badge', 'setup.state', '0'))
+    if (setupcompleted==0): # First boot (open setup)
+        print("[SPLASH] Setup not completed. Running setup!")
+        appglue.start_app("setup")
+    elif (setupcompleted==1): # Second boot (after setup)
+        print("[SPLASH] Showing sponsors once...")
+        badge.nvs_set_str('badge', 'setup.state', '2') # Only force show sponsors once
+        appglue.start_app("sponsors")
+    else: # Setup completed
+        print("[SPLASH] Normal boot.")
+        getTimeNTP() # Set clock if needed
 
 # MAIN
   
 def splash_main():   
     cstate = badge.battery_charge_status()
     vbatt = badge.battery_volt_sense()
-    percent = battery_percent(3800, 4300, vbatt)
+    percent = battery_percent(3800, 4290, vbatt)
     ugfx.init()
-    if (cstate) or (percent>9):
+    if (cstate) or (percent>9) or (percent<1):
         ugfx.input_init()
         welcome()
-        getTimeNTP()
-        draw_home(percent, cstate, "Press start to open launcher!")
+        draw_home(percent, cstate, "Press start to the open launcher!")
         ugfx.input_attach(ugfx.BTN_START, start_launcher)
         global splashTimer
         setup_services()
         start_sleep_counter()
-    elif(percent==0):
-        ugfx.clear(ugfx.WHITE)
-        ugfx.string(0, 0, "Recovery mode", "PermanentMarker22", ugfx.BLACK)
-        ugfx.string(0, 25, "No battery. Dropping to shell...", "Roboto_Regular12", ugfx.BLACK)
-        ugfx.set_lut(ugfx.LUT_FASTER)
-        ugfx.flush()
         
     else:
         draw_batterylow(percent)       
