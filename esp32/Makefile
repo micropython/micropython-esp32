@@ -159,7 +159,6 @@ SRC_C = \
 	machine_hw_spi.c \
 	mpthreadport.c \
 	esprtcmem.c \
-	espdeepsleep.c \
 	ugfx_containers.c \
 	ugfx_widgets.c \
 	ugfx_styles.c \
