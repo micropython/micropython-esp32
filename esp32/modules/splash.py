@@ -238,11 +238,9 @@ def splashTimer_callback(tmr):
         loopCnt = 0
         cstate = badge.battery_charge_status()
         percent = battery_percent()
-        if (cstate) or (percent>95) or (percent<1):
-            if (percent==0):
-                draw_home(percent, cstate, "Huh?!", True, False)
-            else:
-                draw_home(percent, cstate, "", False, False)
+        vbatt = badge.battery_volt_sense()
+        if (cstate) or (percent>95) or (vbatt<100):
+            draw_home(percent, cstate, "", False, False)
         else:
             if (percent<10):
                 draw_batterylow(percent)
@@ -288,8 +286,10 @@ def welcome():
 def splash_main():   
     cstate = badge.battery_charge_status()
     percent = battery_percent()
+    vbatt = badge.battery_volt_sense()
+    print("[SPLASH] Vbatt = "+str(vbatt))
     ugfx.init()
-    if (cstate) or (percent>9) or (percent<1):
+    if (cstate) or (percent>9) or (vbatt<100):
         ugfx.input_init()
         welcome()
         draw_home(percent, cstate, "", True, False)
