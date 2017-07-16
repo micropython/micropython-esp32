@@ -54,6 +54,10 @@ INC += -I../../components/badge
 INC += -I../../components/ugfx
 INC += -I../../components/graph
 INC += -I../../components/sha2017
+INC += -I../../components/bpp-recv
+INC += -I../../components/bpp-if
+INC += -I../../components/ed25519/include
+INC += -I../../components/redundancy
 INC += -I../../main
 INC += -I../../ugfx/src/gdisp/mcufont
 INC += -I../../ugfx
@@ -155,6 +159,7 @@ SRC_C = \
 	machine_hw_spi.c \
 	mpthreadport.c \
 	esprtcmem.c \
+	espdeepsleep.c \
 	ugfx_containers.c \
 	ugfx_widgets.c \
 	ugfx_styles.c \
@@ -661,6 +666,15 @@ BADGE_COMPONENTS_O = $(addprefix $(BADGE)/components/,\
 	sha2017/sha2017_ota.o \
 	)
 
+#Re-use libraries built while building non-micro-python project. Because kindly
+#fuck off with your ignore-all-esp-idf-and-make-me-state-every-single-thing-again-conventions
+#micropython makefile crap. Yes, I'm salty about that.
+BADGE_LIBS += ../../build/ed25519/libed25519.a
+BADGE_LIBS += ../../build/bpp-if/libbpp-if.a
+BADGE_LIBS += ../../build/bpp-recv/libbpp-recv.a
+BADGE_LIBS += ../../build/redundancy/libredundancy.a
+
+
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(BADGE_COMPONENTS_O))
 
 ################################################################################
@@ -698,6 +712,7 @@ APP_LD_ARGS += -L$(dir $(LIBSTDCXX_FILE_NAME)) -lstdc++
 APP_LD_ARGS += $(ESPCOMP)/newlib/lib/libc.a
 APP_LD_ARGS += $(ESPCOMP)/newlib/lib/libm.a
 APP_LD_ARGS += $(ESPCOMP)/esp32/libhal.a
+APP_LD_ARGS += $(BADGE_LIBS)
 APP_LD_ARGS += -L$(ESPCOMP)/esp32/lib -lcore -lnet80211 -lphy -lrtc -lpp -lwpa -lsmartconfig -lcoexist
 APP_LD_ARGS += $(OBJ)
 APP_LD_ARGS += --end-group
