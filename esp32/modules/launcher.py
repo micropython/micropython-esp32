@@ -8,16 +8,27 @@ import appglue
 
 ugfx.init()
 ugfx.input_init()
-
+ugfx.clear(ugfx.BLACK)
+ugfx.flush()
 ugfx.clear(ugfx.WHITE)
-ugfx.string(180,25,"STILL","Roboto_BlackItalic24",ugfx.BLACK)
-ugfx.string(160,50,"Hacking","PermanentMarker22",ugfx.BLACK)
-str_len = ugfx.get_string_width("Hacking","PermanentMarker22")
-ugfx.line(160, 72, 174 + str_len, 72, ugfx.BLACK)
-ugfx.line(170 + str_len, 52, 170 + str_len, 70, ugfx.BLACK)
-ugfx.string(170,75,"Anyway","Roboto_BlackItalic24",ugfx.BLACK)
-ugfx.string(155,105,"MOTD: NVS","Roboto_Regular18",ugfx.BLACK)
+ugfx.flush()
 
+ugfx.string_box(148,22,148,26, "STILL", "Roboto_BlackItalic24", ugfx.BLACK, ugfx.justifyCenter)
+ugfx.string_box(148,45,148,23, "Hacking", "PermanentMarker22", ugfx.BLACK, ugfx.justifyCenter)
+ugfx.string_box(148,70,148,26, "Anyway", "Roboto_BlackItalic24", ugfx.BLACK, ugfx.justifyCenter)
+
+#the line under the text
+str_len = ugfx.get_string_width("Hacking","PermanentMarker22")
+line_begin = 148 + int((148-str_len)/2)
+line_end = str_len+line_begin
+ugfx.line(line_begin, 68, line_end, 68, ugfx.BLACK)
+
+#the cursor past the text
+cursor_pos = line_end+5
+ugfx.line(cursor_pos, 46, cursor_pos, 66, ugfx.BLACK)
+
+ugfx.string_box(148,110,148,18, "Spaanse Spook","Roboto_Regular18",ugfx.BLACK, ugfx.justifyLeft)
+ugfx.flush()
 options = None
 install_path = None
 
@@ -35,10 +46,6 @@ def populate_it():
 
     for app in apps:
         options.add_item(app)
-        
-    options.add_item('setup')
-    options.add_item('sponsors')
-    
 
 def run_it(pushed):
     if (pushed):
@@ -46,8 +53,8 @@ def run_it(pushed):
         options.destroy()
 
         ugfx.clear(ugfx.BLACK)
-        ugfx.string(40,25,"Running:","Roboto_BlackItalic24",ugfx.WHITE)
-        ugfx.string(100,75, selected,"PermanentMarker22",ugfx.WHITE)
+        ugfx.string_box(0, 25, 296, 25,"Running:","Roboto_BlackItalic24",ugfx.WHITE, ugfx.justifyCenter)
+        ugfx.string_box(0, 51, 296, 23, selected, "PermanentMarker22", ugfx.WHITE, ugfx.justifyCenter)
         ugfx.flush()
         badge.eink_busy_wait()
         appglue.start_app(selected)
@@ -81,8 +88,8 @@ def uninstall_it(pushed):
         print(uninstall)
         if uninstall:
             ugfx.clear(ugfx.BLACK)
-            ugfx.string(40,25,"Uninstalling:","Roboto_BlackItalic24",ugfx.WHITE)
-            ugfx.string(100,75, selected,"PermanentMarker22",ugfx.WHITE)
+            ugfx.string_box(0, 25, 296, 25,"Uninstalling:","Roboto_BlackItalic24",ugfx.WHITE, ugfx.justifyCenter)
+            ugfx.string_box(0, 51, 296, 23, selected, "PermanentMarker22", ugfx.WHITE, ugfx.justifyCenter)
             ugfx.flush()
             install_path = get_install_path()
             for rm_file in os.listdir("%s/%s" % (install_path, selected)):
