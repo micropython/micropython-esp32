@@ -145,21 +145,17 @@ void app_main(void) {
   uint8_t inv_magic = esp_rtcmem_read(1);
 
 #ifdef CONFIG_SHA_BPP_ENABLE
-	//Grab level of int pin of touchpad. If high, this was a
-	//scheduled wakeup because of a deep sleep timeout. If low,
-	//the user used the touchpad.
-	//yes, this is v1 specific. Please add v0.x support yourself.
-	gpio_config_t io_conf = {
-		.mode         = GPIO_MODE_INPUT,
-		.pin_bit_mask = 1LL << PIN_NUM_MPR121_INT,
-		.pull_down_en = 0,
-		.pull_up_en   = 1,
-	};
-	gpio_config(&io_conf);
-	if (gpio_get_level(PIN_NUM_MPR121_INT)==1) {
-		printf("Touch int is high. Starting bpp.\n");
-		do_bpp_bgnd();
-	}
+  //Grab level of int pin of touchpad. If high, this was a
+  //scheduled wakeup because of a deep sleep timeout. If low,
+  //the user used the touchpad.
+  //yes, this is v1 specific. Please add v0.x support yourself.
+  gpio_config_t io_conf = {
+    .mode         = GPIO_MODE_INPUT,
+    .pin_bit_mask = 1LL << PIN_NUM_MPR121_INT,
+    .pull_down_en = 0,
+    .pull_up_en   = 1,
+  };
+  gpio_config(&io_conf);
 #endif
 
   if (magic == (uint8_t)~inv_magic) {
@@ -168,6 +164,15 @@ void app_main(void) {
         case 1:
           printf("Starting OTA\n");
           sha2017_ota_update();
+          break;
+#ifdef CONFIG_SHA_BPP_ENABLE
+        case 2:
+        	if (gpio_get_level(PIN_NUM_MPR121_INT)==1) {
+        		printf("Touch int is high. Starting bpp.\n");
+        		do_bpp_bgnd();
+        	}
+          break;
+#endif
       }
   } else {
     xTaskCreateStaticPinnedToCore(mp_task, "mp_task", MP_TASK_STACK_LEN, NULL, MP_TASK_PRIORITY,
