@@ -16,6 +16,7 @@ def check_bootsec():
 def fs_corrupted():
     import time
     import ugfx
+    ugfx.init()
     ugfx.clear(ugfx.WHITE)
     ugfx.string(0, 0, "--- FATAL EXCEPTION ---", "Roboto_Regular12", ugfx.BLACK)
     ugfx.string(0, 13, "FAT filesystem corrupted", "Roboto_Regular12", ugfx.BLACK)
