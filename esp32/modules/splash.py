@@ -343,8 +343,7 @@ def load_settings():
     global battery_percent_empty
     battery_percent_empty = int(badge.nvs_get_str('splash', 'battery.percent.empty', '1')) # %
     global ntp_timeout
-    ntp_timeout = int(badge.nvs_get_str('splash', 'ntp.timeout', '40')) #s
-    
+    ntp_timeout = int(badge.nvs_get_str('splash', 'ntp.timeout', '40')) #amount of tries
 
 # MAIN
   
