@@ -11,13 +11,14 @@ def setup_services():
     except OSError:
         print("[SPLASH] Can't setup services: no lib folder!")
         return False
+    status = True #True if no error occured
     for app in apps:
         try:
             files = uos.listdir('lib/'+app)
         except OSError:
             print("[SPLASH] Listing app files for app '"+app+"' failed!")
             return False
-        status = True
+        
         found = False
         for f in files:
             if (f=="service.py"):
@@ -29,7 +30,7 @@ def setup_services():
                     srv.setup()
                 except BaseException as msg:
                     print("Exception in service setup "+app+": ", msg)
-                    status = False
+                    status = False #Error: status is now False
                 break
         if not found:
             print("[SPLASH] App '"+app+"' has no service")
@@ -126,7 +127,9 @@ def battery_percent():
         vbatt = 0
         for i in range(0,10):
             vbatt = vbatt + badge.battery_volt_sense()
-        percent = battery_percent_internal(3800, 4300, round(vbatt/10))
+            global battery_volt_min
+            global battery_volt_max
+        percent = battery_percent_internal(battery_volt_min, battery_volt_max, round(vbatt/10))
         return percent
 
 # GRAPHICS
@@ -163,23 +166,28 @@ def draw_helper_clear(full):
         ugfx.flush()
     
 def draw_helper_battery(percent,cstate):
-    ugfx.area(2,2,40,18,ugfx.WHITE)
-    ugfx.box(42,7,2,8,ugfx.WHITE)
+    global header_fg
+    global header_bg
+    ugfx.area(2,2,40,18,header_fg)
+    ugfx.box(42,7,2,8,header_fg)
     if (percent>0):
         if (cstate):
-            ugfx.string(5,5,"chrg","Roboto_Regular12",ugfx.BLACK)
+            ugfx.string(5,5,"chrg","Roboto_Regular12",header_bg)
         else:
             if (percent>10):
                 w = round((percent*38)/100)
+                ugfx.area(3,3,38,16,ugfx.WHITE)
                 ugfx.area(3,3,w,16,ugfx.BLACK)
             else:
-                ugfx.string(5,5,"empty","Roboto_Regular12",ugfx.BLACK)
+                ugfx.string(5,5,"empty","Roboto_Regular12",header_bg)
     else:
-        ugfx.string(2,5,"no batt","Roboto_Regular12",ugfx.BLACK)
+        ugfx.string(2,5,"no batt","Roboto_Regular12",header_bg)
     
 def draw_helper_header(text):
-    ugfx.area(0,0,ugfx.width(),23,ugfx.BLACK)
-    ugfx.string(45, 1, text,"DejaVuSans20",ugfx.WHITE)
+    global header_fg
+    global header_bg
+    ugfx.area(0,0,ugfx.width(),23,header_bg)
+    ugfx.string(45, 1, text,"DejaVuSans20",header_fg)
     
 def draw_helper_footer(text_l, text_r):
     ugfx.string(0, ugfx.height()-13, text_l, "Roboto_Regular12",ugfx.BLACK)
@@ -201,11 +209,16 @@ def draw_helper_flush(full):
     
 def draw_home(percent, cstate, status, full_clear, going_to_sleep):
     draw_helper_clear(full_clear)
-    if (cstate):
-        draw_helper_header(status)
+    global header_hide_while_sleeping
+    if (header_hide_while_sleeping and going_to_sleep):
+        print("[SPLASH] Hiding header while sleeping")
     else:
         draw_helper_header(status)
-    draw_helper_battery(percent, cstate)
+        global header_hide_battery_while_sleeping
+        if (header_hide_battery_while_sleeping and going_to_sleep):
+            print("[SPLASH] Hiding battery while sleeping")
+        else:
+            draw_helper_battery(percent, cstate)
     if (going_to_sleep):
         info = "[ ANY: Wake up ]"
     else:
@@ -235,9 +248,10 @@ def start_launcher(pushed):
 # SLEEP
             
 def badge_sleep():
+    global sleep_duration
     print("[SPLASH] Going to sleep now...")
     badge.eink_busy_wait() #Always wait for e-ink
-    deepsleep.start_sleeping(30000) #Sleep for 30 seconds
+    deepsleep.start_sleeping(sleep_duration)
     
 def badge_sleep_forever():
     print("[SPLASH] Going to sleep WITHOUT TIME WAKEUP now...")
@@ -256,12 +270,13 @@ def splashTimer_callback(tmr):
         if (cstate) or (percent>95) or (vbatt<100):
             draw_home(percent, cstate, "", False, False)
         else:
-            if (percent<10):
+            global battery_percent_empty
+            if (percent<=battery_percent_empty):
                 draw_batterylow(percent)
                 ugfx.flush()
                 badge_sleep_forever()
             else:
-                draw_home(percent, cstate, "Zzz...", True, True)
+                draw_home(percent, cstate, "Zzz...", False, True) #No full clear before sleep
                 badge_sleep()
     else:
         if (loop_services(loopCnt)):
@@ -295,6 +310,39 @@ def welcome():
         print("[SPLASH] Normal boot.")
         getTimeNTP() # Set clock if needed
 
+# SETTINGS FROM NVS
+
+def load_settings():
+    header_inv = int(badge.nvs_get_str('splash', 'header.invert', '0'))
+    if (header_inv>0):
+        global header_fg
+        global header_bg
+        header_fg = ugfx.WHITE
+        header_bg = ugfx.BLACK
+    header_hws = int(badge.nvs_get_str('splash', 'header.hws', '0')) #Hide While Sleeping
+    if (header_hws>0):
+        global header_hide_while_sleeping
+        header_hide_while_sleeping = True
+    header_hbws = int(badge.nvs_get_str('splash', 'header.hbws', '0')) #Hide Battery While Sleeping
+    if (header_hbws>0):
+        global header_hide_battery_while_sleeping
+        header_hide_battery_while_sleeping = True
+    global sleep_duration
+    sleep_duration = int(badge.nvs_get_str('splash', 'sleep.duration', '60000'))
+    if (sleep_duration<30000):
+        print("[SPLASH] Sleep duration set to less than 30 seconds. Forcing 30 seconds.")
+        sleep_duration = 30000
+    if (sleep_duration>120000):
+        print("[SPLASH] Sleep duration set to more than 120 seconds. Forcing 120 seconds.")
+        
+    global battery_volt_min
+    battery_volt_min = int(badge.nvs_get_str('splash', 'battery.volt.min', '3800')) # volt
+    global battery_volt_max
+    battery_volt_max = int(badge.nvs_get_str('splash', 'battery.volt.max', '4300')) # volt
+    global battery_percent_empty
+    battery_percent_empty = int(badge.nvs_get_str('splash', 'battery.percent.empty', '1')) # %
+    
+
 # MAIN
   
 def splash_main():   
@@ -302,15 +350,17 @@ def splash_main():
     percent = battery_percent()
     vbatt = badge.battery_volt_sense()
     print("[SPLASH] Vbatt = "+str(vbatt))
+    load_settings()
     ugfx.init()
-    if (cstate) or (percent>9) or (vbatt<100):
+    global battery_percent_empty
+    if (cstate) or (percent>battery_percent_empty) or (vbatt<100):
         ugfx.input_init()
         welcome()
-        draw_home(percent, cstate, "", True, False)
         ugfx.input_attach(ugfx.BTN_START, start_launcher)
         global splashTimer
         setup_services()
         start_sleep_counter()
+        draw_home(percent, cstate, "", True, False)
     else:
         draw_batterylow(percent)       
         badge_sleep_forever()
@@ -319,6 +369,14 @@ def splash_main():
 splashTimer = machine.Timer(0)
 services = []
 loopCnt = 0
+header_fg = ugfx.BLACK
+header_bg = ugfx.WHITE
+sleep_duration = 60000
+header_hide_while_sleeping = False
+header_hide_battery_while_sleeping = False
+battery_volt_min = 3800
+battery_volt_max = 4300
+battery_percent_empty = 1
 
 splash_main()
  
