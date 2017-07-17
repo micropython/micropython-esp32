@@ -93,8 +93,7 @@ def uninstall_it(pushed):
                     os.remove("%s/%s/%s" % (install_path, selected, rm_file))
                 os.rmdir("%s/%s" % (install_path, selected))
             badge.eink_busy_wait()
-            esp.rtcmem_write_string('launcher')
-            esp.start_sleeping(1)
+            appglue.start_app('launcher')
 
         import dialogs
         uninstall = dialogs.prompt_boolean('Are you sure you want to remove %s?' % selected, cb=perform_uninstall)
