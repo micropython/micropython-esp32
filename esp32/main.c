@@ -51,14 +51,11 @@
 #include "uart.h"
 #include "modmachine.h"
 #include "mpthreadport.h"
-<<<<<<< Updated upstream
 #include "badge_portexp.h"
 #include "badge_pins.h"
 #include "bpp_init.h"
 #include "driver/gpio.h"
-=======
 #include "badge_base.h"
->>>>>>> Stashed changes
 
 // MicroPython runs as a task under FreeRTOS
 #define MP_TASK_PRIORITY        (ESP_TASK_PRIO_MIN + 1)
@@ -147,21 +144,21 @@ void app_main(void) {
     uint8_t magic = esp_rtcmem_read(0);
     uint8_t inv_magic = esp_rtcmem_read(1);
 
-	//Grab level of int pin of touchpad. If high, this was a
-	//scheduled wakeup because of a deep sleep timeout. If low,
-	//the user used the touchpad.
-	//yes, this is v1 specific. Please add v0.x support yourself.
-	gpio_config_t io_conf = {
-		.mode         = GPIO_MODE_INPUT,
-		.pin_bit_mask = 1LL << PIN_NUM_MPR121_INT,
-		.pull_down_en = 0,
-		.pull_up_en   = 1,
-	};
-	gpio_config(&io_conf);
-	if (gpio_get_level(PIN_NUM_MPR121_INT)==1) {
-		printf("Touch int is high. Starting bpp.\n");
-		do_bpp_bgnd();
-	}
+	// //Grab level of int pin of touchpad. If high, this was a
+	// //scheduled wakeup because of a deep sleep timeout. If low,
+	// //the user used the touchpad.
+	// //yes, this is v1 specific. Please add v0.x support yourself.
+	// gpio_config_t io_conf = {
+	// 	.mode         = GPIO_MODE_INPUT,
+	// 	.pin_bit_mask = 1LL << PIN_NUM_MPR121_INT,
+	// 	.pull_down_en = 0,
+	// 	.pull_up_en   = 1,
+	// };
+	// gpio_config(&io_conf);
+	// if (gpio_get_level(PIN_NUM_MPR121_INT)==1) {
+	// 	printf("Touch int is high. Starting bpp.\n");
+	// 	do_bpp_bgnd();
+	// }
 
     if (magic == (uint8_t)~inv_magic) {
       printf("Magic checked out!\n");
