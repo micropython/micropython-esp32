@@ -51,10 +51,14 @@
 #include "uart.h"
 #include "modmachine.h"
 #include "mpthreadport.h"
+<<<<<<< Updated upstream
 #include "badge_portexp.h"
 #include "badge_pins.h"
 #include "bpp_init.h"
 #include "driver/gpio.h"
+=======
+#include "badge_base.h"
+>>>>>>> Stashed changes
 
 // MicroPython runs as a task under FreeRTOS
 #define MP_TASK_PRIORITY        (ESP_TASK_PRIO_MIN + 1)
@@ -138,6 +142,8 @@ void do_bpp_bgnd() {
 }
 
 void app_main(void) {
+   badge_base_init();
+
     uint8_t magic = esp_rtcmem_read(0);
     uint8_t inv_magic = esp_rtcmem_read(1);
 
