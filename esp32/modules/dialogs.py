@@ -15,11 +15,13 @@ def notice(text, title="SHA2017", close_text="Close", width = 296, height = 128,
 	"""
 	prompt_boolean(text, title = title, true_text = close_text, false_text = None, width = width, height = height, font=font)
 
-def prompt_boolean(text, title="SHA2017", true_text="Yes", false_text="No", width = 296, height = 128, font="Roboto_Regular12"):
+def prompt_boolean(text, title="SHA2017", true_text="Yes", false_text="No", width = 296, height = 128, font="Roboto_Regular12", cb=None):
 	"""A simple one and two-options dialog
 
 	if 'false_text' is set to None only one button is displayed.
 	If both 'false_text' and 'true_text' are given a boolean is returned, press B for false, A for true.
+
+	Pass along a 'cb' callback to make the dialog async, which is needed to make input work when used from a callback
 
 	The caller is responsible for flushing the display after processing the response.
 	"""
@@ -35,6 +37,32 @@ def prompt_boolean(text, title="SHA2017", true_text="Yes", false_text="No", widt
 		false_text = "B: " + false_text
 		true_text = "A: " + true_text
 
+	def done(result):
+		window.destroy()
+		if cb:
+			cb(result)
+		return result
+
+	def syncSuccess(evt):
+		if evt:
+			# We'd like promises here, but for now this should do
+			global wait_for_interrupt, button_pushed
+			button_pushed = "A"
+			wait_for_interrupt = False
+	def syncCancel(evt):
+		if evt:
+			# We'd like promises here, but for now this should do
+			global wait_for_interrupt, button_pushed
+			button_pushed = "B"
+			wait_for_interrupt = False
+
+	def asyncSuccess(evt):
+		if evt:
+			done(True)
+	def asyncCancel(evt):
+		if evt:
+			done(False)
+
 	label = ugfx.Label(5, 30, width - 10, height - 80, text = text, parent=window)
 	button_no = ugfx.Button(5, height - 40, width // 2 - 15, 30, false_text, parent=window) if false_text else None
 	button_yes = ugfx.Button(width // 2 + 5 if true_text else 5, height - 40, width // 2 - 15 if false_text else width - 10, 30, true_text, parent=window)
@@ -46,23 +74,18 @@ def prompt_boolean(text, title="SHA2017", true_text="Yes", false_text="No", widt
 	ugfx.set_lut(ugfx.LUT_NORMAL)
 	ugfx.flush()
 
-	def done(value):
-		window.hide()
-		window.destroy()
-		button_yes.destroy()
-		if button_no: button_no.destroy()
-		label.destroy()
-		return value
+	if button_no: ugfx.input_attach(ugfx.BTN_B, asyncCancel if cb else syncCancel)
+	ugfx.input_attach(ugfx.BTN_A, asyncSuccess if cb else syncSuccess)
 
-	if button_no: ugfx.input_attach(ugfx.BTN_B, pressed_b)
-	ugfx.input_attach(ugfx.BTN_A, pressed_a)
+	if cb:
+		return
+	else:
+		wait_for_interrupt = True
+		while wait_for_interrupt:
+			time.sleep(0.2)
 
-	wait_for_interrupt = True
-	while wait_for_interrupt:
-		time.sleep(0.2)
-
-	if button_pushed == "B": return done(False)
-	if button_pushed == "A": return done(True)
+		if button_pushed == "B": return done(False)
+		return done(True)
 
 def prompt_text(description, init_text = "", true_text="OK", false_text="Back", width = 300, height = 200, font="Roboto_BlackItalic24", cb=None):
 	"""Shows a dialog and keyboard that allows the user to input/change a string
@@ -96,13 +119,13 @@ def prompt_text(description, init_text = "", true_text="OK", false_text="Back", 
 	def syncSuccess(evt):
 		if evt:
 			# We'd like promises here, but for now this should do
-			global wait_for_interrupt
+			global wait_for_interrupt, button_pushed
 			button_pushed = "A"
 			wait_for_interrupt = False
 	def syncCancel(evt):
 		if evt:
 			# We'd like promises here, but for now this should do
-			global wait_for_interrupt
+			global wait_for_interrupt, button_pushed
 			button_pushed = "B"
 			wait_for_interrupt = False
 
@@ -111,7 +134,7 @@ def prompt_text(description, init_text = "", true_text="OK", false_text="Back", 
 			done(edit.text())
 	def asyncCancel(evt):
 		if evt:
-			done(False)
+			done(None)
 
 	button_yes = ugfx.Button(int(width*4/5), height-kb_height-button_height, int(width*1/5)-3, button_height, true_text, parent=window, cb=asyncSuccess if cb else syncSuccess)
 	button_no = ugfx.Button(int(width*4/5), height-kb_height-button_height-button_height, int(width/5)-3, button_height, false_text, parent=window) if false_text else None
