@@ -93,7 +93,8 @@ def getTimeNTP():
         wifi.init()
         ssid = badge.nvs_get_str('badge', 'wifi.ssid', 'SHA2017-insecure')
         draw_msg("Configuring clock...", "Connecting to '"+ssid+"'...")
-        timeout = 30
+        global ntp_timeout
+        timeout = ntp_timeout
         while not wifi.sta_if.isconnected():
             time.sleep(0.1)
             timeout = timeout - 1
@@ -341,6 +342,8 @@ def load_settings():
     battery_volt_max = int(badge.nvs_get_str('splash', 'battery.volt.max', '4300')) # volt
     global battery_percent_empty
     battery_percent_empty = int(badge.nvs_get_str('splash', 'battery.percent.empty', '1')) # %
+    global ntp_timeout
+    ntp_timeout = int(badge.nvs_get_str('splash', 'ntp.timeout', '40')) #s
     
 
 # MAIN
@@ -377,6 +380,7 @@ header_hide_battery_while_sleeping = False
 battery_volt_min = 3800
 battery_volt_max = 4300
 battery_percent_empty = 1
+ntp_timeout = 40
 
 splash_main()
  
