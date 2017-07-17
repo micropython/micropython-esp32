@@ -73,7 +73,6 @@ def get_install_path():
     install_path = expandhome(install_path)
     return install_path
 
-
 def uninstall_it(pushed):
     if (pushed):
         selected = options.selected_text()
@@ -82,23 +81,23 @@ def uninstall_it(pushed):
         if selected == 'ota_update':
             return
         options.destroy()
-        import dialogs
-        print(selected)
-        uninstall = dialogs.prompt_boolean('Are you sure you want to remove %s?' % selected)
-        print(uninstall)
-        if uninstall:
-            ugfx.clear(ugfx.BLACK)
-            ugfx.string_box(0, 25, 296, 25,"Uninstalling:","Roboto_BlackItalic24",ugfx.WHITE, ugfx.justifyCenter)
-            ugfx.string_box(0, 51, 296, 23, selected, "PermanentMarker22", ugfx.WHITE, ugfx.justifyCenter)
-            ugfx.flush()
-            install_path = get_install_path()
-            for rm_file in os.listdir("%s/%s" % (install_path, selected)):
-                os.remove("%s/%s/%s" % (install_path, selected, rm_file))
-            os.rmdir("%s/%s" % (install_path, selected))
-        badge.eink_busy_wait()
-        esp.rtcmem_write_string('launcher')
-        esp.start_sleeping(1)
 
+        def perform_uninstall(ok):
+            if ok:
+                ugfx.clear(ugfx.BLACK)
+                ugfx.string_box(0, 25, 296, 25,"Uninstalling:","Roboto_BlackItalic24",ugfx.WHITE, ugfx.justifyCenter)
+                ugfx.string_box(0, 51, 296, 23, selected, "PermanentMarker22", ugfx.WHITE, ugfx.justifyCenter)
+                ugfx.flush()
+                install_path = get_install_path()
+                for rm_file in os.listdir("%s/%s" % (install_path, selected)):
+                    os.remove("%s/%s/%s" % (install_path, selected, rm_file))
+                os.rmdir("%s/%s" % (install_path, selected))
+            badge.eink_busy_wait()
+            esp.rtcmem_write_string('launcher')
+            esp.start_sleeping(1)
+
+        import dialogs
+        uninstall = dialogs.prompt_boolean('Are you sure you want to remove %s?' % selected, cb=perform_uninstall)
 
 populate_it()
 
