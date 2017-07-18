@@ -453,6 +453,7 @@ STATIC void network_bluetooth_gatt_id_print(const mp_print_t *print, const esp_g
 typedef enum {
     NETWORK_BLUETOOTH_FIND_SERVICE,
     NETWORK_BLUETOOTH_FIND_CONNECTION,
+    NETWORK_BLUETOOTH_DEL_CONNECTION,
     NETWORK_BLUETOOTH_FIND_CHAR_DESCR_IN,
     NETWORK_BLUETOOTH_FIND_CHAR_DESCR,
     NETWORK_BLUETOOTH_DEL_SERVICE,
@@ -532,12 +533,19 @@ STATIC mp_obj_t network_bluetooth_item_op(mp_obj_t list, esp_bt_uuid_t* uuid, ui
                 break;
 
             case NETWORK_BLUETOOTH_FIND_CONNECTION:
+            case NETWORK_BLUETOOTH_DEL_CONNECTION:
                 {
                     network_bluetooth_connection_obj_t* conn = (network_bluetooth_connection_obj_t*) items[i];
                     if ((bda != NULL && memcmp(conn->bda, bda, ESP_BD_ADDR_LEN) == 0) || (bda == NULL && conn->conn_id == handle_or_conn_id)) {
                         ret = conn;
-                        goto NETWORK_BLUETOOTH_ITEM_END;
                     }
+
+                    if (kind == NETWORK_BLUETOOTH_DEL_CONNECTION) {
+                        // a bit ineffecient, but
+                        // list_pop() is static
+                        mp_obj_list_remove(list, conn);
+                    }
+                    goto NETWORK_BLUETOOTH_ITEM_END;
                 }
                 break;
         }
@@ -607,6 +615,11 @@ STATIC mp_obj_t network_bluetooth_find_next_char_in_service(network_bluetooth_se
 STATIC mp_obj_t network_bluetooth_del_service_by_uuid(esp_bt_uuid_t* uuid) {
     network_bluetooth_obj_t* bluetooth = network_bluetooth_get_singleton();
     return network_bluetooth_item_op(bluetooth->services, uuid, 0, NULL, NETWORK_BLUETOOTH_DEL_SERVICE);
+}
+
+STATIC mp_obj_t network_bluetooth_del_connection_by_bda(esp_bd_addr_t bda) {
+    network_bluetooth_obj_t* bluetooth = network_bluetooth_get_singleton();
+    return network_bluetooth_item_op(bluetooth->connections, NULL, 0, bda, NETWORK_BLUETOOTH_DEL_CONNECTION);
 }
 
 STATIC void network_bluetooth_print_bda(const mp_print_t *print, esp_bd_addr_t bda) {
@@ -2881,7 +2894,9 @@ STATIC mp_obj_t network_bluetooth_connection_disconnect(mp_obj_t self_in) {
     network_bluetooth_connection_obj_t* connection = (network_bluetooth_connection_obj_t*) self_in;
     if (connection->conn_id != -1) {
         esp_ble_gattc_close(bluetooth->gattc_interface, connection->conn_id);
+        network_bluetooth_del_connection_by_bda(connection->bda);
         connection->conn_id = -1;
+        connection->services = mp_obj_new_list(0, NULL);
     }
     return mp_const_none;
 }
@@ -3396,6 +3411,14 @@ STATIC mp_obj_t network_bluetooth_services(mp_obj_t self_in) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(network_bluetooth_services_obj, network_bluetooth_services);
 
+// bluetooth.conns()
+
+STATIC mp_obj_t network_bluetooth_conns(mp_obj_t self_in) {
+    network_bluetooth_obj_t* bluetooth = network_bluetooth_get_singleton();
+    return bluetooth->connections;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(network_bluetooth_conns_obj, network_bluetooth_conns);
+
 // bluetooth.is_scanning()
 
 STATIC mp_obj_t network_bluetooth_is_scanning(mp_obj_t self_in) {
@@ -3466,6 +3489,7 @@ STATIC const mp_rom_map_elem_t network_bluetooth_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_connect), MP_ROM_PTR(&network_bluetooth_connect_obj) },
     { MP_ROM_QSTR(MP_QSTR_Service), MP_ROM_PTR(&network_bluetooth_gatts_service_type) },
     { MP_ROM_QSTR(MP_QSTR_services), MP_ROM_PTR(&network_bluetooth_services_obj) },
+    { MP_ROM_QSTR(MP_QSTR_conns), MP_ROM_PTR(&network_bluetooth_conns_obj) },
     { MP_ROM_QSTR(MP_QSTR_callback), MP_ROM_PTR(&network_bluetooth_callback_obj) },
     { MP_ROM_QSTR(MP_QSTR_scan_start), MP_ROM_PTR(&network_bluetooth_scan_start_obj) },
     { MP_ROM_QSTR(MP_QSTR_scan_stop), MP_ROM_PTR(&network_bluetooth_scan_stop_obj) },
