@@ -2064,6 +2064,7 @@ STATIC void network_bluetooth_gattc_event_handler(
         case ESP_GATTC_WRITE_DESCR_EVT:
         case ESP_GATTC_WRITE_CHAR_EVT:
             xQueueSend(read_write_q, &read_data, portMAX_DELAY);
+            enqueue = false;
             break;
 
         case ESP_GATTC_NOTIFY_EVT:
