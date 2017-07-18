@@ -29,7 +29,7 @@ ESPCOMP = $(ESPIDF)/components
 ESPTOOL ?= $(ESPCOMP)/esptool_py/esptool/esptool.py
 
 # verify the ESP IDF version
-ESPIDF_SUPHASH := 9b955f4c9f1b32652ea165d3e4cdaad01bba170e
+ESPIDF_SUPHASH := 4ec2abbf23084ac060679e4136fa222a2d0ab0e8
 ESPIDF_CURHASH := $(shell git -C $(ESPIDF) show -s --pretty=format:'%H')
 ifneq ($(ESPIDF_CURHASH),$(ESPIDF_SUPHASH))
 $(info ** WARNING **)
@@ -55,10 +55,12 @@ INC += -I$(ESPCOMP)/driver/include/driver
 INC += -I$(ESPCOMP)/nghttp/port/include
 INC += -I$(ESPCOMP)/nghttp/nghttp2/lib/includes
 INC += -I$(ESPCOMP)/esp32/include
+INC += -I$(ESPCOMP)/soc/include
 INC += -I$(ESPCOMP)/soc/esp32/include
 INC += -I$(ESPCOMP)/ethernet/include
 INC += -I$(ESPCOMP)/expat/include/expat
 INC += -I$(ESPCOMP)/expat/port/include
+INC += -I$(ESPCOMP)/heap/include
 INC += -I$(ESPCOMP)/json/include
 INC += -I$(ESPCOMP)/json/port/include
 INC += -I$(ESPCOMP)/log/include
@@ -219,7 +221,6 @@ ESPIDF_ESP32_O = $(addprefix $(ESPCOMP)/esp32/,\
 	gdbstub.o \
 	crosscore_int.o \
 	deep_sleep.o \
-	heap_alloc_caps.o \
 	ipc.o \
 	int_wdt.o \
 	event_loop.o \
@@ -234,14 +235,20 @@ ESPIDF_ESP32_O = $(addprefix $(ESPCOMP)/esp32/,\
 	dport_access.o \
 	)
 
+ESPIDF_HEAP_O = $(addprefix $(ESPCOMP)/heap/,\
+	heap_caps.o \
+	heap_caps_init.o \
+	multi_heap.o \
+	)
+
 ESPIDF_SOC_O = $(addprefix $(ESPCOMP)/soc/,\
-	esp32/brownout.o \
 	esp32/cpu_util.o \
 	esp32/rtc_clk.o \
 	esp32/rtc_init.o \
 	esp32/rtc_pm.o \
 	esp32/rtc_sleep.o \
 	esp32/rtc_time.o \
+	esp32/soc_memory_layout.o \
 	)
 
 ESPIDF_CXX_O = $(addprefix $(ESPCOMP)/cxx/,\
@@ -277,8 +284,6 @@ ESPIDF_FREERTOS_O = $(addprefix $(ESPCOMP)/freertos/,\
 	croutine.o \
 	event_groups.o \
 	FreeRTOS-openocd.o \
-	heap_regions_debug.o \
-	heap_regions.o \
 	list.o \
 	portasm.o \
 	port.o \
@@ -539,6 +544,7 @@ OBJ_ESPIDF =
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_NEWLIB_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_DRIVER_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_ESP32_O))
+OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_HEAP_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_SOC_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_CXX_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_ETHERNET_O))
