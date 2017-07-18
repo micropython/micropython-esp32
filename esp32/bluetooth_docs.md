@@ -109,6 +109,8 @@ bluetooth.ble_settings(int_min = 1280, int_max = 1280,
 
 `bluetooth.services()` GATTS - returns the existing GATTS services.
 
+`bluetooth.conns()` GATTC - Returns all the current client connections.
+
 `bluetooth.callback(<callback>, <callback_data>)` used to set the callback function for bluetooth-object-level callbacks.  `<callback>` can be set to None.  If `<callback_data>` is not specified, it will be set to None.  Always returns a 2-tuple of the present `<callback>` and `<callback_data>`.  If called with no parameters, the values remain unchanged.  `<callback>` will be called with 4 parameters:
 
 1. The `bluetooth` object
