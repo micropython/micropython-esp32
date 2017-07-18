@@ -159,6 +159,45 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_2(badge_display_picture_obj,
    return mp_const_none;
  }
  STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_eink_busy_wait_obj, badge_eink_busy_wait_);
+ 
+ 
+/* PNG READER TEST */
+
+extern uint8_t ugfx_framebuffer[296*128];
+
+STATIC mp_obj_t badge_eink_png(mp_obj_t obj_x, mp_obj_t obj_y, mp_obj_t obj_filename) {
+    uint16_t x = mp_obj_get_int(obj_x);
+    uint16_t y = mp_obj_get_int(obj_y);
+    mp_uint_t len;
+    const char* filename = mp_obj_str_get_data(obj_filename, &len);
+    struct lib_file_reader *fr = lib_file_new(filename, 1024);
+    if (fr == NULL)
+    {
+        nlr_raise(mp_obj_new_exception_msg_varg(&mp_type_ValueError, "Could not open file '%s'!",filename));
+        return mp_const_none;
+    }
+    
+	struct lib_png_reader *pr = lib_png_new((lib_reader_read_t) &lib_file_read, fr);
+    if (pr == NULL)
+    {
+        nlr_raise(mp_obj_new_exception_msg_varg(&mp_type_ValueError, "out of memory."));
+		lib_file_destroy(fr);
+        return mp_const_none;
+    }
+    
+	int res = lib_png_load_image(pr, &ugfx_framebuffer[y * BADGE_EINK_WIDTH + x], 296-x, 128-y, 296);
+	lib_png_destroy(pr);
+	lib_file_destroy(fr);
+    
+    if (res < 0)
+    {
+        nlr_raise(mp_obj_new_exception_msg_varg(&mp_type_ValueError, "failed to load image: res = %i", res));
+    }
+  return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_3(badge_eink_png_obj, badge_eink_png);
+
+/* END OF PNG READER TEST */
 
 // Power
 
@@ -270,6 +309,8 @@ STATIC const mp_rom_map_elem_t badge_module_globals_table[] = {
 
     {MP_ROM_QSTR(MP_QSTR_eink_busy), MP_ROM_PTR(&badge_eink_busy_obj)},
     {MP_ROM_QSTR(MP_QSTR_eink_busy_wait), MP_ROM_PTR(&badge_eink_busy_wait_obj)},
+    
+    {MP_ROM_QSTR(MP_QSTR_eink_png), MP_ROM_PTR(&badge_eink_png_obj)},
 
 /*
     {MP_ROM_QSTR(MP_QSTR_display_picture),

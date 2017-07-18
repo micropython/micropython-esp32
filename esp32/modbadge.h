@@ -12,6 +12,9 @@
 #include "badge_vibrator.h"
 #include "badge_nvs.h"
 
+#include "file_reader.h"
+#include "png_reader.h"
+
 #include "font.h"
 #include "font_16px.h"
 #include "font_8px.h"

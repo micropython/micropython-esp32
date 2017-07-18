@@ -37,7 +37,7 @@
 #include "py/runtime.h"
 #include "py/mperrno.h"
 #include "extmod/vfs.h"
-#include "extmod/vfs_fat.h"
+#include "extmod/vfs_esp.h"
 #include "genhdr/mpversion.h"
 
 extern const mp_obj_type_t mp_fat_vfs_type;
@@ -116,6 +116,9 @@ STATIC const mp_rom_map_elem_t os_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_umount), MP_ROM_PTR(&mp_vfs_umount_obj) },
     #if MICROPY_VFS_FAT
     { MP_ROM_QSTR(MP_QSTR_VfsFat), MP_ROM_PTR(&mp_fat_vfs_type) },
+    #endif
+    #if MICROPY_VFS_ESP
+    { MP_ROM_QSTR(MP_QSTR_VfsEsp), MP_ROM_PTR(&mp_esp_vfs_type) },
     #endif
     #endif
 };

@@ -248,6 +248,8 @@ def draw_home(percent, cstate, status, full_clear, going_to_sleep):
             draw_helper_battery(percent, cstate)
     if (going_to_sleep):
         info = "[ ANY: Wake up ]"
+    elif (status=="BPP"):
+        info = "Busy..."
     else:
         info = "[ START: LAUNCHER ]"
     draw_helper_footer(clockstring(),info)
