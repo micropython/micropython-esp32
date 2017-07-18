@@ -279,7 +279,7 @@ def badge_sleep():
     global sleep_duration
     print("[SPLASH] Going to sleep now...")
     badge.eink_busy_wait() #Always wait for e-ink
-    deepsleep.start_sleeping(sleep_duration)
+    deepsleep.start_sleeping(sleep_duration*1000)
     
 def badge_sleep_forever():
     increment_reboot_counter()
@@ -364,11 +364,11 @@ def load_settings():
         global header_hide_battery_while_sleeping
         header_hide_battery_while_sleeping = True
     global sleep_duration
-    sleep_duration = int(badge.nvs_get_str('splash', 'sleep.duration', '60000'))
-    if (sleep_duration<30000):
+    sleep_duration = int(badge.nvs_get_str('splash', 'sleep.duration', '60'))
+    if (sleep_duration<30):
         print("[SPLASH] Sleep duration set to less than 30 seconds. Forcing 30 seconds.")
-        sleep_duration = 30000
-    if (sleep_duration>120000):
+        sleep_duration = 30
+    if (sleep_duration>120):
         print("[SPLASH] Sleep duration set to more than 120 seconds. Forcing 120 seconds.") 
     global battery_volt_min
     battery_volt_min = int(badge.nvs_get_str('splash', 'battery.volt.min', '3800')) # volt
@@ -421,7 +421,7 @@ timer_loop_amount = 10
 loopCnt = timer_loop_amount
 header_fg = ugfx.BLACK
 header_bg = ugfx.WHITE
-sleep_duration = 60000
+sleep_duration = 60
 header_hide_while_sleeping = False
 header_hide_battery_while_sleeping = False
 battery_volt_min = 3800
