@@ -1,7 +1,33 @@
-import ugfx, time, badge, machine, uos, appglue, deepsleep, network
+import ugfx, time, badge, machine, uos, appglue, deepsleep, network, esp
 
 # SHA2017 badge home screen
 # Renze Nicolai 2017
+
+# BPP
+def get_reboot_counter():
+    return esp.rtcmem_read(1023)
+
+def set_reboot_counter(value):
+    esp.rtcmem_write(1023, value)
+    
+def increment_reboot_counter():
+    val = get_reboot_counter()
+    if (val<255):
+        val = val + 1
+    set_reboot_counter(val)
+    
+def bpp_execute():
+    print("[SPLASH] Executing BPP...")
+    set_reboot_counter(0)
+    esp.rtcmem_write(0,2)
+    esp.rtcmem_write(0,~2)
+    deepsleep.reboot()
+    
+def bpp_check():
+    global bpp_after_count
+    if (get_reboot_counter()>bpp_after_count):
+        return True
+    return False
 
 # SERVICES
 def setup_services():
@@ -36,12 +62,12 @@ def setup_services():
             print("[SPLASH] App '"+app+"' has no service")
     return status
 
-def loop_services(loopCnt):
+def loop_services(lcnt):
     noSleep = False
     global services
     for srv in services:
         try:
-            if (srv.loop(loopCnt)):
+            if (srv.loop(lcnt)):
                 noSleep = True
         except BaseException as msg:
             print("[SPLASH] Service loop exception: ", msg)
@@ -240,21 +266,23 @@ def draw_batterylow(percent):
 # START LAUNCHER
     
 def start_launcher(pushed):
-    #print("START LAUNCHER: ", pushed)
     if(pushed):
         global splashTimer
         splashTimer.deinit()
+        increment_reboot_counter()
         appglue.start_app("launcher")
       
 # SLEEP
             
 def badge_sleep():
+    increment_reboot_counter()
     global sleep_duration
     print("[SPLASH] Going to sleep now...")
     badge.eink_busy_wait() #Always wait for e-ink
-    deepsleep.start_sleeping(sleep_duration)
+    deepsleep.start_sleeping(sleep_duration*1000)
     
 def badge_sleep_forever():
+    increment_reboot_counter()
     print("[SPLASH] Going to sleep WITHOUT TIME WAKEUP now...")
     badge.eink_busy_wait() #Always wait for e-ink
     deepsleep.start_sleeping(0) #Sleep until button interrupt occurs
@@ -263,13 +291,15 @@ def badge_sleep_forever():
 
 def splashTimer_callback(tmr):
     global loopCnt
-    if loopCnt>9:
-        loopCnt = 0
+    global timer_loop_amount
+    if loopCnt<1:
+        loopCnt = timer_loop_amount
         cstate = badge.battery_charge_status()
         percent = battery_percent()
         vbatt = badge.battery_volt_sense()
-        if (cstate) or (percent>95) or (vbatt<100):
-            draw_home(percent, cstate, "", False, False)
+        if (cstate) or (percent>98) or (vbatt<100): #If charging, charged or without battery
+            global header_status_string
+            draw_home(percent, cstate, header_status_string, False, False) #Update display
         else:
             global battery_percent_empty
             if (percent<=battery_percent_empty):
@@ -277,16 +307,21 @@ def splashTimer_callback(tmr):
                 ugfx.flush()
                 badge_sleep_forever()
             else:
-                draw_home(percent, cstate, "Zzz...", False, True) #No full clear before sleep
-                badge_sleep()
+                if (bpp_check()):
+                    draw_home(percent, cstate, "BPP", False, True)
+                    bpp_execute()
+                else:
+                    draw_home(percent, cstate, "Zzz...", False, True)
+                    badge_sleep()
     else:
         if (loop_services(loopCnt)):
-            loopCnt = 0
-    loopCnt = loopCnt + 1
+            loopCnt = timer_loop_amount
+    loopCnt = loopCnt - 1
   
 def start_sleep_counter():
     global splashTimer
-    splashTimer.init(period=500, mode=machine.Timer.PERIODIC, callback=splashTimer_callback)
+    global splash_timer_interval
+    splashTimer.init(period=splash_timer_interval, mode=machine.Timer.PERIODIC, callback=splashTimer_callback)
   
 def stop_sleep_counter():
     global splashTimer
@@ -329,13 +364,12 @@ def load_settings():
         global header_hide_battery_while_sleeping
         header_hide_battery_while_sleeping = True
     global sleep_duration
-    sleep_duration = int(badge.nvs_get_str('splash', 'sleep.duration', '60000'))
-    if (sleep_duration<30000):
+    sleep_duration = int(badge.nvs_get_str('splash', 'sleep.duration', '60'))
+    if (sleep_duration<30):
         print("[SPLASH] Sleep duration set to less than 30 seconds. Forcing 30 seconds.")
-        sleep_duration = 30000
-    if (sleep_duration>120000):
-        print("[SPLASH] Sleep duration set to more than 120 seconds. Forcing 120 seconds.")
-        
+        sleep_duration = 30
+    if (sleep_duration>120):
+        print("[SPLASH] Sleep duration set to more than 120 seconds. Forcing 120 seconds.") 
     global battery_volt_min
     battery_volt_min = int(badge.nvs_get_str('splash', 'battery.volt.min', '3800')) # volt
     global battery_volt_max
@@ -344,7 +378,13 @@ def load_settings():
     battery_percent_empty = int(badge.nvs_get_str('splash', 'battery.percent.empty', '1')) # %
     global ntp_timeout
     ntp_timeout = int(badge.nvs_get_str('splash', 'ntp.timeout', '40')) #amount of tries
-
+    global bpp_after_count
+    bpp_after_count = int(badge.nvs_get_str('splash', 'bpp.count', '5'))
+    global splash_timer_interval
+    splash_timer_interval = int(badge.nvs_get_str('splash', 'timer.interval', '500'))
+    global timer_loop_amount
+    timer_loop_amount = int(badge.nvs_get_str('splash', 'timer.amount', '10'))
+    
 # MAIN
   
 def splash_main():   
@@ -353,6 +393,10 @@ def splash_main():
     vbatt = badge.battery_volt_sense()
     print("[SPLASH] Vbatt = "+str(vbatt))
     load_settings()
+    
+    global header_status_string
+    header_status_string = str(get_reboot_counter())
+    
     ugfx.init()
     global battery_percent_empty
     if (cstate) or (percent>battery_percent_empty) or (vbatt<100):
@@ -362,7 +406,10 @@ def splash_main():
         global splashTimer
         setup_services()
         start_sleep_counter()
-        draw_home(percent, cstate, "", True, False)
+        full_clear = False
+        if (get_reboot_counter()==0):
+            full_clear = True
+        draw_home(percent, cstate, "", full_clear, False)
     else:
         draw_batterylow(percent)       
         badge_sleep_forever()
@@ -370,16 +417,20 @@ def splash_main():
 #Global variables
 splashTimer = machine.Timer(0)
 services = []
-loopCnt = 0
+timer_loop_amount = 10
+loopCnt = timer_loop_amount
 header_fg = ugfx.BLACK
 header_bg = ugfx.WHITE
-sleep_duration = 60000
+sleep_duration = 60
 header_hide_while_sleeping = False
 header_hide_battery_while_sleeping = False
 battery_volt_min = 3800
 battery_volt_max = 4300
 battery_percent_empty = 1
 ntp_timeout = 40
+bpp_after_count = 5
+header_status_string = ""
+splash_timer_interval = 500
 
 splash_main()
  
