@@ -6,6 +6,8 @@
 #endif
 
 #include <string.h>
+#include <errno.h>
+
 #include "py/nlr.h"
 #include "py/runtime.h"
 #include "py/mperrno.h"
@@ -27,6 +29,27 @@
 static const char *TAG = "vfs_native.c";
 static wl_handle_t s_wl_handle = WL_INVALID_HANDLE;
 
+/* esp-idf doesn't seem to have a cwd; create one. */
+char cwd[256] = { 0 };
+int
+chdir(const char *path)
+{
+	strncpy(cwd, path, sizeof(cwd));
+	cwd[255] = 0;
+	return 0;
+}
+char *
+getcwd(char *buf, size_t size)
+{
+	if (size <= strlen(cwd))
+	{
+		errno = ENAMETOOLONG;
+		return NULL;
+	}
+	strcpy(buf, cwd);
+	return buf;
+}
+
 STATIC mp_obj_t native_vfs_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args) {
     mp_arg_check_num(n_args, n_kw, 1, 1, false);
 
@@ -34,21 +57,7 @@ STATIC mp_obj_t native_vfs_make_new(const mp_obj_type_t *type, size_t n_args, si
     fs_user_mount_t *vfs = m_new_obj(fs_user_mount_t);
     vfs->base.type = type;
     vfs->flags = FSUSER_FREE_OBJ;
-    //vfs->fatfs.drv = vfs;
 
-    // load block protocol methods
-    /*mp_load_method(args[0], MP_QSTR_readblocks, vfs->readblocks);
-    mp_load_method_maybe(args[0], MP_QSTR_writeblocks, vfs->writeblocks);
-    mp_load_method_maybe(args[0], MP_QSTR_ioctl, vfs->u.ioctl);
-    if (vfs->u.ioctl[0] != MP_OBJ_NULL) {
-        // device supports new block protocol, so indicate it
-        vfs->flags |= FSUSER_HAVE_IOCTL;
-    } else {
-        // no ioctl method, so assume the device uses the old block protocol
-        mp_load_method_maybe(args[0], MP_QSTR_sync, vfs->u.old.sync);
-        mp_load_method(args[0], MP_QSTR_count, vfs->u.old.count);
-    }*/
-    
     ets_printf("DUMMY: VFS_MAKE_NEW\n");
 
     return MP_OBJ_FROM_PTR(vfs);
@@ -75,7 +84,7 @@ STATIC MP_DEFINE_CONST_STATICMETHOD_OBJ(native_vfs_mkfs_obj, MP_ROM_PTR(&native_
 STATIC MP_DEFINE_CONST_FUN_OBJ_3(native_vfs_open_obj, fatfs_builtin_open_self);
 
 STATIC mp_obj_t native_vfs_ilistdir_func(size_t n_args, const mp_obj_t *args) {
-    /*mp_obj_native_vfs_t *self = MP_OBJ_TO_PTR(args[0]);
+    mp_obj_native_vfs_t *self = MP_OBJ_TO_PTR(args[0]);
     bool is_str_type = true;
     const char *path;
     if (n_args == 2) {
@@ -87,98 +96,89 @@ STATIC mp_obj_t native_vfs_ilistdir_func(size_t n_args, const mp_obj_t *args) {
         path = "";
     }
 
-    return native_vfs_ilistdir2(self, path, is_str_type); */
-    ets_printf("DUMMY: VFS_LISTDIR_FUNC\n");
-    return mp_const_none;
+    ets_printf("vfs_native: VFS_LISTDIR_FUNC\n");
+    return native_vfs_ilistdir2(self, path, is_str_type);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(native_vfs_ilistdir_obj, 1, 2, native_vfs_ilistdir_func);
 
-STATIC mp_obj_t native_vfs_remove_internal(mp_obj_t vfs_in, mp_obj_t path_in, mp_int_t attr) {
-    /*mp_obj_native_vfs_t *self = MP_OBJ_TO_PTR(vfs_in);
+STATIC mp_obj_t native_vfs_remove(mp_obj_t vfs_in, mp_obj_t path_in) {
+    mp_obj_native_vfs_t *self = MP_OBJ_TO_PTR(vfs_in);
     const char *path = mp_obj_str_get_str(path_in);
 
-    FILINFO fno;
-    FRESULT res = f_stat(&self->fatfs, path, &fno);
+	int res = unlink(path);
+	if (res < 0) {
+		mp_raise_OSError(errno);
+		return mp_const_none;
+	}
 
-    if (res != FR_OK) {
-        mp_raise_OSError(fresult_to_errno_table[res]);
-    }
-
-    // check if path is a file or directory
-    if ((fno.fattrib & AM_DIR) == attr) {
-        res = f_unlink(&self->fatfs, path);
-
-        if (res != FR_OK) {
-            mp_raise_OSError(fresult_to_errno_table[res]);
-        }
-        return mp_const_none;
-    } else {
-        mp_raise_OSError(attr ? MP_ENOTDIR : MP_EISDIR);
-    }*/
-    ets_printf("DUMMY: VFS_REMOVE_INTERNAL\n");
-    return mp_const_none;
-}
-
-STATIC mp_obj_t native_vfs_remove(mp_obj_t vfs_in, mp_obj_t path_in) {
-    return native_vfs_remove_internal(vfs_in, path_in, 0); // 0 == file attribute
+	ets_printf("vfs_native: VFS_REMOVE_INTERNAL\n");
+	return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(native_vfs_remove_obj, native_vfs_remove);
 
 STATIC mp_obj_t native_vfs_rmdir(mp_obj_t vfs_in, mp_obj_t path_in) {
-    return mp_const_none;//native_vfs_remove_internal(vfs_in, path_in, AM_DIR);
+    const char *path = mp_obj_str_get_str(path_in);
+	int res = rmdir(path);
+	if (res < 0) {
+		mp_raise_OSError(errno);
+		return mp_const_none;
+	}
+
+    ets_printf("vfs_native: VFS_MKDIR\n");
+    return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(native_vfs_rmdir_obj, native_vfs_rmdir);
 
 STATIC mp_obj_t native_vfs_rename(mp_obj_t vfs_in, mp_obj_t path_in, mp_obj_t path_out) {
-    /*mp_obj_native_vfs_t *self = MP_OBJ_TO_PTR(vfs_in);
+    mp_obj_native_vfs_t *self = MP_OBJ_TO_PTR(vfs_in);
     const char *old_path = mp_obj_str_get_str(path_in);
     const char *new_path = mp_obj_str_get_str(path_out);
-    FRESULT res = f_rename(&self->fatfs, old_path, new_path);
-    if (res == FR_EXIST) {
-        // if new_path exists then try removing it (but only if it's a file)
-        native_vfs_remove_internal(vfs_in, path_out, 0); // 0 == file attribute
-        // try to rename again
-        res = f_rename(&self->fatfs, old_path, new_path);
-    }
-    if (res == FR_OK) {
-        return mp_const_none;
-    } else {
-        mp_raise_OSError(fresult_to_errno_table[res]);
-    }*/
-    
-    ets_printf("DUMMY: VFS_RENAME\n");
-    //return mp_const_none;
-    mp_raise_OSError(MP_EIO);
+
+    int res = rename(old_path, new_path);
+	/*
+	// FIXME: have to check if we can replace files with this
+	if (res < 0 && errno == EEXISTS) {
+		res = unlink(new_path);
+		if (res < 0) {
+			mp_raise_OSError(errno);
+			return mp_const_none;
+		}
+		res = rename(old_path, new_path);
+	}
+	*/
+	if (res < 0) {
+		mp_raise_OSError(errno);
+		return mp_const_none;
+	}
+
+    ets_printf("vfs_native: VFS_RENAME\n");
+	return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_3(native_vfs_rename_obj, native_vfs_rename);
 
 STATIC mp_obj_t native_vfs_mkdir(mp_obj_t vfs_in, mp_obj_t path_o) {
-    /*mp_obj_native_vfs_t *self = MP_OBJ_TO_PTR(vfs_in);
     const char *path = mp_obj_str_get_str(path_o);
-    FRESULT res = f_mkdir(&self->fatfs, path);
-    if (res == FR_OK) {
-        return mp_const_none;
-    } else {
-        mp_raise_OSError(fresult_to_errno_table[res]);
-    }*/
-    ets_printf("DUMMY: VFS_MKDIR\n");
+	int res = mkdir(path, 0755);
+	if (res < 0) {
+		mp_raise_OSError(errno);
+		return mp_const_none;
+	}
+
+    ets_printf("vfs_native: VFS_MKDIR\n");
     return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(native_vfs_mkdir_obj, native_vfs_mkdir);
 
 /// Change current directory.
 STATIC mp_obj_t native_vfs_chdir(mp_obj_t vfs_in, mp_obj_t path_in) {
-    /*mp_obj_native_vfs_t *self = MP_OBJ_TO_PTR(vfs_in);
-    const char *path;
-    path = mp_obj_str_get_str(path_in);
+    const char *path = mp_obj_str_get_str(path_in);
+	int res = chdir(path);
+	if (res < 0) {
+		mp_raise_OSError(errno);
+		return mp_const_none;
+	}
 
-    FRESULT res = f_chdir(&self->fatfs, path);
-
-    if (res != FR_OK) {
-        mp_raise_OSError(fresult_to_errno_table[res]);
-    }*/
-    
-    ets_printf("DUMMY: VFS_CHDIR\n");
+    ets_printf("vfs_native: VFS_CHDIR\n");
 
     return mp_const_none;
 }
@@ -186,67 +186,53 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_2(native_vfs_chdir_obj, native_vfs_chdir);
 
 /// Get the current directory.
 STATIC mp_obj_t native_vfs_getcwd(mp_obj_t vfs_in) {
-    /*mp_obj_native_vfs_t *self = MP_OBJ_TO_PTR(vfs_in);
     char buf[MICROPY_ALLOC_PATH_MAX + 1];
-    FRESULT res = f_getcwd(&self->fatfs, buf, sizeof(buf));
-    if (res != FR_OK) {
-        mp_raise_OSError(fresult_to_errno_table[res]);
-    }
-    return mp_obj_new_str(buf, strlen(buf), false);*/
-    ets_printf("DUMMY: VFS_GETCWD\n");
-    return mp_const_none;
+    char *ch = getcwd(buf, sizeof(buf));
+	if (ch == NULL) {
+		mp_raise_OSError(errno);
+		return mp_const_none;
+	}
+
+    ets_printf("vfs_native: VFS_GETCWD\n");
+    return mp_obj_new_str(buf, strlen(buf), false);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(native_vfs_getcwd_obj, native_vfs_getcwd);
 
 /// \function stat(path)
 /// Get the status of a file or directory.
 STATIC mp_obj_t native_vfs_stat(mp_obj_t vfs_in, mp_obj_t path_in) {
-    /*mp_obj_native_vfs_t *self = MP_OBJ_TO_PTR(vfs_in);
+    mp_obj_native_vfs_t *self = MP_OBJ_TO_PTR(vfs_in);
     const char *path = mp_obj_str_get_str(path_in);
 
+	struct stat buf;
     FILINFO fno;
     if (path[0] == 0 || (path[0] == '/' && path[1] == 0)) {
         // stat root directory
-        fno.fsize = 0;
-        fno.fdate = 0x2821; // Jan 1, 2000
-        fno.ftime = 0;
-        fno.fattrib = AM_DIR;
+        buf.st_size = 0;
+		buf.st_atime = 946684800; // Jan 1, 2000
+		buf.st_mode = MP_S_IFDIR;
     } else {
-        FRESULT res = f_stat(&self->fatfs, path, &fno);
-        if (res != FR_OK) {
-            mp_raise_OSError(fresult_to_errno_table[res]);
-        }
+		int res = stat(path, &buf);
+		if (res < 0) {
+			mp_raise_OSError(errno);
+			return mp_const_none;
+		}
     }
 
     mp_obj_tuple_t *t = MP_OBJ_TO_PTR(mp_obj_new_tuple(10, NULL));
-    mp_int_t mode = 0;
-    if (fno.fattrib & AM_DIR) {
-        mode |= MP_S_IFDIR;
-    } else {
-        mode |= MP_S_IFREG;
-    }
-    mp_int_t seconds = timeutils_seconds_since_2000(
-        1980 + ((fno.fdate >> 9) & 0x7f),
-        (fno.fdate >> 5) & 0x0f,
-        fno.fdate & 0x1f,
-        (fno.ftime >> 11) & 0x1f,
-        (fno.ftime >> 5) & 0x3f,
-        2 * (fno.ftime & 0x1f)
-    );
-    t->items[0] = MP_OBJ_NEW_SMALL_INT(mode); // st_mode
+    t->items[0] = MP_OBJ_NEW_SMALL_INT(buf.st_mode);
     t->items[1] = MP_OBJ_NEW_SMALL_INT(0); // st_ino
     t->items[2] = MP_OBJ_NEW_SMALL_INT(0); // st_dev
     t->items[3] = MP_OBJ_NEW_SMALL_INT(0); // st_nlink
     t->items[4] = MP_OBJ_NEW_SMALL_INT(0); // st_uid
     t->items[5] = MP_OBJ_NEW_SMALL_INT(0); // st_gid
-    t->items[6] = MP_OBJ_NEW_SMALL_INT(fno.fsize); // st_size
-    t->items[7] = MP_OBJ_NEW_SMALL_INT(seconds); // st_atime
-    t->items[8] = MP_OBJ_NEW_SMALL_INT(seconds); // st_mtime
-    t->items[9] = MP_OBJ_NEW_SMALL_INT(seconds); // st_ctime
+    t->items[6] = MP_OBJ_NEW_SMALL_INT(buf.st_size); // st_size
+    t->items[7] = MP_OBJ_NEW_SMALL_INT(buf.st_atime); // st_atime
+    t->items[8] = MP_OBJ_NEW_SMALL_INT(buf.st_atime); // st_mtime
+    t->items[9] = MP_OBJ_NEW_SMALL_INT(buf.st_atime); // st_ctime
 
-    return MP_OBJ_FROM_PTR(t);*/
-    ets_printf("DUMMY: VFS_STAT\n");
-    return mp_const_none;
+    ets_printf("vfs_native: VFS_STAT\n");
+    return MP_OBJ_FROM_PTR(t);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(native_vfs_stat_obj, native_vfs_stat);
 
