@@ -24,33 +24,9 @@ static const char *TAG = "vfs_native_file.c";
 extern const mp_obj_type_t mp_type_fileio;
 extern const mp_obj_type_t mp_type_textio;
 
-// this table converts from FRESULT to POSIX errno
-const byte fresult_to_errno_table[20] = {
-    [FR_OK] = 0,
-    [FR_DISK_ERR] = MP_EIO,
-    [FR_INT_ERR] = MP_EIO,
-    [FR_NOT_READY] = MP_EBUSY,
-    [FR_NO_FILE] = MP_ENOENT,
-    [FR_NO_PATH] = MP_ENOENT,
-    [FR_INVALID_NAME] = MP_EINVAL,
-    [FR_DENIED] = MP_EACCES,
-    [FR_EXIST] = MP_EEXIST,
-    [FR_INVALID_OBJECT] = MP_EINVAL,
-    [FR_WRITE_PROTECTED] = MP_EROFS,
-    [FR_INVALID_DRIVE] = MP_ENODEV,
-    [FR_NOT_ENABLED] = MP_ENODEV,
-    [FR_NO_FILESYSTEM] = MP_ENODEV,
-    [FR_MKFS_ABORTED] = MP_EIO,
-    [FR_TIMEOUT] = MP_EIO,
-    [FR_LOCKED] = MP_EIO,
-    [FR_NOT_ENOUGH_CORE] = MP_ENOMEM,
-    [FR_TOO_MANY_OPEN_FILES] = MP_EMFILE,
-    [FR_INVALID_PARAMETER] = MP_EINVAL,
-};
-
 typedef struct _pyb_file_obj_t {
     mp_obj_base_t base;
-    FIL *fp;
+    FILE *fp;
 } pyb_file_obj_t;
 
 STATIC void file_obj_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
@@ -60,10 +36,9 @@ STATIC void file_obj_print(const mp_print_t *print, mp_obj_t self_in, mp_print_k
 
 STATIC mp_uint_t file_obj_read(mp_obj_t self_in, void *buf, mp_uint_t size, int *errcode) {
     pyb_file_obj_t *self = MP_OBJ_TO_PTR(self_in);
-    UINT sz_out;
-    FRESULT res = f_read(&self->fp, buf, size, &sz_out);
-    if (res != FR_OK) {
-        *errcode = fresult_to_errno_table[res];
+    int sz_out = fread(buf, 1, size, self->fp);
+    if (sz_out < 0) {
+        *errcode = errno;
         return MP_STREAM_ERROR;
     }
     return sz_out;
@@ -71,10 +46,9 @@ STATIC mp_uint_t file_obj_read(mp_obj_t self_in, void *buf, mp_uint_t size, int 
 
 STATIC mp_uint_t file_obj_write(mp_obj_t self_in, const void *buf, mp_uint_t size, int *errcode) {
     pyb_file_obj_t *self = MP_OBJ_TO_PTR(self_in);
-    UINT sz_out;
-    FRESULT res = f_write(&self->fp, buf, size, &sz_out);
-    if (res != FR_OK) {
-        *errcode = fresult_to_errno_table[res];
+    int sz_out = fwrite(buf, 1, size, self->fp);
+    if (sz_out < 0) {
+        *errcode = errno;
         return MP_STREAM_ERROR;
     }
     if (sz_out != size) {
@@ -89,10 +63,11 @@ STATIC mp_uint_t file_obj_write(mp_obj_t self_in, const void *buf, mp_uint_t siz
 STATIC mp_obj_t file_obj_close(mp_obj_t self_in) {
     pyb_file_obj_t *self = MP_OBJ_TO_PTR(self_in);
     // if fs==NULL then the file is closed and in that case this method is a no-op
-    if (self->fp.obj.fs != NULL) {
-        FRESULT res = f_close(&self->fp);
-        if (res != FR_OK) {
-            mp_raise_OSError(fresult_to_errno_table[res]);
+    if (self->fp != NULL) {
+		int res = fclose(self->fp);
+		self->fp = NULL;
+        if (res < 0) {
+            mp_raise_OSError(errno);
         }
     }
     return mp_const_none;
@@ -135,7 +110,7 @@ STATIC mp_uint_t file_obj_ioctl(mp_obj_t o_in, mp_uint_t request, uintptr_t arg,
     } else if (request == MP_STREAM_FLUSH) {
         FRESULT res = f_sync(&self->fp);
         if (res != FR_OK) {
-            *errcode = fresult_to_errno_table[res];
+            *errcode = errno;
             return MP_STREAM_ERROR;
         }
         return 0;
@@ -161,52 +136,23 @@ STATIC const mp_arg_t file_open_args[] = {
 
 STATIC mp_obj_t file_open(fs_user_mount_t *vfs, const mp_obj_type_t *type, mp_arg_val_t *args) {
     printf("TEST: FILE_OBJ_OPEN\n");
-    int mode = 0;
-    const char *mode_s = mp_obj_str_get_str(args[1].u_obj);
-    // TODO make sure only one of r, w, x, a, and b, t are specified
-    while (*mode_s) {
-        switch (*mode_s++) {
-            case 'r':
-                mode |= FA_READ;
-                break;
-            case 'w':
-                mode |= FA_WRITE | FA_CREATE_ALWAYS;
-                break;
-            case 'x':
-                mode |= FA_WRITE | FA_CREATE_NEW;
-                break;
-            case 'a':
-                mode |= FA_WRITE | FA_OPEN_ALWAYS;
-                break;
-            case '+':
-                mode |= FA_READ | FA_WRITE;
-                break;
-            #if MICROPY_PY_IO_FILEIO
-            case 'b':
-                type = &mp_type_fileio;
-                break;
-            #endif
-            case 't':
-                type = &mp_type_textio;
-                break;
-        }
-    }
 
     pyb_file_obj_t *o = m_new_obj_with_finaliser(pyb_file_obj_t);
     o->base.type = type;
 
     const char *fname = mp_obj_str_get_str(args[0].u_obj);
-    assert(vfs != NULL);
-    FRESULT res = f_open(&vfs->fatfs, &o->fp, fname, mode);
-    if (res != FR_OK) {
-        m_del_obj(pyb_file_obj_t, o);
-        mp_raise_OSError(fresult_to_errno_table[res]);
-    }
+    const char *mode_s = mp_obj_str_get_str(args[1].u_obj);
 
-    // for 'a' mode, we must begin at the end of the file
-    if ((mode & FA_OPEN_ALWAYS) != 0) {
-        f_lseek(&o->fp, f_size(&o->fp));
+	ets_printf("trying open(\"%s\", \"%s\")\n", fname, mode_s);
+
+    assert(vfs != NULL);
+	FILE *f = fopen(fname, mode_s);
+	if (f == NULL) {
+		ets_printf("error = %d\n", errno);
+        m_del_obj(pyb_file_obj_t, o);
+        mp_raise_OSError(errno);
     }
+	o->fp = f;
 
     return MP_OBJ_FROM_PTR(o);
 }

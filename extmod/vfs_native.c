@@ -26,7 +26,6 @@
 
 static const char *TAG = "vfs_native.c";
 static wl_handle_t s_wl_handle = WL_INVALID_HANDLE;
-const char *base_path = "/spiflash";
 
 STATIC mp_obj_t native_vfs_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args) {
     mp_arg_check_num(n_args, n_kw, 1, 1, false);
@@ -300,12 +299,13 @@ STATIC mp_obj_t vfs_fat_mount(mp_obj_t self_in, mp_obj_t readonly, mp_obj_t mkfs
             .format_if_mount_failed = true
     };
     
-    esp_err_t err = esp_vfs_fat_spiflash_mount(base_path, "locfd", &mount_config, &s_wl_handle);
+    esp_err_t err = esp_vfs_fat_spiflash_mount("", "locfd", &mount_config, &s_wl_handle);
     
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Failed to mount FATFS (0x%x)", err);
         mp_raise_OSError(MP_EIO);
     }
+        ESP_LOGE(TAG, "mount succes!");
     
     //FRESULT res = f_mount(&self->fatfs);
 
@@ -353,7 +353,7 @@ STATIC MP_DEFINE_CONST_DICT(native_vfs_locals_dict, native_vfs_locals_dict_table
 
 const mp_obj_type_t mp_native_vfs_type = {
     { &mp_type_type },
-    .name = MP_QSTR_VfsEsp,
+    .name = MP_QSTR_VfsNative,
     .make_new = native_vfs_make_new,
     .locals_dict = (mp_obj_dict_t*)&native_vfs_locals_dict,
 };
