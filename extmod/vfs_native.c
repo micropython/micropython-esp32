@@ -28,6 +28,7 @@
 
 static const char *TAG = "vfs_native.c";
 static wl_handle_t s_wl_handle = WL_INVALID_HANDLE;
+static bool native_vfs_mounted = false;
 
 /* esp-idf doesn't seem to have a cwd; create one. */
 char cwd[256] = { 0 };
@@ -64,19 +65,9 @@ STATIC mp_obj_t native_vfs_make_new(const mp_obj_type_t *type, size_t n_args, si
 }
 
 STATIC mp_obj_t native_vfs_mkfs(mp_obj_t bdev_in) {
-    // create new object
-    fs_user_mount_t *vfs = MP_OBJ_TO_PTR(native_vfs_make_new(&mp_native_vfs_type, 1, 0, &bdev_in));
+	ets_printf("DUMMY: VFS_MKFS\n");
 
-    // make the filesystem
-    /*uint8_t working_buf[_MAX_SS];
-    FRESULT res = f_mkfs(&vfs->fatfs, FM_FAT | FM_SFD, 0, working_buf, sizeof(working_buf));
-    if (res != FR_OK) {
-        mp_raise_OSError(fresult_to_errno_table[res]);
-    }*/
-    
-    ets_printf("DUMMY: VFS_MKFS\n");
-
-    return mp_const_none;
+	return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(native_vfs_mkfs_fun_obj, native_vfs_mkfs);
 STATIC MP_DEFINE_CONST_STATICMETHOD_OBJ(native_vfs_mkfs_obj, MP_ROM_PTR(&native_vfs_mkfs_fun_obj));
@@ -278,31 +269,26 @@ STATIC mp_obj_t vfs_fat_mount(mp_obj_t self_in, mp_obj_t readonly, mp_obj_t mkfs
         self->writeblocks[0] = MP_OBJ_NULL;
     }*/
 
+	// already mounted?
+	if (native_vfs_mounted)
+	{
+		return mp_const_none;
+	}
+
     // mount the block device
-    
     const esp_vfs_fat_mount_config_t mount_config = {
             .max_files = 4,
             .format_if_mount_failed = true
     };
-    
+
     esp_err_t err = esp_vfs_fat_spiflash_mount("", "locfd", &mount_config, &s_wl_handle);
-    
+
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Failed to mount FATFS (0x%x)", err);
         mp_raise_OSError(MP_EIO);
     }
-        ESP_LOGE(TAG, "mount succes!");
-    
-    //FRESULT res = f_mount(&self->fatfs);
 
-    // check if we need to make the filesystem
-    /*if (res == FR_NO_FILESYSTEM && mp_obj_is_true(mkfs)) {
-        uint8_t working_buf[_MAX_SS];
-        res = f_mkfs(&self->fatfs, FM_FAT | FM_SFD, 0, working_buf, sizeof(working_buf));
-    }*/
-    /*if (res != FR_OK) {
-        mp_raise_OSError(fresult_to_errno_table[res]);
-    }*/
+	native_vfs_mounted = true;
 
     return mp_const_none;
 }
