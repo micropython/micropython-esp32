@@ -31,7 +31,7 @@ ESPTOOL ?= $(ESPCOMP)/esptool_py/esptool/esptool.py
 BADGE = $(IDF_PATH)/..
 
 # verify the ESP IDF version
-ESPIDF_SUPHASH := 4c62fb9c3f52bd3e753aed06208d14aef4d48a0b
+ESPIDF_SUPHASH := 8d71d38298444d859f6bbb2aa92bc1c09f19e664
 ESPIDF_CURHASH := $(shell git -C $(ESPIDF) show -s --pretty=format:'%H')
 ifneq ($(ESPIDF_CURHASH),$(ESPIDF_SUPHASH))
 $(info ** WARNING **)
@@ -51,7 +51,7 @@ INC += -I../lib/mp-readline
 INC += -I../lib/netutils
 INC += -I../lib/timeutils
 INC += -I../../components/badge
-INC += -I../../components/ugfx
+INC += -I../../components/ugfx-glue
 INC += -I../../components/graph
 INC += -I../../components/sha2017
 INC += -I../../components/bpp-recv
@@ -349,6 +349,7 @@ ESPIDF_FREERTOS_O = $(addprefix $(ESPCOMP)/freertos/,\
 	xtensa_intr.o \
 	xtensa_overlay_os_hook.o \
 	xtensa_vectors.o \
+	xtensa_vector_defaults.o \
 	)
 
 ESPIDF_VFS_O = $(addprefix $(ESPCOMP)/vfs/,\
@@ -658,9 +659,9 @@ BADGE_COMPONENTS_O = $(addprefix $(BADGE)/components/,\
 	graph/font.o \
 	graph/font_16px.o \
 	graph/font_8px.o \
-	ugfx/gdisp_lld_framebuffer.o \
-	ugfx/ginput_lld_toggle.o \
-	ugfx/gfx_mk.o \
+	ugfx-glue/gdisp_lld_framebuffer.o \
+	ugfx-glue/ginput_lld_toggle.o \
+	ugfx-glue/gfx_mk.o \
 	sha2017/wildcard_sha2017_org.o \
 	sha2017/sha2017_ota_graphics.o \
 	sha2017/sha2017_ota.o \
@@ -748,7 +749,7 @@ $(BUILD)/%.o: %.cpp
 ################################################################################
 # Declarations to build the bootloader
 
-$(BUILD)/bootloader/$(ESPCOMP)/%.o: CFLAGS += -DBOOTLOADER_BUILD=1 -I$(ESPCOMP)/bootloader_support/include_priv -I$(ESPCOMP)/bootloader_support/include -I$(ESPCOMP)/micro-ecc/micro-ecc -I$(ESPCOMP)/esp32 -Wno-error=format
+$(BUILD)/bootloader/$(ESPCOMP)/%.o: CFLAGS += -DBOOTLOADER_BUILD=1 -I$(ESPCOMP)/bootloader_support/include_priv -I$(ESPCOMP)/bootloader/include -I$(ESPCOMP)/bootloader_support/include -I$(ESPCOMP)/micro-ecc/micro-ecc -I$(ESPCOMP)/esp32 -Wno-error=format
 BOOTLOADER_OBJ = $(addprefix $(BUILD)/bootloader/$(ESPCOMP)/,\
 	bootloader_support/src/bootloader_flash.o \
 	bootloader_support/src/bootloader_random.o \
@@ -762,7 +763,7 @@ BOOTLOADER_OBJ = $(addprefix $(BUILD)/bootloader/$(ESPCOMP)/,\
 	soc/esp32/rtc_clk.o \
 	soc/esp32/rtc_time.o \
 	micro-ecc/micro-ecc/uECC.o \
-	bootloader/src/main/bootloader_start.o \
+	bootloader/subproject/main/bootloader_start.o \
 	)
 
 BOOTLOADER_LIBS =
@@ -781,8 +782,8 @@ BOOTLOADER_LDFLAGS += -Wl,--gc-sections
 BOOTLOADER_LDFLAGS += -static
 BOOTLOADER_LDFLAGS += -Wl,-EL
 BOOTLOADER_LDFLAGS += -Wl,-Map=$(@:.elf=.map) -Wl,--cref
-BOOTLOADER_LDFLAGS += -T $(ESPCOMP)/bootloader/src/main/esp32.bootloader.ld
-BOOTLOADER_LDFLAGS += -T $(ESPCOMP)/bootloader/src/main/esp32.bootloader.rom.ld
+BOOTLOADER_LDFLAGS += -T $(ESPCOMP)/bootloader/subproject/main/esp32.bootloader.ld
+BOOTLOADER_LDFLAGS += -T $(ESPCOMP)/bootloader/subproject/main/esp32.bootloader.rom.ld
 BOOTLOADER_LDFLAGS += -T $(ESPCOMP)/esp32/ld/esp32.rom.ld
 BOOTLOADER_LDFLAGS += -T $(ESPCOMP)/esp32/ld/esp32.rom.spiflash.ld
 
