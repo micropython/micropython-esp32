@@ -1,5 +1,5 @@
 #include "py/mpconfig.h"
-#if MICROPY_VFS && MICROPY_VFS_ESP
+#if MICROPY_VFS && MICROPY_VFS_NATIVE
 
 #include <stdint.h>
 #include <stdio.h>
@@ -7,7 +7,7 @@
 #include "py/mphal.h"
 
 #include "py/runtime.h"
-#include "extmod/vfs_esp.h"
+#include "extmod/vfs_native.h"
 
 #if _MAX_SS == _MIN_SS
 #define SECSIZE(fs) (_MIN_SS)

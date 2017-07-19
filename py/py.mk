@@ -233,10 +233,10 @@ PY_O_BASENAME = \
 	../extmod/modframebuf.o \
 	../extmod/vfs.o \
 	../extmod/vfs_reader.o \
-	../extmod/vfs_esp.o \
-	../extmod/vfs_esp_diskio.o \
-	../extmod/vfs_esp_file.o \
-	../extmod/vfs_esp_misc.o \
+	../extmod/vfs_native.o \
+	../extmod/vfs_native_diskio.o \
+	../extmod/vfs_native_file.o \
+	../extmod/vfs_native_misc.o \
 	../extmod/utime_mphal.o \
 	../extmod/uos_dupterm.o \
 	../lib/embed/abort_.o \

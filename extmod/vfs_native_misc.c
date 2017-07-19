@@ -1,10 +1,10 @@
 #include "py/mpconfig.h"
-#if MICROPY_VFS_ESP
+#if MICROPY_VFS_NATIVE
 
 #include <string.h>
 #include "py/nlr.h"
 #include "py/runtime.h"
-#include "extmod/vfs_esp.h"
+#include "extmod/vfs_native.h"
 #include "py/lexer.h"
 
 #if 0

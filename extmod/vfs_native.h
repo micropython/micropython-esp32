@@ -24,10 +24,10 @@ typedef struct _fs_user_mount_t {
 } fs_user_mount_t;
 
 extern const byte fresult_to_errno_table[20];
-extern const mp_obj_type_t mp_esp_vfs_type;
+extern const mp_obj_type_t mp_native_vfs_type;
 
-mp_import_stat_t esp_vfs_import_stat(struct _fs_user_mount_t *vfs, const char *path);
+mp_import_stat_t native_vfs_import_stat(struct _fs_user_mount_t *vfs, const char *path);
 mp_obj_t fatfs_builtin_open_self(mp_obj_t self_in, mp_obj_t path, mp_obj_t mode);
 MP_DECLARE_CONST_FUN_OBJ_KW(mp_builtin_open_obj);
 
-mp_obj_t esp_vfs_ilistdir2(struct _fs_user_mount_t *vfs, const char *path, bool is_str_type);
+mp_obj_t native_vfs_ilistdir2(struct _fs_user_mount_t *vfs, const char *path, bool is_str_type);

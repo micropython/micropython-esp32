@@ -1,5 +1,5 @@
 #include "py/mpconfig.h"
-#if MICROPY_VFS && MICROPY_VFS_ESP
+#if MICROPY_VFS && MICROPY_VFS_NATIVE
 
 #include <stdio.h>
 #include <errno.h>
@@ -8,8 +8,15 @@
 #include "py/runtime.h"
 #include "py/stream.h"
 #include "py/mperrno.h"
-#include "extmod/vfs_esp.h"
+#include "extmod/vfs_native.h"
+
 #include "src/ff.h"
+
+#include "esp_vfs.h"
+#include "src/esp_vfs_fat.h"
+#include "esp_system.h"
+
+static const char *TAG = "vfs_native_file.c";
 
 #define mp_type_fileio fatfs_type_fileio
 #define mp_type_textio fatfs_type_textio
@@ -43,7 +50,7 @@ const byte fresult_to_errno_table[20] = {
 
 typedef struct _pyb_file_obj_t {
     mp_obj_base_t base;
-    FIL fp;
+    FIL *fp;
 } pyb_file_obj_t;
 
 STATIC void file_obj_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
@@ -52,7 +59,7 @@ STATIC void file_obj_print(const mp_print_t *print, mp_obj_t self_in, mp_print_k
 }
 
 STATIC mp_uint_t file_obj_read(mp_obj_t self_in, void *buf, mp_uint_t size, int *errcode) {
-    /*pyb_file_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    pyb_file_obj_t *self = MP_OBJ_TO_PTR(self_in);
     UINT sz_out;
     FRESULT res = f_read(&self->fp, buf, size, &sz_out);
     if (res != FR_OK) {
@@ -60,15 +67,10 @@ STATIC mp_uint_t file_obj_read(mp_obj_t self_in, void *buf, mp_uint_t size, int 
         return MP_STREAM_ERROR;
     }
     return sz_out;
-    */
-    
-    printf("DUMMY: FILE_OBJ_READ\n");
-    mp_uint_t dummy = 0;
-    return dummy;
 }
 
 STATIC mp_uint_t file_obj_write(mp_obj_t self_in, const void *buf, mp_uint_t size, int *errcode) {
-    /*pyb_file_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    pyb_file_obj_t *self = MP_OBJ_TO_PTR(self_in);
     UINT sz_out;
     FRESULT res = f_write(&self->fp, buf, size, &sz_out);
     if (res != FR_OK) {
@@ -80,15 +82,12 @@ STATIC mp_uint_t file_obj_write(mp_obj_t self_in, const void *buf, mp_uint_t siz
         *errcode = MP_ENOSPC;
         return MP_STREAM_ERROR;
     }
-    return sz_out;*/
-    printf("DUMMY: FILE_OBJ_WRITE\n");
-    mp_uint_t dummy = 0;
-    return dummy;
+    return sz_out;
 }
 
 
 STATIC mp_obj_t file_obj_close(mp_obj_t self_in) {
-    /*pyb_file_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    pyb_file_obj_t *self = MP_OBJ_TO_PTR(self_in);
     // if fs==NULL then the file is closed and in that case this method is a no-op
     if (self->fp.obj.fs != NULL) {
         FRESULT res = f_close(&self->fp);
@@ -96,8 +95,6 @@ STATIC mp_obj_t file_obj_close(mp_obj_t self_in) {
             mp_raise_OSError(fresult_to_errno_table[res]);
         }
     }
-    return mp_const_none;*/
-    printf("DUMMY: FILE_OBJ_CLOSE\n");
     return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(file_obj_close_obj, file_obj_close);
@@ -163,7 +160,8 @@ STATIC const mp_arg_t file_open_args[] = {
 #define FILE_OPEN_NUM_ARGS MP_ARRAY_SIZE(file_open_args)
 
 STATIC mp_obj_t file_open(fs_user_mount_t *vfs, const mp_obj_type_t *type, mp_arg_val_t *args) {
-    /*int mode = 0;
+    printf("TEST: FILE_OBJ_OPEN\n");
+    int mode = 0;
     const char *mode_s = mp_obj_str_get_str(args[1].u_obj);
     // TODO make sure only one of r, w, x, a, and b, t are specified
     while (*mode_s) {
@@ -210,10 +208,6 @@ STATIC mp_obj_t file_open(fs_user_mount_t *vfs, const mp_obj_type_t *type, mp_ar
         f_lseek(&o->fp, f_size(&o->fp));
     }
 
-    return MP_OBJ_FROM_PTR(o);
-    */
-    printf("DUMMY: FILE_OBJ_READ\n");
-    pyb_file_obj_t *o = m_new_obj_with_finaliser(pyb_file_obj_t);
     return MP_OBJ_FROM_PTR(o);
 }
 
