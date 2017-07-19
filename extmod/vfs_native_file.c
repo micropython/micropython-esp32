@@ -15,6 +15,7 @@
 #include "esp_vfs.h"
 #include "src/esp_vfs_fat.h"
 #include "esp_system.h"
+#include "esp_log.h"
 
 static const char *TAG = "vfs_native_file.c";
 
@@ -149,7 +150,7 @@ STATIC mp_obj_t file_open(fs_user_mount_t *vfs, const mp_obj_type_t *type, mp_ar
 		return mp_const_none;
 	}
 
-	ets_printf("trying open(\"%s\", \"%s\")\n", fname, mode_s);
+	ESP_LOGW(TAG, "vfs_native.open('%s', '%s')", fname, mode_s);
 
     assert(vfs != NULL);
 	FILE *f = fopen(fname, mode_s);

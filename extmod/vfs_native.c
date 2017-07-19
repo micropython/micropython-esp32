@@ -27,6 +27,7 @@
 #define mp_obj_native_vfs_t fs_user_mount_t
 
 static const char *TAG = "vfs_native.c";
+
 static wl_handle_t s_wl_handle = WL_INVALID_HANDLE;
 static bool native_vfs_mounted = false;
 
@@ -52,12 +53,14 @@ chdir(const char *path)
 		return -1;
 	}
 
+	ESP_LOGW(TAG, "cwd set to '%s'", cwd);
 	strncpy(cwd, path, sizeof(cwd));
 	return 0;
 }
 char *
 getcwd(char *buf, size_t size)
 {
+	ESP_LOGW(TAG, "requesting cwd '%s'", cwd);
 	if (size <= strlen(cwd))
 	{
 		errno = ENAMETOOLONG;
@@ -69,9 +72,11 @@ getcwd(char *buf, size_t size)
 char *
 mkabspath(const char *path)
 {
+	ESP_LOGW(TAG, "abspath '%s' in cwd '%s'", path, cwd);
 	// path is already absolute
 	if (path[0] == '/')
 	{
+		ESP_LOGW(TAG, " `-> '%s'", path);
 		return path;
 	}
 
@@ -122,6 +127,10 @@ mkabspath(const char *path)
 		return NULL;
 	}
 	strcat(buf, path);
+	if (buf[0] == 0) {
+		strcat(buf, "/");
+	}
+	ESP_LOGW(TAG, " `-> '%s'", buf);
 	return buf;
 }
 
@@ -167,7 +176,7 @@ STATIC mp_obj_t native_vfs_ilistdir_func(size_t n_args, const mp_obj_t *args) {
 		return mp_const_none;
 	}
 
-    ets_printf("vfs_native: VFS_LISTDIR_FUNC\n");
+	ESP_LOGW(TAG, "vfs_native.ilistdir('%s')", path);
     return native_vfs_ilistdir2(self, path, is_str_type);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(native_vfs_ilistdir_obj, 1, 2, native_vfs_ilistdir_func);
@@ -182,13 +191,13 @@ STATIC mp_obj_t native_vfs_remove(mp_obj_t vfs_in, mp_obj_t path_in) {
 		return mp_const_none;
 	}
 
+	ESP_LOGW(TAG, "vfs_native.unlink('%s')", path);
 	int res = unlink(path);
 	if (res < 0) {
 		mp_raise_OSError(errno);
 		return mp_const_none;
 	}
 
-	ets_printf("vfs_native: VFS_REMOVE_INTERNAL\n");
 	return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(native_vfs_remove_obj, native_vfs_remove);
@@ -203,6 +212,7 @@ STATIC mp_obj_t native_vfs_rmdir(mp_obj_t vfs_in, mp_obj_t path_in) {
 		return mp_const_none;
 	}
 
+	ESP_LOGW(TAG, "vfs_native.rmdir('%s')", path);
 	int res = rmdir(path);
 	if (res < 0) {
 		mp_raise_OSError(errno);
@@ -231,6 +241,7 @@ STATIC mp_obj_t native_vfs_rename(mp_obj_t vfs_in, mp_obj_t path_in, mp_obj_t pa
 		return mp_const_none;
 	}
 
+	ESP_LOGW(TAG, "vfs_native.rename('%s', '%s')", old_path, new_path);
     int res = rename(old_path, new_path);
 	/*
 	// FIXME: have to check if we can replace files with this
@@ -248,7 +259,6 @@ STATIC mp_obj_t native_vfs_rename(mp_obj_t vfs_in, mp_obj_t path_in, mp_obj_t pa
 		return mp_const_none;
 	}
 
-    ets_printf("vfs_native: VFS_RENAME\n");
 	return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_3(native_vfs_rename_obj, native_vfs_rename);
@@ -263,13 +273,13 @@ STATIC mp_obj_t native_vfs_mkdir(mp_obj_t vfs_in, mp_obj_t path_o) {
 		return mp_const_none;
 	}
 
+	ESP_LOGW(TAG, "vfs_native.mkdir('%s')", path);
 	int res = mkdir(path, 0755);
 	if (res < 0) {
 		mp_raise_OSError(errno);
 		return mp_const_none;
 	}
 
-    ets_printf("vfs_native: VFS_MKDIR\n");
     return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(native_vfs_mkdir_obj, native_vfs_mkdir);
@@ -285,13 +295,12 @@ STATIC mp_obj_t native_vfs_chdir(mp_obj_t vfs_in, mp_obj_t path_in) {
 		return mp_const_none;
 	}
 
+	ESP_LOGW(TAG, "vfs_native.chdir('%s')", path);
 	int res = chdir(path);
 	if (res < 0) {
 		mp_raise_OSError(errno);
 		return mp_const_none;
 	}
-
-    ets_printf("vfs_native: VFS_CHDIR\n");
 
     return mp_const_none;
 }
@@ -302,13 +311,13 @@ STATIC mp_obj_t native_vfs_getcwd(mp_obj_t vfs_in) {
 //	mp_obj_native_vfs_t *self = MP_OBJ_TO_PTR(vfs_in);
 
     char buf[MICROPY_ALLOC_PATH_MAX + 1];
+	ESP_LOGW(TAG, "vfs_native.getcwd()");
     char *ch = getcwd(buf, sizeof(buf));
 	if (ch == NULL) {
 		mp_raise_OSError(errno);
 		return mp_const_none;
 	}
 
-    ets_printf("vfs_native: VFS_GETCWD\n");
     return mp_obj_new_str(buf, strlen(buf), false);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(native_vfs_getcwd_obj, native_vfs_getcwd);
@@ -325,6 +334,7 @@ STATIC mp_obj_t native_vfs_stat(mp_obj_t vfs_in, mp_obj_t path_in) {
 		return mp_const_none;
 	}
 
+	ESP_LOGW(TAG, "vfs_native.stat('%s')", path);
 	struct stat buf;
     if (path[0] == 0 || (path[0] == '/' && path[1] == 0)) {
         // stat root directory
@@ -351,7 +361,6 @@ STATIC mp_obj_t native_vfs_stat(mp_obj_t vfs_in, mp_obj_t path_in) {
     t->items[8] = MP_OBJ_NEW_SMALL_INT(buf.st_atime); // st_mtime
     t->items[9] = MP_OBJ_NEW_SMALL_INT(buf.st_atime); // st_ctime
 
-    ets_printf("vfs_native: VFS_STAT\n");
     return MP_OBJ_FROM_PTR(t);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(native_vfs_stat_obj, native_vfs_stat);

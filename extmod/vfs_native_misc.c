@@ -4,11 +4,17 @@
 #include <string.h>
 #include <dirent.h>
 #include <errno.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <esp_log.h>
 
 #include "py/nlr.h"
 #include "py/runtime.h"
 #include "extmod/vfs_native.h"
 #include "py/lexer.h"
+
+static const char *TAG = "vfs_native_misc.c";
 
 typedef struct _mp_vfs_native_ilistdir_it_t {
     mp_obj_base_t base;
@@ -29,6 +35,7 @@ STATIC mp_obj_t mp_vfs_native_ilistdir_it_iternext(mp_obj_t self_in) {
 		}
 
         char *fn = de->d_name;
+		ESP_LOGW(TAG, "vfs_native.readdir -> '%s'", fn);
 
         // filter . and ..
 		if (fn[0] == '.' && ((fn[1] == '.' && fn[2] == 0) || fn[1] == 0))
@@ -64,6 +71,9 @@ mp_obj_t native_vfs_ilistdir2(fs_user_mount_t *vfs, const char *path, bool is_st
     iter->base.type = &mp_type_polymorph_iter;
     iter->iternext = mp_vfs_native_ilistdir_it_iternext;
     iter->is_str = is_str_type;
+
+	ESP_LOGW(TAG, "vfs_native.opendir('%s')", path);
+
 	DIR *d = opendir(path);
 	if (d == NULL) {
         mp_raise_OSError(errno);
@@ -73,21 +83,22 @@ mp_obj_t native_vfs_ilistdir2(fs_user_mount_t *vfs, const char *path, bool is_st
     return MP_OBJ_FROM_PTR(iter);
 }
 
-#if 0
 mp_import_stat_t native_vfs_import_stat(fs_user_mount_t *vfs, const char *path) {
-    FILINFO fno;
-    assert(vfs != NULL);
-    FRESULT res = f_stat(&vfs->fatfs, path, &fno);
-    if (res == FR_OK) {
-        if ((fno.fattrib & AM_DIR) != 0) {
-            return MP_IMPORT_STAT_DIR;
-        } else {
-            return MP_IMPORT_STAT_FILE;
-        }
-    }
-    return MP_IMPORT_STAT_NO_EXIST;
-}
+	path = mkabspath(path);
+	if (path == NULL) {
+		return MP_IMPORT_STAT_NO_EXIST;
+	}
 
-#endif
+	struct stat buf;
+	ESP_LOGW(TAG, "vfs_native.import_stat('%s')", path);
+	int res = stat(path, &buf);
+	if (res < 0) {
+		return MP_IMPORT_STAT_NO_EXIST;
+	}
+	if ((buf.st_mode & S_IFDIR) == 0) {
+		return MP_IMPORT_STAT_FILE;
+	}
+	return MP_IMPORT_STAT_DIR;
+}
 
 #endif // MICROPY_VFS_FAT
