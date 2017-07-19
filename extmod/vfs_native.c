@@ -31,12 +31,28 @@ static wl_handle_t s_wl_handle = WL_INVALID_HANDLE;
 static bool native_vfs_mounted = false;
 
 /* esp-idf doesn't seem to have a cwd; create one. */
-char cwd[256] = { 0 };
+char cwd[MICROPY_ALLOC_PATH_MAX + 1] = { 0 };
+
 int
 chdir(const char *path)
 {
+	struct stat buf;
+	int res = stat(path, &buf);
+	if (res < 0) {
+		return -1;
+	}
+	if ((buf.st_mode & S_IFDIR) == 0)
+	{
+		errno = ENOTDIR;
+		return -1;
+	}
+	if (strlen(path) >= sizeof(cwd))
+	{
+		errno = ENAMETOOLONG;
+		return -1;
+	}
+
 	strncpy(cwd, path, sizeof(cwd));
-	cwd[255] = 0;
 	return 0;
 }
 char *
@@ -48,6 +64,64 @@ getcwd(char *buf, size_t size)
 		return NULL;
 	}
 	strcpy(buf, cwd);
+	return buf;
+}
+char *
+mkabspath(const char *path)
+{
+	// path is already absolute
+	if (path[0] == '/')
+	{
+		return path;
+	}
+
+	// use two buffers to support methods like rename()
+	static bool altbuf = false;
+	static char buf1[MICROPY_ALLOC_PATH_MAX + 1];
+	static char buf2[MICROPY_ALLOC_PATH_MAX + 1];
+	char *buf = altbuf ? buf1 : buf2;
+	altbuf = !altbuf;
+
+	strcpy(buf, cwd);
+	int len = strlen(buf);
+	while (1) {
+		// handle './' and '../'
+		if (path[0] == 0)
+			break;
+		if (path[0] == '.' && path[1] == 0) { // '.'
+			path = &path[1];
+			break;
+		}
+		if (path[0] == '.' && path[1] == '/') { // './'
+			path = &path[2];
+			continue;
+		}
+		if (path[0] == '.' && path[1] == '.' && path[2] == 0) { // '..'
+			path = &path[2];
+			while (len > 0 && buf[len] != '/') len--;
+			buf[len] = 0;
+			break;
+		}
+		if (path[0] == '.' && path[1] == '.' && path[2] == '/') { // '../'
+			path = &path[3];
+			while (len > 0 && buf[len] != '/') len--;
+			buf[len] = 0;
+			continue;
+		}
+		if (strlen(buf) >= sizeof(buf1)-1) {
+			errno = ENAMETOOLONG;
+			return NULL;
+		}
+		strcat(buf, "/");
+		len++;
+		break;
+	}
+
+	if (strlen(buf) + strlen(path) >= sizeof(buf1)) {
+		errno = ENAMETOOLONG;
+		return NULL;
+	}
+	strcat(buf, path);
 	return buf;
 }
 
@@ -87,14 +161,26 @@ STATIC mp_obj_t native_vfs_ilistdir_func(size_t n_args, const mp_obj_t *args) {
         path = "";
     }
 
+	path = mkabspath(path);
+	if (path == NULL) {
+		mp_raise_OSError(errno);
+		return mp_const_none;
+	}
+
     ets_printf("vfs_native: VFS_LISTDIR_FUNC\n");
     return native_vfs_ilistdir2(self, path, is_str_type);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(native_vfs_ilistdir_obj, 1, 2, native_vfs_ilistdir_func);
 
 STATIC mp_obj_t native_vfs_remove(mp_obj_t vfs_in, mp_obj_t path_in) {
-    mp_obj_native_vfs_t *self = MP_OBJ_TO_PTR(vfs_in);
+//	mp_obj_native_vfs_t *self = MP_OBJ_TO_PTR(vfs_in);
     const char *path = mp_obj_str_get_str(path_in);
+
+	path = mkabspath(path);
+	if (path == NULL) {
+		mp_raise_OSError(errno);
+		return mp_const_none;
+	}
 
 	int res = unlink(path);
 	if (res < 0) {
@@ -108,7 +194,15 @@ STATIC mp_obj_t native_vfs_remove(mp_obj_t vfs_in, mp_obj_t path_in) {
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(native_vfs_remove_obj, native_vfs_remove);
 
 STATIC mp_obj_t native_vfs_rmdir(mp_obj_t vfs_in, mp_obj_t path_in) {
+//	mp_obj_native_vfs_t *self = MP_OBJ_TO_PTR(vfs_in);
     const char *path = mp_obj_str_get_str(path_in);
+
+	path = mkabspath(path);
+	if (path == NULL) {
+		mp_raise_OSError(errno);
+		return mp_const_none;
+	}
+
 	int res = rmdir(path);
 	if (res < 0) {
 		mp_raise_OSError(errno);
@@ -121,9 +215,21 @@ STATIC mp_obj_t native_vfs_rmdir(mp_obj_t vfs_in, mp_obj_t path_in) {
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(native_vfs_rmdir_obj, native_vfs_rmdir);
 
 STATIC mp_obj_t native_vfs_rename(mp_obj_t vfs_in, mp_obj_t path_in, mp_obj_t path_out) {
-    mp_obj_native_vfs_t *self = MP_OBJ_TO_PTR(vfs_in);
+//	mp_obj_native_vfs_t *self = MP_OBJ_TO_PTR(vfs_in);
     const char *old_path = mp_obj_str_get_str(path_in);
     const char *new_path = mp_obj_str_get_str(path_out);
+
+	old_path = mkabspath(old_path);
+	if (old_path == NULL) {
+		mp_raise_OSError(errno);
+		return mp_const_none;
+	}
+
+	new_path = mkabspath(new_path);
+	if (new_path == NULL) {
+		mp_raise_OSError(errno);
+		return mp_const_none;
+	}
 
     int res = rename(old_path, new_path);
 	/*
@@ -148,7 +254,15 @@ STATIC mp_obj_t native_vfs_rename(mp_obj_t vfs_in, mp_obj_t path_in, mp_obj_t pa
 STATIC MP_DEFINE_CONST_FUN_OBJ_3(native_vfs_rename_obj, native_vfs_rename);
 
 STATIC mp_obj_t native_vfs_mkdir(mp_obj_t vfs_in, mp_obj_t path_o) {
+//	mp_obj_native_vfs_t *self = MP_OBJ_TO_PTR(vfs_in);
     const char *path = mp_obj_str_get_str(path_o);
+
+	path = mkabspath(path);
+	if (path == NULL) {
+		mp_raise_OSError(errno);
+		return mp_const_none;
+	}
+
 	int res = mkdir(path, 0755);
 	if (res < 0) {
 		mp_raise_OSError(errno);
@@ -162,7 +276,15 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_2(native_vfs_mkdir_obj, native_vfs_mkdir);
 
 /// Change current directory.
 STATIC mp_obj_t native_vfs_chdir(mp_obj_t vfs_in, mp_obj_t path_in) {
+//	mp_obj_native_vfs_t *self = MP_OBJ_TO_PTR(vfs_in);
     const char *path = mp_obj_str_get_str(path_in);
+
+	path = mkabspath(path);
+	if (path == NULL) {
+		mp_raise_OSError(errno);
+		return mp_const_none;
+	}
+
 	int res = chdir(path);
 	if (res < 0) {
 		mp_raise_OSError(errno);
@@ -177,6 +299,8 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_2(native_vfs_chdir_obj, native_vfs_chdir);
 
 /// Get the current directory.
 STATIC mp_obj_t native_vfs_getcwd(mp_obj_t vfs_in) {
+//	mp_obj_native_vfs_t *self = MP_OBJ_TO_PTR(vfs_in);
+
     char buf[MICROPY_ALLOC_PATH_MAX + 1];
     char *ch = getcwd(buf, sizeof(buf));
 	if (ch == NULL) {
@@ -192,11 +316,16 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(native_vfs_getcwd_obj, native_vfs_getcwd);
 /// \function stat(path)
 /// Get the status of a file or directory.
 STATIC mp_obj_t native_vfs_stat(mp_obj_t vfs_in, mp_obj_t path_in) {
-    mp_obj_native_vfs_t *self = MP_OBJ_TO_PTR(vfs_in);
+//	mp_obj_native_vfs_t *self = MP_OBJ_TO_PTR(vfs_in);
     const char *path = mp_obj_str_get_str(path_in);
 
+	path = mkabspath(path);
+	if (path == NULL) {
+		mp_raise_OSError(errno);
+		return mp_const_none;
+	}
+
 	struct stat buf;
-    FILINFO fno;
     if (path[0] == 0 || (path[0] == '/' && path[1] == 0)) {
         // stat root directory
         buf.st_size = 0;

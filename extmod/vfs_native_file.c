@@ -143,6 +143,12 @@ STATIC mp_obj_t file_open(fs_user_mount_t *vfs, const mp_obj_type_t *type, mp_ar
     const char *fname = mp_obj_str_get_str(args[0].u_obj);
     const char *mode_s = mp_obj_str_get_str(args[1].u_obj);
 
+	fname = mkabspath(fname);
+	if (fname == NULL) {
+		mp_raise_OSError(errno);
+		return mp_const_none;
+	}
+
 	ets_printf("trying open(\"%s\", \"%s\")\n", fname, mode_s);
 
     assert(vfs != NULL);
