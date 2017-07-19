@@ -58,6 +58,8 @@ INC += -I../../components/bpp-recv
 INC += -I../../components/bpp-if
 INC += -I../../components/ed25519/include
 INC += -I../../components/redundancy
+INC += -I../../components/badge-first-run
+INC += -I../../components/png
 INC += -I../../main
 INC += -I../../ugfx/src/gdisp/mcufont
 INC += -I../../ugfx
@@ -665,6 +667,14 @@ BADGE_COMPONENTS_O = $(addprefix $(BADGE)/components/,\
 	sha2017/wildcard_sha2017_org.o \
 	sha2017/sha2017_ota_graphics.o \
 	sha2017/sha2017_ota.o \
+	badge-first-run/badge_first_run.o \
+	badge-first-run/png_hacking.o \
+	png/adler32.o \
+	png/crc32.o \
+	png/deflate_reader.o \
+	png/file_reader.o \
+	png/mem_reader.o \
+	png/png_reader.o \
 	)
 
 #Re-use libraries built while building non-micro-python project. Because kindly

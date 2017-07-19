@@ -56,6 +56,7 @@
 #include "bpp_init.h"
 #include "driver/gpio.h"
 #include "badge_base.h"
+#include "badge_first_run.h"
 
 // MicroPython runs as a task under FreeRTOS
 #define MP_TASK_PRIORITY        (ESP_TASK_PRIO_MIN + 1)
@@ -139,6 +140,7 @@ void do_bpp_bgnd() {
 }
 
 void app_main(void) {
+   badge_check_first_run();
    badge_base_init();
 
   uint8_t magic = esp_rtcmem_read(0);
