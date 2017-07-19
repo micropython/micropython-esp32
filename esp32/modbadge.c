@@ -163,8 +163,6 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_2(badge_display_picture_obj,
  
 /* PNG READER TEST */
 
-extern uint8_t ugfx_framebuffer[296*128];
-
 STATIC mp_obj_t badge_eink_png(mp_obj_t obj_x, mp_obj_t obj_y, mp_obj_t obj_filename) {
     uint16_t x = mp_obj_get_int(obj_x);
     uint16_t y = mp_obj_get_int(obj_y);
@@ -185,7 +183,7 @@ STATIC mp_obj_t badge_eink_png(mp_obj_t obj_x, mp_obj_t obj_y, mp_obj_t obj_file
         return mp_const_none;
     }
     
-	int res = lib_png_load_image(pr, &ugfx_framebuffer[y * BADGE_EINK_WIDTH + x], 296-x, 128-y, 296);
+	int res = lib_png_load_image(pr, &badge_eink_fb[y * BADGE_EINK_WIDTH + x], 296-x, 128-y, 296);
 	lib_png_destroy(pr);
 	lib_file_destroy(fr);
     
