@@ -85,7 +85,7 @@ int _mbedtls_ssl_send(void *ctx, const byte *buf, size_t len) {
 
     int out_sz = sock_stream->write(sock, buf, len, &err);
     if (out_sz == MP_STREAM_ERROR) {
-        if(mp_is_nonblocking_error(err)) {
+        if (mp_is_nonblocking_error(err)) {
             return MBEDTLS_ERR_SSL_WANT_WRITE;
         }
         return -err;
@@ -101,7 +101,7 @@ int _mbedtls_ssl_recv(void *ctx, byte *buf, size_t len) {
     int err;
     int out_sz = sock_stream->read(sock, buf, len, &err);
     if (out_sz == MP_STREAM_ERROR) {
-        if(mp_is_nonblocking_error(err)) {
+        if (mp_is_nonblocking_error(err)) {
             return MBEDTLS_ERR_SSL_WANT_READ;
         }
         return -err;
@@ -109,20 +109,7 @@ int _mbedtls_ssl_recv(void *ctx, byte *buf, size_t len) {
     return out_sz;
 }
 
-STATIC mp_obj_t socket_setblocking(mp_obj_t self_in, mp_obj_t flag_in) {
-    mp_obj_ssl_socket_t *o = MP_OBJ_TO_PTR(self_in);
-    mp_obj_t sock = o->sock;
-    mp_obj_t dest[3];
 
-    mp_load_method_maybe(sock, MP_QSTR_setblocking, dest);
-    if (dest[0] == MP_OBJ_NULL || dest[1] == MP_OBJ_NULL) {
-        mp_raise_msg(&mp_type_RuntimeError, "wrapped socket must implement setblocking()");
-    }
-
-    dest[2] = flag_in;
-    return mp_call_method_n_kw(1, 0, dest);
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(socket_setblocking_obj, socket_setblocking);
 
 STATIC mp_obj_ssl_socket_t *socket_new(mp_obj_t sock, struct ssl_args *args) {
     mp_obj_ssl_socket_t *o = m_new_obj(mp_obj_ssl_socket_t);
@@ -147,9 +134,9 @@ STATIC mp_obj_ssl_socket_t *socket_new(mp_obj_t sock, struct ssl_args *args) {
     }
 
     ret = mbedtls_ssl_config_defaults(&o->conf,
-                    MBEDTLS_SSL_IS_CLIENT,
-                    MBEDTLS_SSL_TRANSPORT_STREAM,
-                    MBEDTLS_SSL_PRESET_DEFAULT);
+                                      MBEDTLS_SSL_IS_CLIENT,
+                                      MBEDTLS_SSL_TRANSPORT_STREAM,
+                                      MBEDTLS_SSL_PRESET_DEFAULT);
     if (ret != 0) {
         assert(0);
     }
@@ -223,7 +210,7 @@ STATIC mp_uint_t socket_read(mp_obj_t o_in, void *buf, mp_uint_t size, int *errc
         return 0;
     }
 
-    if (ret == MBEDTLS_ERR_SSL_WANT_READ) { 
+    if (ret == MBEDTLS_ERR_SSL_WANT_READ) {
         *errcode = EWOULDBLOCK;
         return 0;
     }
@@ -243,7 +230,7 @@ STATIC mp_uint_t socket_write(mp_obj_t o_in, const void *buf, mp_uint_t size, in
         return ret;
     }
 
-    if (ret == MBEDTLS_ERR_SSL_WANT_WRITE) { 
+    if (ret == MBEDTLS_ERR_SSL_WANT_WRITE) {
         *errcode = EWOULDBLOCK;
         return 0;
     }
@@ -252,6 +239,20 @@ STATIC mp_uint_t socket_write(mp_obj_t o_in, const void *buf, mp_uint_t size, in
     return MP_STREAM_ERROR;
 }
 
+STATIC mp_obj_t socket_setblocking(mp_obj_t self_in, mp_obj_t flag_in) {
+    mp_obj_ssl_socket_t *o = MP_OBJ_TO_PTR(self_in);
+    mp_obj_t sock = o->sock;
+    mp_obj_t dest[3];
+
+    mp_load_method_maybe(sock, MP_QSTR_setblocking, dest);
+    if (dest[0] == MP_OBJ_NULL || dest[1] == MP_OBJ_NULL) {
+        mp_raise_msg(&mp_type_RuntimeError, "wrapped socket must implement setblocking()");
+    }
+
+    dest[2] = flag_in;
+    return mp_call_method_n_kw(1, 0, dest);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_2(socket_setblocking_obj, socket_setblocking);
 
 STATIC mp_obj_t socket_close(mp_obj_t self_in) {
     mp_obj_ssl_socket_t *self = MP_OBJ_TO_PTR(self_in);
@@ -309,7 +310,7 @@ STATIC mp_obj_t mod_ssl_wrap_socket(size_t n_args, const mp_obj_t *pos_args, mp_
 
     struct ssl_args args;
     mp_arg_parse_all(n_args - 1, pos_args + 1, kw_args,
-        MP_ARRAY_SIZE(allowed_args), allowed_args, (mp_arg_val_t*)&args);
+                     MP_ARRAY_SIZE(allowed_args), allowed_args, (mp_arg_val_t*)&args);
 
     return MP_OBJ_FROM_PTR(socket_new(sock, &args));
 }
