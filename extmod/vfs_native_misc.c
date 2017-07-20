@@ -84,7 +84,8 @@ mp_obj_t native_vfs_ilistdir2(fs_user_mount_t *vfs, const char *path, bool is_st
 }
 
 mp_import_stat_t native_vfs_import_stat(fs_user_mount_t *vfs, const char *path) {
-	path = mkabspath(path);
+	char absbuf[MICROPY_ALLOC_PATH_MAX + 1];
+	path = mkabspath(path, absbuf, sizeof(absbuf));
 	if (path == NULL) {
 		return MP_IMPORT_STAT_NO_EXIST;
 	}

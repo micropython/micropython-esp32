@@ -6,17 +6,15 @@
 #include <fcntl.h>
 #include <errno.h>
 
+#include "esp_vfs.h"
+#include "esp_system.h"
+#include "esp_log.h"
+
 #include "py/nlr.h"
 #include "py/runtime.h"
 #include "py/stream.h"
 #include "py/mperrno.h"
 #include "extmod/vfs_native.h"
-
-#include "src/ff.h"
-
-#include "esp_vfs.h"
-#include "esp_system.h"
-#include "esp_log.h"
 
 static const char *TAG = "vfs_native_file.c";
 
@@ -144,7 +142,8 @@ STATIC mp_obj_t file_open(fs_user_mount_t *vfs, const mp_obj_type_t *type, mp_ar
 	const char *fname = mp_obj_str_get_str(args[0].u_obj);
 	const char *mode_s = mp_obj_str_get_str(args[1].u_obj);
 
-	fname = mkabspath(fname);
+	char absbuf[MICROPY_ALLOC_PATH_MAX + 1];
+	fname = mkabspath(fname, absbuf, sizeof(absbuf));
 	if (fname == NULL) {
 		mp_raise_OSError(errno);
 		return mp_const_none;

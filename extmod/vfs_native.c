@@ -9,15 +9,16 @@
 #include <unistd.h>
 #include <errno.h>
 
+#include "esp_vfs.h"
+#include "esp_vfs_fat.h"
+#include "esp_system.h"
+#include "esp_log.h"
+
 #include "py/nlr.h"
 #include "py/runtime.h"
 #include "py/mperrno.h"
 #include "extmod/vfs_native.h"
 #include "lib/timeutils/timeutils.h"
-
-#include "esp_vfs.h"
-#include "src/esp_vfs_fat.h"
-#include "esp_system.h"
 
 #define mp_obj_native_vfs_t fs_user_mount_t
 
@@ -65,25 +66,24 @@ getcwd(char *buf, size_t size)
 	return buf;
 }
 const char *
-mkabspath(const char *path)
+mkabspath(const char *path, char *buf, int buflen)
 {
 	ESP_LOGV(TAG, "abspath '%s' in cwd '%s'", path, cwd);
-	// path is already absolute
+
 	if (path[0] == '/')
-	{
+	{ // path is already absolute
 		ESP_LOGV(TAG, " `-> '%s'", path);
 		return path;
 	}
 
-	// use two buffers to support methods like rename()
-	static bool altbuf = false;
-	static char buf1[MICROPY_ALLOC_PATH_MAX + 1];
-	static char buf2[MICROPY_ALLOC_PATH_MAX + 1];
-	char *buf = altbuf ? buf1 : buf2;
-	altbuf = !altbuf;
+	int len = strlen(cwd);
+	if (len >= buflen)
+	{
+		errno = ENAMETOOLONG;
+		return NULL;
+	}
 
 	strcpy(buf, cwd);
-	int len = strlen(buf);
 	while (1) {
 		// handle './' and '../'
 		if (path[0] == 0)
@@ -108,7 +108,7 @@ mkabspath(const char *path)
 			buf[len] = 0;
 			continue;
 		}
-		if (strlen(buf) >= sizeof(buf1)-1) {
+		if (strlen(buf) >= buflen-1) {
 			errno = ENAMETOOLONG;
 			return NULL;
 		}
@@ -117,7 +117,7 @@ mkabspath(const char *path)
 		break;
 	}
 
-	if (strlen(buf) + strlen(path) >= sizeof(buf1)) {
+	if (strlen(buf) + strlen(path) >= buflen) {
 		errno = ENAMETOOLONG;
 		return NULL;
 	}
@@ -165,7 +165,8 @@ STATIC mp_obj_t native_vfs_ilistdir_func(size_t n_args, const mp_obj_t *args) {
 		path = "";
 	}
 
-	path = mkabspath(path);
+	char absbuf[MICROPY_ALLOC_PATH_MAX + 1];
+	path = mkabspath(path, absbuf, sizeof(absbuf));
 	if (path == NULL) {
 		mp_raise_OSError(errno);
 		return mp_const_none;
@@ -180,7 +181,8 @@ STATIC mp_obj_t native_vfs_remove(mp_obj_t vfs_in, mp_obj_t path_in) {
 //	mp_obj_native_vfs_t *self = MP_OBJ_TO_PTR(vfs_in);
 	const char *path = mp_obj_str_get_str(path_in);
 
-	path = mkabspath(path);
+	char absbuf[MICROPY_ALLOC_PATH_MAX + 1];
+	path = mkabspath(path, absbuf, sizeof(absbuf));
 	if (path == NULL) {
 		mp_raise_OSError(errno);
 		return mp_const_none;
@@ -201,7 +203,8 @@ STATIC mp_obj_t native_vfs_rmdir(mp_obj_t vfs_in, mp_obj_t path_in) {
 //	mp_obj_native_vfs_t *self = MP_OBJ_TO_PTR(vfs_in);
 	const char *path = mp_obj_str_get_str(path_in);
 
-	path = mkabspath(path);
+	char absbuf[MICROPY_ALLOC_PATH_MAX + 1];
+	path = mkabspath(path, absbuf, sizeof(absbuf));
 	if (path == NULL) {
 		mp_raise_OSError(errno);
 		return mp_const_none;
@@ -223,13 +226,15 @@ STATIC mp_obj_t native_vfs_rename(mp_obj_t vfs_in, mp_obj_t path_in, mp_obj_t pa
 	const char *old_path = mp_obj_str_get_str(path_in);
 	const char *new_path = mp_obj_str_get_str(path_out);
 
-	old_path = mkabspath(old_path);
+	char old_absbuf[MICROPY_ALLOC_PATH_MAX + 1];
+	old_path = mkabspath(old_path, old_absbuf, sizeof(old_absbuf));
 	if (old_path == NULL) {
 		mp_raise_OSError(errno);
 		return mp_const_none;
 	}
 
-	new_path = mkabspath(new_path);
+	char new_absbuf[MICROPY_ALLOC_PATH_MAX + 1];
+	new_path = mkabspath(new_path, new_absbuf, sizeof(new_absbuf));
 	if (new_path == NULL) {
 		mp_raise_OSError(errno);
 		return mp_const_none;
@@ -261,7 +266,8 @@ STATIC mp_obj_t native_vfs_mkdir(mp_obj_t vfs_in, mp_obj_t path_o) {
 //	mp_obj_native_vfs_t *self = MP_OBJ_TO_PTR(vfs_in);
 	const char *path = mp_obj_str_get_str(path_o);
 
-	path = mkabspath(path);
+	char absbuf[MICROPY_ALLOC_PATH_MAX + 1];
+	path = mkabspath(path, absbuf, sizeof(absbuf));
 	if (path == NULL) {
 		mp_raise_OSError(errno);
 		return mp_const_none;
@@ -283,7 +289,8 @@ STATIC mp_obj_t native_vfs_chdir(mp_obj_t vfs_in, mp_obj_t path_in) {
 //	mp_obj_native_vfs_t *self = MP_OBJ_TO_PTR(vfs_in);
 	const char *path = mp_obj_str_get_str(path_in);
 
-	path = mkabspath(path);
+	char absbuf[MICROPY_ALLOC_PATH_MAX + 1];
+	path = mkabspath(path, absbuf, sizeof(absbuf));
 	if (path == NULL) {
 		mp_raise_OSError(errno);
 		return mp_const_none;
@@ -322,7 +329,8 @@ STATIC mp_obj_t native_vfs_stat(mp_obj_t vfs_in, mp_obj_t path_in) {
 //	mp_obj_native_vfs_t *self = MP_OBJ_TO_PTR(vfs_in);
 	const char *path = mp_obj_str_get_str(path_in);
 
-	path = mkabspath(path);
+	char absbuf[MICROPY_ALLOC_PATH_MAX + 1];
+	path = mkabspath(path, absbuf, sizeof(absbuf));
 	if (path == NULL) {
 		mp_raise_OSError(errno);
 		return mp_const_none;
