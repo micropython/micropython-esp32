@@ -29,7 +29,7 @@ ESPCOMP = $(ESPIDF)/components
 ESPTOOL ?= $(ESPCOMP)/esptool_py/esptool/esptool.py
 
 # verify the ESP IDF version
-ESPIDF_SUPHASH := 1e0710f1b24429a316c9c34732aa17bd3f189421
+ESPIDF_SUPHASH := 9b955f4c9f1b32652ea165d3e4cdaad01bba170e
 ESPIDF_CURHASH := $(shell git -C $(ESPIDF) show -s --pretty=format:'%H')
 ifneq ($(ESPIDF_CURHASH),$(ESPIDF_SUPHASH))
 $(info ** WARNING **)
@@ -53,7 +53,7 @@ INC += -I$(ESPCOMP)/bootloader_support/include
 INC += -I$(ESPCOMP)/driver/include
 INC += -I$(ESPCOMP)/driver/include/driver
 INC += -I$(ESPCOMP)/nghttp/port/include
-INC += -I$(ESPCOMP)/nghttp/include
+INC += -I$(ESPCOMP)/nghttp/nghttp2/lib/includes
 INC += -I$(ESPCOMP)/esp32/include
 INC += -I$(ESPCOMP)/soc/esp32/include
 INC += -I$(ESPCOMP)/ethernet/include
@@ -78,7 +78,7 @@ INC += -I$(ESPCOMP)/xtensa-debug-module/include
 INC += -I$(ESPCOMP)/wpa_supplicant/include
 INC += -I$(ESPCOMP)/wpa_supplicant/port/include
 INC += -I$(ESPCOMP)/ethernet/include
-INC += -I$(ESPCOMP)/tcpip_adapter/include
+INC += -I$(ESPCOMP)/app_trace/include
 
 CFLAGS = -std=gnu99 -Os -ffunction-sections -fdata-sections -fstrict-volatile-bitfields -mlongcalls -nostdlib -Wall -Werror -Wno-error=unused-function -Wno-error=unused-but-set-variable -Wno-error=unused-variable -Wno-error=deprecated-declarations -DMBEDTLS_CONFIG_FILE='"mbedtls/esp_config.h"' -DHAVE_CONFIG_H -DESP_PLATFORM  $(INC)
 CFLAGS += -DIDF_VER=\"$(IDF_VER)\"
@@ -119,6 +119,7 @@ SRC_C = \
 	esponewire.c \
 	modutime.c \
 	moduos.c \
+	machine_timer.c \
 	machine_pin.c \
 	machine_touchpad.c \
 	machine_adc.c \
@@ -134,11 +135,6 @@ SRC_C = \
 	machine_hw_spi.c \
 	mpthreadport.c \
 	$(SRC_MOD)
-
-STM_SRC_C = $(addprefix stmhal/,\
-	pybstdio.c \
-	input.c \
-	)
 
 ESP8266_SRC_C = $(addprefix esp8266/,\
 	modonewire.c \
@@ -171,6 +167,7 @@ LIB_SRC_C = $(addprefix lib/,\
 	timeutils/timeutils.c \
 	utils/pyexec.c \
 	utils/interrupt_char.c \
+	utils/sys_stdio_mphal.c \
 	)
 
 ifeq ($(MICROPY_FATFS), 1)
@@ -186,14 +183,13 @@ DRIVERS_SRC_C = $(addprefix drivers/,\
 OBJ_MP =
 OBJ_MP += $(PY_O)
 OBJ_MP += $(addprefix $(BUILD)/, $(SRC_C:.c=.o))
-OBJ_MP += $(addprefix $(BUILD)/, $(STM_SRC_C:.c=.o))
 OBJ_MP += $(addprefix $(BUILD)/, $(ESP8266_SRC_C:.c=.o))
 OBJ_MP += $(addprefix $(BUILD)/, $(EXTMOD_SRC_C:.c=.o))
 OBJ_MP += $(addprefix $(BUILD)/, $(LIB_SRC_C:.c=.o))
 OBJ_MP += $(addprefix $(BUILD)/, $(DRIVERS_SRC_C:.c=.o))
 
 # List of sources for qstr extraction
-SRC_QSTR += $(SRC_C) $(STM_SRC_C) $(ESP8266_SRC_C) $(EXTMOD_SRC_C) $(DRIVERS_SRC_C)
+SRC_QSTR += $(SRC_C) $(ESP8266_SRC_C) $(EXTMOD_SRC_C) $(LIB_SRC_C) $(DRIVERS_SRC_C)
 # Append any auto-generated sources that are needed by sources listed in SRC_QSTR
 SRC_QSTR_AUTO_DEPS +=
 
@@ -213,7 +209,6 @@ ESPIDF_DRIVER_O = $(addprefix $(ESPCOMP)/driver/,\
 
 $(BUILD)/$(ESPCOMP)/esp32/dport_access.o: CFLAGS += -Wno-array-bounds
 ESPIDF_ESP32_O = $(addprefix $(ESPCOMP)/esp32/,\
-	app_trace.o \
 	panic.o \
 	event_default_handlers.o \
 	task_wdt.o \
@@ -322,6 +317,10 @@ ESPIDF_TCPIP_ADAPTER_O = $(addprefix $(ESPCOMP)/tcpip_adapter/,\
 	tcpip_adapter_lwip.o \
 	)
 
+ESPIDF_APP_TRACE_O = $(addprefix $(ESPCOMP)/app_trace/,\
+	app_trace.o \
+	)
+
 ESPIDF_NEWLIB_O = $(addprefix $(ESPCOMP)/newlib/,\
 	time.o \
 	syscalls.o \
@@ -331,27 +330,27 @@ ESPIDF_NEWLIB_O = $(addprefix $(ESPCOMP)/newlib/,\
 	)
 
 ESPIDF_NGHTTP_O = $(addprefix $(ESPCOMP)/nghttp/,\
-	library/nghttp2_http.o \
-	library/nghttp2_version.o \
-	library/nghttp2_mem.o \
-	library/nghttp2_hd_huffman.o \
-	library/nghttp2_rcbuf.o \
-	library/nghttp2_callbacks.o \
-	library/nghttp2_session.o \
-	library/nghttp2_stream.o \
-	library/nghttp2_hd.o \
-	library/nghttp2_priority_spec.o \
-	library/nghttp2_buf.o \
-	library/nghttp2_option.o \
-	library/nghttp2_npn.o \
-	library/nghttp2_helper.o \
-	library/nghttp2_frame.o \
-	library/nghttp2_outbound_item.o \
-	library/nghttp2_hd_huffman_data.o \
-	library/nghttp2_pq.o \
-	library/nghttp2_queue.o \
-	library/nghttp2_submit.o \
-	library/nghttp2_map.o \
+	nghttp2/lib/nghttp2_http.o \
+	nghttp2/lib/nghttp2_version.o \
+	nghttp2/lib/nghttp2_mem.o \
+	nghttp2/lib/nghttp2_hd_huffman.o \
+	nghttp2/lib/nghttp2_rcbuf.o \
+	nghttp2/lib/nghttp2_callbacks.o \
+	nghttp2/lib/nghttp2_session.o \
+	nghttp2/lib/nghttp2_stream.o \
+	nghttp2/lib/nghttp2_hd.o \
+	nghttp2/lib/nghttp2_priority_spec.o \
+	nghttp2/lib/nghttp2_buf.o \
+	nghttp2/lib/nghttp2_option.o \
+	nghttp2/lib/nghttp2_npn.o \
+	nghttp2/lib/nghttp2_helper.o \
+	nghttp2/lib/nghttp2_frame.o \
+	nghttp2/lib/nghttp2_outbound_item.o \
+	nghttp2/lib/nghttp2_hd_huffman_data.o \
+	nghttp2/lib/nghttp2_pq.o \
+	nghttp2/lib/nghttp2_queue.o \
+	nghttp2/lib/nghttp2_submit.o \
+	nghttp2/lib/nghttp2_map.o \
 	port/http_parser.o \
 	)
 
@@ -552,6 +551,7 @@ OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_LWIP_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_MBEDTLS_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_XTENSA_DEBUG_MODULE_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_TCPIP_ADAPTER_O))
+OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_APP_TRACE_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_NGHTTP_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_NVS_FLASH_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_OPENSSL_O))

@@ -22,8 +22,14 @@ Example::
 
     # First, we need to open a stream which holds a database
     # This is usually a file, but can be in-memory database
-    # using uio.BytesIO, a raw flash section, etc.
-    f = open("mydb", "w+b")
+    # using uio.BytesIO, a raw flash partition, etc.
+    # Oftentimes, you want to create a database file if it doesn't
+    # exist and open if it exists. Idiom below takes care of this.
+    # DO NOT open database with "a+b" access mode.
+    try:
+        f = open("mydb", "r+b")
+    except OSError:
+        f = open("mydb", "w+b")
 
     # Now open a database itself
     db = btree.open(f)
@@ -32,6 +38,11 @@ Example::
     db[b"3"] = b"three"
     db[b"1"] = b"one"
     db[b"2"] = b"two"
+
+    # Assume that any changes are cached in memory unless
+    # explicitly flushed (or database closed). Flush database
+    # at the end of each "transaction".
+    db.flush()
 
     # Prints b'two'
     print(db[b"2"])
@@ -69,7 +80,7 @@ Functions
 
    Open a database from a random-access `stream` (like an open file). All
    other parameters are optional and keyword-only, and allow to tweak advanced
-   paramters of the database operation (most users will not need them):
+   parameters of the database operation (most users will not need them):
 
    * `flags` - Currently unused.
    * `cachesize` - Suggested maximum memory cache size in bytes. For a
@@ -92,7 +103,7 @@ Methods
 
    Close the database. It's mandatory to close the database at the end of
    processing, as some unwritten data may be still in the cache. Note that
-   this does not close underlying streamw with which the database was opened,
+   this does not close underlying stream with which the database was opened,
    it should be closed separately (which is also mandatory to make sure that
    data flushed from buffer to the underlying storage).
 
