@@ -15,6 +15,13 @@ def check_bootsec():
 
 def fs_corrupted():
     import time
+    import ugfx
+    ugfx.init()
+    ugfx.clear(ugfx.WHITE)
+    ugfx.string(0, 0, "--- FATAL EXCEPTION ---", "Roboto_Regular12", ugfx.BLACK)
+    ugfx.string(0, 13, "FAT filesystem corrupted", "Roboto_Regular12", ugfx.BLACK)
+    ugfx.string(0, 26, "Perform factory reprogramming!", "Roboto_Regular12", ugfx.BLACK)
+    ugfx.flush()
     while 1:
         print("""\
 FAT filesystem appears to be corrupted. If you had important data there, you
@@ -41,15 +48,15 @@ esp.rtcmem_write(0,0)
 esp.rtcmem_write(1,0)
 if machine.reset_cause() != machine.DEEPSLEEP_RESET:
     print("cold boot")
-    import launcher
+    import splash
 else:
     print("wake from sleep")
     load_me = esp.rtcmem_read_string()
     if load_me != "":
-        print("starting %s", load_me)
+        print("starting %s" % load_me)
         esp.rtcmem_write_string("")
         __import__(load_me)
     else:
-        import launcher
+        import splash
 """)
     return vfs

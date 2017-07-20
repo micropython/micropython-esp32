@@ -11,6 +11,11 @@
 
 **Merged pull requests:**
 
+- Flash firmware faster [\#61](https://github.com/SHA2017-badge/micropython-esp32/pull/61) ([Roosted7](https://github.com/Roosted7))
+- Ported from @loboris [\#60](https://github.com/SHA2017-badge/micropython-esp32/pull/60) ([annejan](https://github.com/annejan))
+- use esp partition data to determine fat location and size. [\#57](https://github.com/SHA2017-badge/micropython-esp32/pull/57) ([basvs](https://github.com/basvs))
+- Be able to pass do\_select variable to  [\#56](https://github.com/SHA2017-badge/micropython-esp32/pull/56) ([dennisdegreef](https://github.com/dennisdegreef))
+- Add splash / home screen application [\#55](https://github.com/SHA2017-badge/micropython-esp32/pull/55) ([rnplus](https://github.com/rnplus))
 - NVS as config store [\#53](https://github.com/SHA2017-badge/micropython-esp32/pull/53) ([annejan](https://github.com/annejan))
 - small bug fix in flashfbdev.py/modesp.c [\#52](https://github.com/SHA2017-badge/micropython-esp32/pull/52) ([annejan](https://github.com/annejan))
 - Preliminary support for callbacks for buttons [\#51](https://github.com/SHA2017-badge/micropython-esp32/pull/51) ([raboof](https://github.com/raboof))

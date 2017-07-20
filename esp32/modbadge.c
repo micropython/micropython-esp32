@@ -48,8 +48,8 @@ STATIC mp_obj_t badge_nvs_get_str_(mp_uint_t n_args, const mp_obj_t *args) {
   mp_uint_t len;
   const char *namespace = mp_obj_str_get_data(args[0], &len);
   const char *key = mp_obj_str_get_data(args[1], &len);
-  char value[1024]; // TODO wut?
-  size_t length;
+  char value[256]; // TODO wut?
+  size_t length = sizeof(value);
   esp_err_t err = badge_nvs_get_str(namespace, key, value, &length);
   if (err != ESP_OK) {
     if (n_args > 2) {
@@ -69,6 +69,59 @@ STATIC mp_obj_t badge_nvs_set_str_(mp_obj_t namespace, mp_obj_t key, mp_obj_t va
   return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_3(badge_nvs_set_str_obj, badge_nvs_set_str_);
+
+STATIC mp_obj_t badge_nvs_set_u8_(mp_obj_t namespace, mp_obj_t key, mp_obj_t value) {
+  uint8_t u8value = mp_obj_get_int(value);
+  esp_err_t err = badge_nvs_set_u8(mp_obj_str_get_str(namespace), mp_obj_str_get_str(key), u8value);
+  if (err != ESP_OK) {
+    mp_raise_msg(&mp_type_ValueError, "TODO error things");
+  }
+  return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_3(badge_nvs_set_u8_obj, badge_nvs_set_u8_);
+
+STATIC mp_obj_t badge_nvs_get_u8_(mp_uint_t n_args, const mp_obj_t *args) {
+  mp_uint_t len;
+  const char *namespace = mp_obj_str_get_data(args[0], &len);
+  const char *key = mp_obj_str_get_data(args[1], &len);
+  uint8_t u8value = mp_obj_get_int(args[2]);
+  esp_err_t err = badge_nvs_get_u8(namespace, key, &u8value);
+  if (err != ESP_OK) {
+    if (n_args > 2) {
+      return args[2];
+    }
+    return mp_const_none;
+  }
+  return mp_obj_new_int(u8value);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(badge_nvs_get_u8_obj, 2, 3, badge_nvs_get_u8_);
+
+STATIC mp_obj_t badge_nvs_set_u16_(mp_obj_t namespace, mp_obj_t key, mp_obj_t value) {
+  uint16_t u16value = mp_obj_get_int(value);
+  esp_err_t err = badge_nvs_set_u16(mp_obj_str_get_str(namespace), mp_obj_str_get_str(key), u16value);
+  if (err != ESP_OK) {
+    mp_raise_msg(&mp_type_ValueError, "TODO error things");
+  }
+  return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_3(badge_nvs_set_u16_obj, badge_nvs_set_u16_);
+
+STATIC mp_obj_t badge_nvs_get_u16_(mp_uint_t n_args, const mp_obj_t *args) {
+  mp_uint_t len;
+  const char *namespace = mp_obj_str_get_data(args[0], &len);
+  const char *key = mp_obj_str_get_data(args[1], &len);
+  uint16_t u16value = mp_obj_get_int(args[2]);
+  esp_err_t err = badge_nvs_get_u16(namespace, key, &u16value);
+  if (err != ESP_OK) {
+    if (n_args > 2) {
+      return args[2];
+    }
+    return mp_const_none;
+  }
+  return mp_obj_new_int(u16value);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(badge_nvs_get_u16_obj, 2, 3, badge_nvs_get_u16_);
+
 
 // EINK
 
@@ -196,6 +249,10 @@ STATIC const mp_rom_map_elem_t badge_module_globals_table[] = {
 
     {MP_ROM_QSTR(MP_QSTR_nvs_get_str), MP_ROM_PTR(&badge_nvs_get_str_obj)},
     {MP_ROM_QSTR(MP_QSTR_nvs_set_str), MP_ROM_PTR(&badge_nvs_set_str_obj)},
+    {MP_ROM_QSTR(MP_QSTR_nvs_get_u8), MP_ROM_PTR(&badge_nvs_get_u8_obj)},
+    {MP_ROM_QSTR(MP_QSTR_nvs_set_u8), MP_ROM_PTR(&badge_nvs_set_u8_obj)},
+    {MP_ROM_QSTR(MP_QSTR_nvs_get_u16), MP_ROM_PTR(&badge_nvs_get_u16_obj)},
+    {MP_ROM_QSTR(MP_QSTR_nvs_set_u16), MP_ROM_PTR(&badge_nvs_set_u16_obj)},
 
 
 #if defined(PIN_NUM_LED) || defined(MPR121_PIN_NUM_LEDS)

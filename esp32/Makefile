@@ -15,7 +15,7 @@ FROZEN_MPY_DIR = modules
 include ../py/py.mk
 
 PORT ?= /dev/ttyUSB0
-BAUD ?= 460800
+BAUD ?= 921600
 FLASH_MODE ?= dio
 FLASH_FREQ ?= 40m
 FLASH_SIZE ?= 16MB
@@ -31,7 +31,7 @@ ESPTOOL ?= $(ESPCOMP)/esptool_py/esptool/esptool.py
 BADGE = $(IDF_PATH)/..
 
 # verify the ESP IDF version
-ESPIDF_SUPHASH := c9c8840c88f966e4c25e29051936abb46fac8bb3
+ESPIDF_SUPHASH := 8d71d38298444d859f6bbb2aa92bc1c09f19e664
 ESPIDF_CURHASH := $(shell git -C $(ESPIDF) show -s --pretty=format:'%H')
 ifneq ($(ESPIDF_CURHASH),$(ESPIDF_SUPHASH))
 $(info ** WARNING **)
@@ -51,9 +51,15 @@ INC += -I../lib/mp-readline
 INC += -I../lib/netutils
 INC += -I../lib/timeutils
 INC += -I../../components/badge
-INC += -I../../components/ugfx
+INC += -I../../components/ugfx-glue
 INC += -I../../components/graph
 INC += -I../../components/sha2017
+INC += -I../../components/bpp-recv
+INC += -I../../components/bpp-if
+INC += -I../../components/ed25519/include
+INC += -I../../components/redundancy
+INC += -I../../components/badge-first-run
+INC += -I../../components/png
 INC += -I../../main
 INC += -I../../ugfx/src/gdisp/mcufont
 INC += -I../../ugfx
@@ -95,6 +101,9 @@ INC += -I$(ESPCOMP)/app_trace/include
 INC += -I$(ESPCOMP)/freertos/include/freertos
 INC += -I$(ESPCOMP)/app_update/include
 INC += -I$(ESPCOMP)/bootloader_support/include_priv
+INC += -I$(ESPCOMP)/sdmmc/include
+INC += -I$(ESPCOMP)/heap/include
+INC += -I$(ESPCOMP)/soc/include
 
 CFLAGS = -std=gnu99 -Os -ffunction-sections -fdata-sections -fstrict-volatile-bitfields -mlongcalls -nostdlib -Wall -Wno-error=unused-function -Wno-error=unused-but-set-variable -Wno-error=unused-variable -Wno-error=deprecated-declarations -DMBEDTLS_CONFIG_FILE='"mbedtls/esp_config.h"' -DHAVE_CONFIG_H -DESP_PLATFORM  $(INC)
 CFLAGS += -DIDF_VER=\"$(IDF_VER)\"
@@ -152,7 +161,6 @@ SRC_C = \
 	machine_hw_spi.c \
 	mpthreadport.c \
 	esprtcmem.c \
-	espdeepsleep.c \
 	ugfx_containers.c \
 	ugfx_widgets.c \
 	ugfx_styles.c \
@@ -236,6 +244,8 @@ ESPIDF_DRIVER_O = $(addprefix $(ESPCOMP)/driver/,\
 	spi_master.o \
 	spi_common.o \
 	rtc_module.o \
+	sdmmc_host.o \
+  sdmmc_transaction.o \
 	)
 
 $(BUILD)/$(ESPCOMP)/esp32/dport_access.o: CFLAGS += -Wno-array-bounds
@@ -250,7 +260,6 @@ ESPIDF_ESP32_O = $(addprefix $(ESPCOMP)/esp32/,\
 	gdbstub.o \
 	crosscore_int.o \
 	deep_sleep.o \
-	heap_alloc_caps.o \
 	ipc.o \
 	int_wdt.o \
 	event_loop.o \
@@ -263,16 +272,23 @@ ESPIDF_ESP32_O = $(addprefix $(ESPCOMP)/esp32/,\
 	phy_init.o \
 	intr_alloc.o \
 	dport_access.o \
+	brownout.o \
+	)
+
+ESPIDF_HEAP_O = $(addprefix $(ESPCOMP)/heap/,\
+	heap_caps.o \
+	heap_caps_init.o \
+	multi_heap.o \
 	)
 
 ESPIDF_SOC_O = $(addprefix $(ESPCOMP)/soc/,\
-	esp32/brownout.o \
 	esp32/cpu_util.o \
 	esp32/rtc_clk.o \
 	esp32/rtc_init.o \
 	esp32/rtc_pm.o \
 	esp32/rtc_sleep.o \
 	esp32/rtc_time.o \
+	esp32/soc_memory_layout.o \
 	)
 
 ESPIDF_CXX_O = $(addprefix $(ESPCOMP)/cxx/,\
@@ -322,8 +338,6 @@ ESPIDF_FREERTOS_O = $(addprefix $(ESPCOMP)/freertos/,\
 	croutine.o \
 	event_groups.o \
 	FreeRTOS-openocd.o \
-	heap_regions_debug.o \
-	heap_regions.o \
 	list.o \
 	portasm.o \
 	port.o \
@@ -337,6 +351,7 @@ ESPIDF_FREERTOS_O = $(addprefix $(ESPCOMP)/freertos/,\
 	xtensa_intr.o \
 	xtensa_overlay_os_hook.o \
 	xtensa_vectors.o \
+	xtensa_vector_defaults.o \
 	)
 
 ESPIDF_VFS_O = $(addprefix $(ESPCOMP)/vfs/,\
@@ -418,6 +433,10 @@ ESPIDF_SPI_FLASH_O = $(addprefix $(ESPCOMP)/spi_flash/,\
 	cache_utils.o \
 	flash_ops.o \
 	)
+
+ESPIDF_SDMMC_O = $(addprefix $(ESPCOMP)/sdmmc/,\
+  sdmmc_cmd.o \
+  )
 
 ESPIDF_WEAR_LEVELLING_O = $(addprefix $(ESPCOMP)/wear_levelling/,\
 	wear_levelling.o \
@@ -614,6 +633,8 @@ OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_WEAR_LEVELLING_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_WPA_SUPPLICANT_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_APP_UPDATE_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_BOOTLOADER_O))
+OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_SDMMC_O))
+OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_HEAP_O))
 
 ####################
 # Badge magic
@@ -634,18 +655,36 @@ BADGE_COMPONENTS_O = $(addprefix $(BADGE)/components/,\
 	badge/badge_power.o \
 	badge/badge_eink_dev.o \
 	badge/badge_eink_lut.o \
+	badge/badge_eink_fb.o \
 	badge/badge_nvs.o \
 	badge/badge.o \
 	graph/font.o \
 	graph/font_16px.o \
 	graph/font_8px.o \
-	ugfx/gdisp_lld_framebuffer.o \
-	ugfx/ginput_lld_toggle.o \
-	ugfx/gfx_mk.o \
+	ugfx-glue/gdisp_lld_framebuffer.o \
+	ugfx-glue/ginput_lld_toggle.o \
+	ugfx-glue/gfx_mk.o \
 	sha2017/wildcard_sha2017_org.o \
 	sha2017/sha2017_ota_graphics.o \
 	sha2017/sha2017_ota.o \
+	badge-first-run/badge_first_run.o \
+	badge-first-run/png_hacking.o \
+	png/adler32.o \
+	png/crc32.o \
+	png/deflate_reader.o \
+	png/file_reader.o \
+	png/mem_reader.o \
+	png/png_reader.o \
 	)
+
+#Re-use libraries built while building non-micro-python project. Because kindly
+#fuck off with your ignore-all-esp-idf-and-make-me-state-every-single-thing-again-conventions
+#micropython makefile crap. Yes, I'm salty about that.
+BADGE_LIBS += ../../build/ed25519/libed25519.a
+BADGE_LIBS += ../../build/bpp-if/libbpp-if.a
+BADGE_LIBS += ../../build/bpp-recv/libbpp-recv.a
+BADGE_LIBS += ../../build/redundancy/libredundancy.a
+
 
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(BADGE_COMPONENTS_O))
 
@@ -684,6 +723,7 @@ APP_LD_ARGS += -L$(dir $(LIBSTDCXX_FILE_NAME)) -lstdc++
 APP_LD_ARGS += $(ESPCOMP)/newlib/lib/libc.a
 APP_LD_ARGS += $(ESPCOMP)/newlib/lib/libm.a
 APP_LD_ARGS += $(ESPCOMP)/esp32/libhal.a
+APP_LD_ARGS += $(BADGE_LIBS)
 APP_LD_ARGS += -L$(ESPCOMP)/esp32/lib -lcore -lnet80211 -lphy -lrtc -lpp -lwpa -lsmartconfig -lcoexist
 APP_LD_ARGS += $(OBJ)
 APP_LD_ARGS += --end-group
@@ -719,7 +759,7 @@ $(BUILD)/%.o: %.cpp
 ################################################################################
 # Declarations to build the bootloader
 
-$(BUILD)/bootloader/$(ESPCOMP)/%.o: CFLAGS += -DBOOTLOADER_BUILD=1 -I$(ESPCOMP)/bootloader_support/include_priv -I$(ESPCOMP)/bootloader_support/include -I$(ESPCOMP)/micro-ecc/micro-ecc -I$(ESPCOMP)/esp32 -Wno-error=format
+$(BUILD)/bootloader/$(ESPCOMP)/%.o: CFLAGS += -DBOOTLOADER_BUILD=1 -I$(ESPCOMP)/bootloader_support/include_priv -I$(ESPCOMP)/bootloader/include -I$(ESPCOMP)/bootloader_support/include -I$(ESPCOMP)/micro-ecc/micro-ecc -I$(ESPCOMP)/esp32 -Wno-error=format
 BOOTLOADER_OBJ = $(addprefix $(BUILD)/bootloader/$(ESPCOMP)/,\
 	bootloader_support/src/bootloader_flash.o \
 	bootloader_support/src/bootloader_random.o \
@@ -733,7 +773,7 @@ BOOTLOADER_OBJ = $(addprefix $(BUILD)/bootloader/$(ESPCOMP)/,\
 	soc/esp32/rtc_clk.o \
 	soc/esp32/rtc_time.o \
 	micro-ecc/micro-ecc/uECC.o \
-	bootloader/src/main/bootloader_start.o \
+	bootloader/subproject/main/bootloader_start.o \
 	)
 
 BOOTLOADER_LIBS =
@@ -752,8 +792,8 @@ BOOTLOADER_LDFLAGS += -Wl,--gc-sections
 BOOTLOADER_LDFLAGS += -static
 BOOTLOADER_LDFLAGS += -Wl,-EL
 BOOTLOADER_LDFLAGS += -Wl,-Map=$(@:.elf=.map) -Wl,--cref
-BOOTLOADER_LDFLAGS += -T $(ESPCOMP)/bootloader/src/main/esp32.bootloader.ld
-BOOTLOADER_LDFLAGS += -T $(ESPCOMP)/bootloader/src/main/esp32.bootloader.rom.ld
+BOOTLOADER_LDFLAGS += -T $(ESPCOMP)/bootloader/subproject/main/esp32.bootloader.ld
+BOOTLOADER_LDFLAGS += -T $(ESPCOMP)/bootloader/subproject/main/esp32.bootloader.rom.ld
 BOOTLOADER_LDFLAGS += -T $(ESPCOMP)/esp32/ld/esp32.rom.ld
 BOOTLOADER_LDFLAGS += -T $(ESPCOMP)/esp32/ld/esp32.rom.spiflash.ld
 
@@ -777,7 +817,7 @@ $(BUILD)/bootloader.elf: $(BOOTLOADER_OBJ)
 # Declarations to build the partitions
 
 PYTHON2 ?= python2
-PART_SRC = ../../partitions.csv
+PART_SRC = ../../partitions-16MB.csv
 
 $(BUILD)/partitions.bin: $(PART_SRC)
 	$(ECHO) "Create $@"

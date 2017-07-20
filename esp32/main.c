@@ -51,6 +51,12 @@
 #include "uart.h"
 #include "modmachine.h"
 #include "mpthreadport.h"
+#include "badge_portexp.h"
+#include "badge_pins.h"
+#include "bpp_init.h"
+#include "driver/gpio.h"
+#include "badge_base.h"
+#include "badge_first_run.h"
 
 // MicroPython runs as a task under FreeRTOS
 #define MP_TASK_PRIORITY        (ESP_TASK_PRIO_MIN + 1)
@@ -121,21 +127,59 @@ soft_reset:
     goto soft_reset;
 }
 
-void app_main(void) {
-    uint8_t magic = esp_rtcmem_read(0);
-    uint8_t inv_magic = esp_rtcmem_read(1);
+void do_bpp_bgnd() {
+	//Kick off bpp
+	bpp_init();
+	printf("Bpp inited.\n");
+	//immediately abort and reboot when touchpad detects something
+	while(gpio_get_level(PIN_NUM_MPR121_INT)==1) {
+		vTaskDelay(10);
+	}
+	printf("Touch detected. Exiting bpp, rebooting.\n");
+    esp_restart();
+}
 
-    if (magic == (uint8_t)~inv_magic) {
-      printf("Magic checked out!\n");
-        switch (magic) {
-          case 1:
-            printf("Starting OTA\n");
-            sha2017_ota_update();
-        }
-    } else {
-      xTaskCreateStaticPinnedToCore(mp_task, "mp_task", MP_TASK_STACK_LEN, NULL, MP_TASK_PRIORITY,
-                                    &mp_task_stack[0], &mp_task_tcb, 0);
-    }
+void app_main(void) {
+   badge_check_first_run();
+   badge_base_init();
+
+  uint8_t magic = esp_rtcmem_read(0);
+  uint8_t inv_magic = esp_rtcmem_read(1);
+
+#ifdef CONFIG_SHA_BPP_ENABLE
+  //Grab level of int pin of touchpad. If high, this was a
+  //scheduled wakeup because of a deep sleep timeout. If low,
+  //the user used the touchpad.
+  //yes, this is v1 specific. Please add v0.x support yourself.
+  gpio_config_t io_conf = {
+    .mode         = GPIO_MODE_INPUT,
+    .pin_bit_mask = 1LL << PIN_NUM_MPR121_INT,
+    .pull_down_en = 0,
+    .pull_up_en   = 1,
+  };
+  gpio_config(&io_conf);
+#endif
+
+  if (magic == (uint8_t)~inv_magic) {
+    printf("Magic checked out!\n");
+      switch (magic) {
+        case 1:
+          printf("Starting OTA\n");
+          sha2017_ota_update();
+          break;
+#ifdef CONFIG_SHA_BPP_ENABLE
+        case 2:
+        	if (gpio_get_level(PIN_NUM_MPR121_INT)==1) {
+        		printf("Touch int is high. Starting bpp.\n");
+        		do_bpp_bgnd();
+        	}
+          break;
+#endif
+      }
+  } else {
+    xTaskCreateStaticPinnedToCore(mp_task, "mp_task", MP_TASK_STACK_LEN, NULL, MP_TASK_PRIORITY,
+                                  &mp_task_stack[0], &mp_task_tcb, 0);
+  }
 }
 
 void nlr_jump_fail(void *val) {
