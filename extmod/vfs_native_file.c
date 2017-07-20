@@ -216,4 +216,4 @@ mp_obj_t nativefs_builtin_open_self(mp_obj_t self_in, mp_obj_t path, mp_obj_t mo
 	return file_open(self, &mp_type_textio, arg_vals);
 }
 
-#endif // MICROPY_VFS && MICROPY_VFS_FAT
+#endif // MICROPY_VFS && MICROPY_VFS_NATIVE

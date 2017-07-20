@@ -48,8 +48,8 @@ chdir(const char *path)
 		return -1;
 	}
 
-	ESP_LOGD(TAG, "cwd set to '%s'", cwd);
 	strncpy(cwd, path, sizeof(cwd));
+	ESP_LOGD(TAG, "cwd set to '%s'", cwd);
 	return 0;
 }
 char *
@@ -443,4 +443,4 @@ const mp_obj_type_t mp_native_vfs_type = {
 	.locals_dict = (mp_obj_dict_t*)&native_vfs_locals_dict,
 };
 
-#endif // MICROPY_VFS_FAT
+#endif // MICROPY_VFS_NATIVE

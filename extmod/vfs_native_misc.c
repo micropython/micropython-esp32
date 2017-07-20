@@ -101,4 +101,4 @@ mp_import_stat_t native_vfs_import_stat(fs_user_mount_t *vfs, const char *path) 
 	return MP_IMPORT_STAT_DIR;
 }
 
-#endif // MICROPY_VFS_FAT
+#endif // MICROPY_VFS_NATIVE
