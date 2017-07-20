@@ -35,6 +35,8 @@
 #include <assert.h>
 #include "tinf.h"
 
+#include <esp_log.h>
+
 uint32_t tinf_get_le_uint32(TINF_DATA *d);
 uint32_t tinf_get_be_uint32(TINF_DATA *d);
 
@@ -362,6 +364,7 @@ static int tinf_inflate_block_data(TINF_DATA *d, TINF_TREE *lt, TINF_TREE *dt)
         offs = tinf_read_bits(d, dist_bits[dist], dist_base[dist]);
         if (d->dict_ring) {
             if (offs > d->dict_size) {
+                ESP_LOGE("extmod/uzlib/tinflate", "dictionary not large enough! offs=%d, dict=%d", offs, d->dict_size);
                 return TINF_DICT_ERROR;
             }
             d->lzOff = d->dict_idx - offs;
