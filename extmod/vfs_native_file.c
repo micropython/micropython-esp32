@@ -2,6 +2,8 @@
 #if MICROPY_VFS && MICROPY_VFS_NATIVE
 
 #include <stdio.h>
+#include <unistd.h>
+#include <fcntl.h>
 #include <errno.h>
 
 #include "py/nlr.h"
@@ -23,18 +25,24 @@ extern const mp_obj_type_t mp_type_textio;
 
 typedef struct _pyb_file_obj_t {
 	mp_obj_base_t base;
-	FILE *fh;
+	int fd;
 } pyb_file_obj_t;
 
 STATIC void file_obj_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
+	pyb_file_obj_t *self = MP_OBJ_TO_PTR(self_in);
 	(void)kind;
-	mp_printf(print, "<io.%s %p>", mp_obj_get_type_str(self_in), MP_OBJ_TO_PTR(self_in));
+
+	mp_printf(print, "<io.%s %d>", mp_obj_get_type_str(self_in), self->fd);
 }
 
 STATIC mp_uint_t file_obj_read(mp_obj_t self_in, void *buf, mp_uint_t size, int *errcode) {
 	pyb_file_obj_t *self = MP_OBJ_TO_PTR(self_in);
-	int sz_out = fread(buf, 1, size, self->fh);
+
+	ESP_LOGV(TAG, "read(%d, buf, %d)", self->fd, size);
+	int sz_out = read(self->fd, buf, size);
+	ESP_LOGV(TAG, " `-> %d", sz_out);
 	if (sz_out < 0) {
+		ESP_LOGE(TAG, "read(%d, buf, %d): error %d", self->fd, size, errno);
 		*errcode = errno;
 		return MP_STREAM_ERROR;
 	}
@@ -43,27 +51,43 @@ STATIC mp_uint_t file_obj_read(mp_obj_t self_in, void *buf, mp_uint_t size, int 
 
 STATIC mp_uint_t file_obj_write(mp_obj_t self_in, const void *buf, mp_uint_t size, int *errcode) {
 	pyb_file_obj_t *self = MP_OBJ_TO_PTR(self_in);
-	int sz_out = fwrite(buf, 1, size, self->fh);
+
+	ESP_LOGV(TAG, "write(%d, buf, %d)", self->fd, size);
+	int sz_out = write(self->fd, buf, size);
+	ESP_LOGV(TAG, " `-> %d", sz_out);
 	if (sz_out < 0) {
+		ESP_LOGE(TAG, "write(%d, buf, %d): error %d", self->fd, size, errno);
 		*errcode = errno;
 		return MP_STREAM_ERROR;
 	}
-	if (sz_out != size) {
-		// The FatFS documentation says that this means disk full.
-		*errcode = MP_ENOSPC;
-		return MP_STREAM_ERROR;
+	mp_uint_t sz_out_sum = sz_out;
+	while (sz_out > 0) {
+		buf = &((const uint8_t *) buf)[sz_out];
+		size -= sz_out;
+		ESP_LOGV(TAG, "write(%d, buf, %d)", self->fd, size);
+		sz_out = write(self->fd, buf, size);
+		ESP_LOGV(TAG, " `-> %d", sz_out);
+		if (sz_out < 0) {
+			ESP_LOGE(TAG, "write(%d, buf, %d): error %d", self->fd, size, errno);
+			*errcode = errno;
+			return MP_STREAM_ERROR;
+		}
+		sz_out_sum += sz_out;
 	}
-	return sz_out;
+
+	return sz_out_sum;
 }
 
 
 STATIC mp_obj_t file_obj_close(mp_obj_t self_in) {
 	pyb_file_obj_t *self = MP_OBJ_TO_PTR(self_in);
 	// if fs==NULL then the file is closed and in that case this method is a no-op
-	if (self->fh != NULL) {
-		int res = fclose(self->fh);
-		self->fh = NULL;
+	if (self->fd != -1) {
+		ESP_LOGD(TAG, "close()");
+		int res = close(self->fd);
+		self->fd = -1;
 		if (res < 0) {
+			ESP_LOGE(TAG, "close(%d): error %d", self->fd, errno);
 			mp_raise_OSError(errno);
 		}
 	}
@@ -84,24 +108,21 @@ STATIC mp_uint_t file_obj_ioctl(mp_obj_t o_in, mp_uint_t request, uintptr_t arg,
 	if (request == MP_STREAM_SEEK) {
 		struct mp_stream_seek_t *s = (struct mp_stream_seek_t*)(uintptr_t)arg;
 
-		int res = fseek(self->fh, s->offset, s->whence);
-		if (res < 0) {
+		off_t off = lseek(self->fd, s->offset, s->whence);
+		if (off == (off_t)-1) {
+			ESP_LOGE(TAG, "ioctl(%d, %d, ..): error %d", self->fd, request, errno);
 			*errcode = errno;
 			return MP_STREAM_ERROR;
 		}
-
-		s->offset = ftell(self->fh);
+		s->offset = off;
 		return 0;
 
 	} else if (request == MP_STREAM_FLUSH) {
-		int res = fflush(self->fh);
-		if (res < 0) {
-			*errcode = errno;
-			return MP_STREAM_ERROR;
-		}
+		// fsync() not implemented.
 		return 0;
 
 	} else {
+		ESP_LOGE(TAG, "ioctl(%d, %d, ..): error %d", self->fd, request, MP_EINVAL);
 		*errcode = MP_EINVAL;
 		return MP_STREAM_ERROR;
 	}
@@ -129,16 +150,46 @@ STATIC mp_obj_t file_open(fs_user_mount_t *vfs, const mp_obj_type_t *type, mp_ar
 		return mp_const_none;
 	}
 
-	ESP_LOGD(TAG, "open('%s', '%s')", fname, mode_s);
+	const char *mode_s_orig = mode_s;
+	ESP_LOGD(TAG, "open('%s', '%s')", fname, mode_s_orig);
+
+	int mode_rw = 0, mode_x = 0;
+	while (*mode_s) {
+		switch (*mode_s++) {
+			case 'r':
+				mode_rw = O_RDONLY;
+				break;
+			case 'w':
+				mode_rw = O_WRONLY;
+				mode_x = O_CREAT | O_TRUNC;
+				break;
+			case 'a':
+				mode_rw = O_WRONLY;
+				mode_x = O_CREAT | O_APPEND;
+				break;
+			case '+':
+				mode_rw = O_RDWR;
+				break;
+#if MICROPY_PY_IO_FILEIO
+				// If we don't have io.FileIO, then files are in text mode implicitly
+			case 'b':
+				type = &mp_type_fileio;
+				break;
+			case 't':
+				type = &mp_type_textio;
+				break;
+#endif
+		}
+	}
 
 	assert(vfs != NULL);
-	FILE *fh = fopen(fname, mode_s);
-	if (fh == NULL) {
-		ESP_LOGE(TAG, "open('%s', '%s'): error %d", fname, mode_s, errno);
+	int fd = open(fname, mode_x | mode_rw, 0644);
+	if (fd == -1) {
+		ESP_LOGE(TAG, "open('%s', '%s'): error %d", fname, mode_s_orig, errno);
 		m_del_obj(pyb_file_obj_t, o);
 		mp_raise_OSError(errno);
 	}
-	o->fh = fh;
+	o->fd = fd;
 
 	return MP_OBJ_FROM_PTR(o);
 }
