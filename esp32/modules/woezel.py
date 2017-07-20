@@ -234,7 +234,9 @@ def install(to_install, install_path=None, force_reinstall=False):
     global gzdict_sz
     sz = gc.mem_free() + gc.mem_alloc()
     if sz <= 65536:
-        gzdict_sz = 16 + 12
+        # this will probably give errors with some packages, but we
+        # just don't have enough memory.
+        gzdict_sz = 16 + 13
 
     if install_path is None:
         install_path = get_install_path()
