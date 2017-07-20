@@ -686,6 +686,7 @@ BADGE_COMPONENTS_O = $(addprefix $(BADGE)/components/,\
 	png/adler32.o \
 	png/crc32.o \
 	png/deflate_reader.o \
+	png/flash_reader.o \
 	png/file_reader.o \
 	png/mem_reader.o \
 	png/png_reader.o \
