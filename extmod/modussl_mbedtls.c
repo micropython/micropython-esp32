@@ -83,7 +83,7 @@ int _mbedtls_ssl_send(void *ctx, const byte *buf, size_t len) {
 
     int out_sz = sock_stream->write(sock, buf, len, &err);
     if (out_sz == MP_STREAM_ERROR) {
-        if(mp_is_nonblocking_error(err)) {
+        if (mp_is_nonblocking_error(err)) {
             return MBEDTLS_ERR_SSL_WANT_WRITE;
         }
         return -err;
@@ -99,7 +99,7 @@ int _mbedtls_ssl_recv(void *ctx, byte *buf, size_t len) {
     int err;
     int out_sz = sock_stream->read(sock, buf, len, &err);
     if (out_sz == MP_STREAM_ERROR) {
-        if(mp_is_nonblocking_error(err)) {
+        if (mp_is_nonblocking_error(err)) {
             return MBEDTLS_ERR_SSL_WANT_READ;
         }
         return -err;
@@ -164,9 +164,9 @@ STATIC mp_obj_ssl_socket_t *socket_new(mp_obj_t sock, struct ssl_args *args) {
     }
 
     ret = mbedtls_ssl_config_defaults(&o->conf,
-                    MBEDTLS_SSL_IS_CLIENT,
-                    MBEDTLS_SSL_TRANSPORT_STREAM,
-                    MBEDTLS_SSL_PRESET_DEFAULT);
+                                      MBEDTLS_SSL_IS_CLIENT,
+                                      MBEDTLS_SSL_TRANSPORT_STREAM,
+                                      MBEDTLS_SSL_PRESET_DEFAULT);
     if (ret != 0) {
         assert(0);
     }
@@ -274,7 +274,6 @@ STATIC mp_uint_t socket_write(mp_obj_t o_in, const void *buf, mp_uint_t size, in
     return MP_STREAM_ERROR;
 }
 
-
 STATIC mp_obj_t socket_close(mp_obj_t self_in) {
     mp_obj_ssl_socket_t *self = MP_OBJ_TO_PTR(self_in);
 
@@ -331,7 +330,7 @@ STATIC mp_obj_t mod_ssl_wrap_socket(size_t n_args, const mp_obj_t *pos_args, mp_
 
     struct ssl_args args;
     mp_arg_parse_all(n_args - 1, pos_args + 1, kw_args,
-        MP_ARRAY_SIZE(allowed_args), allowed_args, (mp_arg_val_t*)&args);
+                     MP_ARRAY_SIZE(allowed_args), allowed_args, (mp_arg_val_t*)&args);
 
     return MP_OBJ_FROM_PTR(socket_new(sock, &args));
 }
