@@ -60,7 +60,7 @@
 
 // MicroPython runs as a task under FreeRTOS
 #define MP_TASK_PRIORITY        (ESP_TASK_PRIO_MIN + 1)
-#define MP_TASK_STACK_SIZE      (16 * 1024)
+#define MP_TASK_STACK_SIZE      ( 8 * 1024)
 #define MP_TASK_STACK_LEN       (MP_TASK_STACK_SIZE / sizeof(StackType_t))
 #define MP_TASK_HEAP_SIZE       (64 * 1024)
 
