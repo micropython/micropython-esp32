@@ -278,7 +278,7 @@ class WaitingMessage:
 		# Indicator to show something is going on
 		self.indicator = ugfx.Label(ugfx.width() - 100, 0, 20, 20, text = "...", parent=self.window)
 		self.timer = machine.Timer(-1)
-		self.timer.init(period=2000, mode=Timer.PERIODIC, callback=lambda t:self.indicator.visible(not self.indicator.visible()))
+		self.timer.init(period=2000, mode=self.timer.PERIODIC, callback=lambda t:self.indicator.visible(not self.indicator.visible()))
 
 	def destroy(self):
 		self.timer.deinit()
