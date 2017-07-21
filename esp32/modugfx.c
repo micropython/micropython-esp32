@@ -122,11 +122,14 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_0(ugfx_deinit_obj, ugfx_deinit);
 // LUT stettings
 
 STATIC mp_obj_t ugfx_set_lut(mp_obj_t selected_lut) {
-  uint8_t lut = mp_obj_get_int(selected_lut) + 1;
-  if (lut < 1 || lut > 4) {
+  int lut = mp_obj_get_int(selected_lut);
+  if (lut >= 0 && lut <= BADGE_EINK_LUT_MAX) {
+    target_lut = lut;
+  } else if (lut >= 0xf0 && lut <= 0xff) {
+    target_lut = lut;
+  } else {
     mp_raise_msg(&mp_type_ValueError, "invalid LUT");
   }
-  target_lut = lut;
   return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(ugfx_set_lut_obj, ugfx_set_lut);
@@ -271,10 +274,12 @@ STATIC mp_obj_t ugfx_flush(mp_uint_t n_args, const mp_obj_t *args) {
 #ifdef UNIX
   mp_hal_delay_ms(EMU_EINK_SCREEN_DELAY_MS);
 #endif
-	if (n_args == 1) {
-		ugfx_set_lut(args[0]);
-	}
+  uint8_t target_lut_backup = target_lut;
+  if (n_args == 1) {
+    ugfx_set_lut(args[0]);
+  }
   gdispFlush();
+  target_lut = target_lut_backup;
   return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ugfx_flush_obj, 0, 1, ugfx_flush);
