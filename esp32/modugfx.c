@@ -122,11 +122,14 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_0(ugfx_deinit_obj, ugfx_deinit);
 // LUT stettings
 
 STATIC mp_obj_t ugfx_set_lut(mp_obj_t selected_lut) {
-  uint8_t lut = mp_obj_get_int(selected_lut) + 1;
-  if (lut < 1 || lut > 4) {
+  int lut = mp_obj_get_int(selected_lut);
+  if (lut >= 0 && lut <= BADGE_EINK_LUT_MAX) {
+    target_lut = lut;
+  } else if (lut >= 0xf0 && lut <= 0xff) {
+    target_lut = lut;
+  } else {
     mp_raise_msg(&mp_type_ValueError, "invalid LUT");
   }
-  target_lut = lut;
   return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(ugfx_set_lut_obj, ugfx_set_lut);
