@@ -39,6 +39,8 @@
 #include "py/runtime.h"
 #include "rom/rtc.h"
 
+#include <esp_heap_caps.h>
+
 #if MICROPY_SDMMC_USE_DRIVER
 #include "badge_power.h"
 #include "badge_sdcard.h"
@@ -155,6 +157,12 @@ STATIC mp_obj_t esp_rtcmem_write_string_(mp_uint_t n_args, const mp_obj_t *args)
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(esp_rtcmem_write_string_obj, 1, 2, esp_rtcmem_write_string_);
 
+STATIC mp_obj_t dump_mem_allocs(mp_obj_t cap) {
+	uint32_t cap_id = mp_obj_get_int(cap);
+	heap_caps_print_heap_info( cap_id );
+	return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(dump_mem_allocs_obj, dump_mem_allocs);
 
 STATIC mp_obj_t esp_rtc_get_reset_reason_(mp_obj_t cpu) {
   uint8_t cpu_id = mp_obj_get_int(cpu);
@@ -342,6 +350,8 @@ STATIC const mp_rom_map_elem_t esp_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_flash_size), MP_ROM_PTR(&esp_flash_size_obj) },
     { MP_ROM_QSTR(MP_QSTR_flash_user_start), MP_ROM_PTR(&esp_flash_user_start_obj) },
     { MP_ROM_QSTR(MP_QSTR_flash_sec_size), MP_ROM_PTR(&esp_flash_sec_size_obj) },
+
+	{ MP_ROM_QSTR(MP_QSTR_dump_mem_allocs), MP_ROM_PTR(&dump_mem_allocs_obj) },
 
     {MP_ROM_QSTR(MP_QSTR_rtcmem_write), MP_ROM_PTR(&esp_rtcmem_write_obj)},
     {MP_ROM_QSTR(MP_QSTR_rtcmem_read), MP_ROM_PTR(&esp_rtcmem_read_obj)},
