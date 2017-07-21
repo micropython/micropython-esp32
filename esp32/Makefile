@@ -210,6 +210,12 @@ LIB_SRC_C = $(addprefix lib/,\
  	utils/sys_stdio_mphal.c \
 	)
 
+LIB_SRC_C += \
+	$(ESPCOMP)/fatfs/src/diskio_spiflash.c \
+	$(ESPCOMP)/fatfs/src/diskio.c \
+	$(ESPCOMP)/fatfs/src/vfs_fat_spiflash.c \
+	$(ESPCOMP)/fatfs/src/vfs_fat.c
+
 ifeq ($(MICROPY_FATFS), 1)
 LIB_SRC_C += \
 	lib/oofatfs/ff.c \
