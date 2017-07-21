@@ -105,7 +105,7 @@ INC += -I$(ESPCOMP)/bootloader_support/include_priv
 INC += -I$(ESPCOMP)/sdmmc/include
 INC += -I$(ESPCOMP)/heap/include
 INC += -I$(ESPCOMP)/soc/include
-INC += -I$(ESPCOMP)/fatfs
+INC += -I$(ESPCOMP)/fatfs/src
 INC += -I$(ESPCOMP)/vfs/include
 
 CFLAGS = -std=gnu99 -Os -ffunction-sections -fdata-sections -fstrict-volatile-bitfields -mlongcalls -nostdlib -Wall -Wno-error=unused-function -Wno-error=unused-but-set-variable -Wno-error=unused-variable -Wno-error=deprecated-declarations -DMBEDTLS_CONFIG_FILE='"mbedtls/esp_config.h"' -DHAVE_CONFIG_H -DESP_PLATFORM  $(INC)
