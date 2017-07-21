@@ -1,17 +1,17 @@
 import ugfx, appglue, hashlib, ubinascii, time, uos
 
-names = ["Kartoffel", "Sebastius", "tsd", "Sprite_TM", "Underhand", "MaruksBek", "Roosted", "the_JinX", "realitygaps", "raboof", "Alexandre Dulaunoy", " Eric Poulsen", "Damien P. George", "Renze Nicolai"]
+names = ["Niek Blankers", "Sebastiaan Oort", "Bas van Sisseren", "Jeroen Domburg", "Gavan Fantom", "Markus Bechtold", "Thomas Roos", "Anne Jan Brouwer", "Renze Nicolai", "Aram Verstegen", "Arnout Engelen", "Alexandre Dulaunoy", " Eric Poulsen", "Damien P. George"]
 
 def action_exit(pushed):
     if (pushed):
         appglue.home()
-        
+
 def fill_screen_with_crap(c):
     print("Filling screen...")
     for i in range(0,3):
         nr = int.from_bytes(uos.urandom(1), 1)
         sha = hashlib.sha1(str(nr))
-        s = ubinascii.hexlify(sha.digest())    
+        s = ubinascii.hexlify(sha.digest())
         for j in range(0,8):
             x = 0 #int.from_bytes(uos.urandom(1), 1)
             y = int.from_bytes(uos.urandom(1), 1)
@@ -19,7 +19,7 @@ def fill_screen_with_crap(c):
                 ugfx.string(x, y, s+s+s, "Roboto_Regular12", c)
         ugfx.flush()
     print("done.")
-    
+
 def draw_name(x,y,name):
     print("Drawing name "+name)
     for i in range(1,5):
@@ -34,7 +34,7 @@ def draw_name(x,y,name):
     ugfx.string(x, y, name, "PermanentMarker22", ugfx.BLACK)
     print("done.")
     ugfx.flush()
-    
+
 def show_names():
     global names
     c = False
@@ -68,6 +68,6 @@ def main():
     ugfx.input_attach(ugfx.BTN_START, action_exit)
     fill_screen_with_crap(ugfx.BLACK)
     show_names()
-    
+
 while (True):
     main()

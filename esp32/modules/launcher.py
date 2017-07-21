@@ -6,7 +6,7 @@ import time
 import esp
 import appglue
 
-version = "Gekalibreerde Kwibus"
+version = "Gouden Ganzeveer"
 
 ugfx.init()
 ugfx.input_init()
