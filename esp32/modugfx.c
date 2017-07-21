@@ -274,10 +274,12 @@ STATIC mp_obj_t ugfx_flush(mp_uint_t n_args, const mp_obj_t *args) {
 #ifdef UNIX
   mp_hal_delay_ms(EMU_EINK_SCREEN_DELAY_MS);
 #endif
-	if (n_args == 1) {
-		ugfx_set_lut(args[0]);
-	}
+  uint8_t target_lut_backup = target_lut;
+  if (n_args == 1) {
+    ugfx_set_lut(args[0]);
+  }
   gdispFlush();
+  target_lut = target_lut_backup;
   return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ugfx_flush_obj, 0, 1, ugfx_flush);
