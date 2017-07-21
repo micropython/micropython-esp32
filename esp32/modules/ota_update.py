@@ -1,2 +1,2 @@
-import app_glue
+import appglue
 appglue.start_ota()
