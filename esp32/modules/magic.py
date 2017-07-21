@@ -1,6 +1,6 @@
 import ugfx, appglue, hashlib, ubinascii, time, uos
 
-names = ["Niek Blankers", "Sebastiaan Oort", "Bas van Sisseren", "Jeroen Domburg", "Gavan Fantom", "Markus Bechtold", "Thomas Roos", "Anne Jan Brouwer", "Renze Nicolai", "Aram Verstegen", "Arnout Engelen", "Alexandre Dulaunoy", " Eric Poulsen", "Damien P. George"]
+names = ["Niek Blankers", "Sebastian Oort", "Bas van Sisseren", "Jeroen Domburg", "Gavan Fantom", "Markus Bechtold", "Thomas Roos", "Anne Jan Brouwer", "Renze Nicolai", "Aram Verstegen", "Arnout Engelen", "Alexandre Dulaunoy", " Eric Poulsen", "Damien P. George"]
 
 def action_exit(pushed):
     if (pushed):
