@@ -683,10 +683,10 @@ BADGE_COMPONENTS_O = $(addprefix $(BADGE)/components/,\
 	sha2017/sha2017_ota_graphics.o \
 	sha2017/sha2017_ota.o \
 	badge-first-run/badge_first_run.o \
-	badge-first-run/png_hacking.o \
 	png/adler32.o \
 	png/crc32.o \
 	png/deflate_reader.o \
+	png/flash_reader.o \
 	png/file_reader.o \
 	png/mem_reader.o \
 	png/png_reader.o \
