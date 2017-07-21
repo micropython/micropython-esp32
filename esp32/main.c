@@ -175,6 +175,8 @@ void app_main(void) {
         	}
           break;
 #endif
+        case 3:
+          badge_first_run();
       }
   } else {
     xTaskCreateStaticPinnedToCore(mp_task, "mp_task", MP_TASK_STACK_LEN, NULL, MP_TASK_PRIORITY,
