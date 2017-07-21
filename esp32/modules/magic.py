@@ -13,10 +13,10 @@ def fill_screen_with_crap(c):
         sha = hashlib.sha1(str(nr))
         s = ubinascii.hexlify(sha.digest())    
         for j in range(0,8):
-            x = int.from_bytes(uos.urandom(1), 1)
+            x = 0 #int.from_bytes(uos.urandom(1), 1)
             y = int.from_bytes(uos.urandom(1), 1)
             if (x<ugfx.width()) and (y<ugfx.height()):
-                ugfx.string(x, y, s, "Roboto_Regular12", c)
+                ugfx.string(x, y, s+s+s, "Roboto_Regular12", c)
         ugfx.flush()
     print("done.")
     
@@ -40,11 +40,11 @@ def show_names():
     c = False
     for n in range(0, len(names)):
         color = ugfx.BLACK
-        #if (c):
-        #    c = False
-        #else:
-        #    c = True
-        #    color = ugfx.WHITE
+        if (c):
+            c = False
+        else:
+            c = True
+            color = ugfx.WHITE
         fill_screen_with_crap(color)
         x = int.from_bytes(uos.urandom(1), 1)
         y = round(int.from_bytes(uos.urandom(1), 1)/2)
