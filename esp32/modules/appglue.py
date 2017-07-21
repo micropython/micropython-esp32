@@ -14,3 +14,8 @@ def start_app(app):
 
 def home():
     start_app("")
+
+def start_ota():
+    esp.rtcmem_write(0,1)
+    esp.rtcmem_write(1,~1)
+    deepsleep.reboot()
