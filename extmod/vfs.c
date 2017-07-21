@@ -39,6 +39,10 @@
 #include "extmod/vfs_fat.h"
 #endif
 
+#if MICROPY_VFS_NATIVE
+#include "extmod/vfs_native.h"
+#endif
+
 // path is the path to lookup and *path_out holds the path within the VFS
 // object (starts with / if an absolute path).
 // Returns MP_VFS_ROOT for root dir (and then path_out is undefined) and
@@ -124,6 +128,12 @@ mp_import_stat_t mp_vfs_import_stat(const char *path) {
     // fast paths for known VFS types
     if (mp_obj_get_type(vfs->obj) == &mp_fat_vfs_type) {
         return fat_vfs_import_stat(MP_OBJ_TO_PTR(vfs->obj), path_out);
+    }
+    #endif
+    #if MICROPY_VFS_NATIVE
+    // fast paths for known VFS types
+    if (mp_obj_get_type(vfs->obj) == &mp_native_vfs_type) {
+        return native_vfs_import_stat(MP_OBJ_TO_PTR(vfs->obj), path_out);
     }
     #endif
     // TODO delegate to vfs.stat() method

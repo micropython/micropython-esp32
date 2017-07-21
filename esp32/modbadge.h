@@ -6,11 +6,15 @@
 #include "badge.h"
 #include "badge_pins.h"
 #include "badge_eink.h"
+#include "badge_eink_fb.h"
 #include "badge_eink_dev.h"
 #include "badge_power.h"
 #include "badge_leds.h"
 #include "badge_vibrator.h"
 #include "badge_nvs.h"
+
+#include "file_reader.h"
+#include "png_reader.h"
 
 #include "font.h"
 #include "font_16px.h"

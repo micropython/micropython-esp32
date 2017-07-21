@@ -5,7 +5,8 @@ QSTR_DEFS = qstrdefsport.h
 
 MICROPY_PY_USSL = 0
 MICROPY_SSL_AXTLS = 0
-MICROPY_FATFS = 1
+MICROPY_FATFS = 0
+MICROPY_NATIVEFS = 1
 MICROPY_PY_BTREE = 0
 
 #FROZEN_DIR = scripts
@@ -104,6 +105,8 @@ INC += -I$(ESPCOMP)/bootloader_support/include_priv
 INC += -I$(ESPCOMP)/sdmmc/include
 INC += -I$(ESPCOMP)/heap/include
 INC += -I$(ESPCOMP)/soc/include
+INC += -I$(ESPCOMP)/fatfs/src
+INC += -I$(ESPCOMP)/vfs/include
 
 CFLAGS = -std=gnu99 -Os -ffunction-sections -fdata-sections -fstrict-volatile-bitfields -mlongcalls -nostdlib -Wall -Wno-error=unused-function -Wno-error=unused-but-set-variable -Wno-error=unused-variable -Wno-error=deprecated-declarations -DMBEDTLS_CONFIG_FILE='"mbedtls/esp_config.h"' -DHAVE_CONFIG_H -DESP_PLATFORM  $(INC)
 CFLAGS += -DIDF_VER=\"$(IDF_VER)\"
@@ -139,7 +142,6 @@ SRC_C = \
 	uart.c \
 	gccollect.c \
 	mphalport.c \
-	fatfs_port.c \
 	help.c \
 	modutime.c \
 	moduos.c \
@@ -212,6 +214,19 @@ ifeq ($(MICROPY_FATFS), 1)
 LIB_SRC_C += \
 	lib/oofatfs/ff.c \
 	lib/oofatfs/option/unicode.c
+endif
+
+ifeq ($(MICROPY_NATIVEFS), 1)
+LIB_SRC_C += \
+	$(ESPCOMP)/fatfs/src/ff.c \
+	$(ESPCOMP)/fatfs/src/diskio_sdmmc.c \
+	$(ESPCOMP)/fatfs/src/diskio_spiflash.c \
+	$(ESPCOMP)/fatfs/src/diskio.c \
+	$(ESPCOMP)/fatfs/src/vfs_fat_sdmmc.c \
+	$(ESPCOMP)/fatfs/src/vfs_fat_spiflash.c \
+	$(ESPCOMP)/fatfs/src/vfs_fat.c \
+	$(ESPCOMP)/fatfs/src/option/syscall.c \
+	$(ESPCOMP)/fatfs/src/option/unicode.c
 endif
 
 DRIVERS_SRC_C = $(addprefix drivers/,\

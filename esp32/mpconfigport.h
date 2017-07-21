@@ -53,7 +53,8 @@
 #define MICROPY_ENABLE_SCHEDULER            (1)
 #define MICROPY_SCHEDULER_DEPTH             (8)
 #define MICROPY_VFS                         (1)
-#define MICROPY_VFS_FAT                     (1)
+//#define MICROPY_VFS_FAT                     (1)
+#define MICROPY_VFS_NATIVE                  (1)
 
 // control over Python builtins
 #define MICROPY_PY_BUILTINS_INPUT           (1)
@@ -147,8 +148,13 @@
 #define MICROPY_FATFS_RPATH                 (2)
 #define MICROPY_FATFS_MAX_SS                (4096)
 #define MICROPY_FATFS_LFN_CODE_PAGE         (437) /* 1=SFN/ANSI 437=LFN/U.S.(OEM) */
-#define mp_type_fileio                      fatfs_type_fileio
-#define mp_type_textio                      fatfs_type_textio
+#if defined(MICROPY_VFS_FAT)
+ #define mp_type_fileio                      fatfs_type_fileio
+ #define mp_type_textio                      fatfs_type_textio
+#elif defined(MICROPY_VFS_NATIVE)
+ #define mp_type_fileio                      nativefs_type_fileio
+ #define mp_type_textio                      nativefs_type_textio
+#endif
 
 // sdcard using ESP32 sdmmc driver configuration
 #define MICROPY_SDMMC_USE_DRIVER            (1)
