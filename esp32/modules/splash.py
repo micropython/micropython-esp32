@@ -277,6 +277,22 @@ def start_ota(pushed):
     if(pushed):
         print("[SPLASH] Starting OTA...")
         appglue.start_ota()
+        
+# MAGIC
+def actually_start_magic():
+    print("[SPLASH] Starting magic...")
+    esp.rtcmem_write_string("magic")
+    deepsleep.reboot()
+
+magic = 0        
+def start_magic(pushed):
+    global magic
+    if(pushed):
+        magic = magic + 1
+        if (magic>10):
+            actually_start_magic()
+        else:
+            print("[SPLASH] Magic in "+str(10-magic)+"...")
       
 # SLEEP
 def badge_sleep():
@@ -477,6 +493,7 @@ def splash_main():
         ugfx.input_init()
         welcome()
         ugfx.input_attach(ugfx.BTN_START, start_launcher)
+        ugfx.input_attach(ugfx.BTN_A, start_magic)
         global splashTimer
         setup_services()
         start_sleep_counter()
