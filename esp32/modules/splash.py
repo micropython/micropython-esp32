@@ -277,7 +277,12 @@ def start_ota(pushed):
     if(pushed):
         print("[SPLASH] Starting OTA...")
         appglue.start_ota()
-        
+  
+# NOTHING
+def nothing(pressed):
+    if (pressed):
+        reset_countdown()
+  
 # MAGIC
 def actually_start_magic():
     print("[SPLASH] Starting magic...")
@@ -286,6 +291,7 @@ def actually_start_magic():
 
 magic = 0        
 def start_magic(pushed):
+    reset_countdown()
     global magic
     if(pushed):
         magic = magic + 1
@@ -312,7 +318,7 @@ def badge_sleep_forever():
 def splashTimer_callback(tmr):
     global loopCnt
     global timer_loop_amount
-    #print("[TIMER] "+str(loopCnt))
+    print("[TIMER] "+str(loopCnt))
     if loopCnt<1:
         loopCnt = timer_loop_amount
         cstate = badge.battery_charge_status()
@@ -338,6 +344,11 @@ def splashTimer_callback(tmr):
         if (loop_services(loopCnt)):
             loopCnt = timer_loop_amount
     loopCnt = loopCnt - 1
+    
+def reset_countdown():
+    global loopCnt
+    global timer_loop_amount
+    loopCnt = timer_loop_amount
   
 def start_sleep_counter():
     global splashTimer
@@ -497,6 +508,12 @@ def splash_main():
         welcome()
         ugfx.input_attach(ugfx.BTN_START, start_launcher)
         ugfx.input_attach(ugfx.BTN_A, start_magic)
+        ugfx.input_attach(ugfx.BTN_B, nothing)
+        ugfx.input_attach(ugfx.BTN_SELECT, nothing)
+        ugfx.input_attach(ugfx.JOY_UP, nothing)
+        ugfx.input_attach(ugfx.JOY_DOWN, nothing)
+        ugfx.input_attach(ugfx.JOY_LEFT, nothing)
+        ugfx.input_attach(ugfx.JOY_RIGHT, nothing)
         global splashTimer
         setup_services()
         start_sleep_counter()
@@ -527,7 +544,7 @@ header_status_string = ""
 splash_timer_interval = 500
 
 update_available = False
-update_name = "BIG FAT ERROR"
+update_name = "????"
 update_build = 0
 
 splash_main()
