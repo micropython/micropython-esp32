@@ -462,9 +462,9 @@ def load_settings():
     #if (sleep_duration>120):
     #    print("[SPLASH] Sleep duration set to more than 120 seconds. Forcing 120 seconds.") 
     global battery_volt_min
-    battery_volt_min = badge.nvs_get_u16('splash', 'battery.volt.min', 3800) # mV
+    battery_volt_min = badge.nvs_get_u16('splash', 'battery.volt.min', 3700) # mV
     global battery_volt_max
-    battery_volt_max = badge.nvs_get_u16('splash', 'battery.volt.max', 4300) # mV
+    battery_volt_max = badge.nvs_get_u16('splash', 'battery.volt.max', 4200) # mV
     global battery_percent_empty
     battery_percent_empty = badge.nvs_get_u8('splash', 'battery.percent.empty', 1) # %
     global ntp_timeout
@@ -472,9 +472,9 @@ def load_settings():
     global bpp_after_count
     bpp_after_count = badge.nvs_get_u8('splash', 'bpp.count', 5)
     global splash_timer_interval
-    splash_timer_interval = badge.nvs_get_u16('splash', 'timer.interval', 500)
+    splash_timer_interval = badge.nvs_get_u16('splash', 'timer.interval', 200)
     global timer_loop_amount
-    timer_loop_amount = badge.nvs_get_u8('splash', 'timer.amount', 10)
+    timer_loop_amount = badge.nvs_get_u8('splash', 'timer.amount', 25)
     
 # MAIN
 def splash_main():   
