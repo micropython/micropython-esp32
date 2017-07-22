@@ -319,6 +319,8 @@ def splashTimer_callback(tmr):
     global loopCnt
     global timer_loop_amount
     #print("[TIMER] "+str(loopCnt))
+    #print("[BATTERY] "+str(badge.battery_volt_sense())+" ["+str(badge.battery_charge_status())+"]")
+        
     if loopCnt<1:
         loopCnt = timer_loop_amount
         cstate = badge.battery_charge_status()
@@ -384,7 +386,6 @@ def wifi_connect():
     return True
     
 # CHECK OTA VERSION
-
 def download_ota_info():
     import gc
     import urequests as requests
