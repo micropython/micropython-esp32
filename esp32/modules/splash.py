@@ -318,7 +318,7 @@ def badge_sleep_forever():
 def splashTimer_callback(tmr):
     global loopCnt
     global timer_loop_amount
-    print("[TIMER] "+str(loopCnt))
+    #print("[TIMER] "+str(loopCnt))
     if loopCnt<1:
         loopCnt = timer_loop_amount
         cstate = badge.battery_charge_status()
