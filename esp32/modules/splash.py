@@ -312,6 +312,7 @@ def badge_sleep_forever():
 def splashTimer_callback(tmr):
     global loopCnt
     global timer_loop_amount
+    #print("[TIMER] "+str(loopCnt))
     if loopCnt<1:
         loopCnt = timer_loop_amount
         cstate = badge.battery_charge_status()
@@ -475,6 +476,8 @@ def load_settings():
     splash_timer_interval = badge.nvs_get_u16('splash', 'timer.interval', 200)
     global timer_loop_amount
     timer_loop_amount = badge.nvs_get_u8('splash', 'timer.amount', 25)
+    global loopCnt
+    loopCnt = timer_loop_amount
     
 # MAIN
 def splash_main():   
@@ -508,7 +511,7 @@ def splash_main():
 # GLOBALS (With defaults that will probably never be used)
 splashTimer = machine.Timer(0)
 services = []
-timer_loop_amount = 10
+timer_loop_amount = 9999
 loopCnt = timer_loop_amount
 header_fg = ugfx.BLACK
 header_bg = ugfx.WHITE
