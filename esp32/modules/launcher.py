@@ -5,8 +5,7 @@ import ujson as json
 import time
 import esp
 import appglue
-
-version = "Gouden Ganzeveer"
+import version
 
 ugfx.init()
 ugfx.input_init()
@@ -29,7 +28,7 @@ ugfx.line(line_begin, 68, line_end, 68, ugfx.BLACK)
 cursor_pos = line_end+5
 ugfx.line(cursor_pos, 46, cursor_pos, 66, ugfx.BLACK)
 
-ugfx.string_box(148,110,148,18, version,"Roboto_Regular12",ugfx.BLACK, ugfx.justifyLeft)
+ugfx.string_box(148,110,148,18, version.name,"Roboto_Regular12",ugfx.BLACK, ugfx.justifyLeft)
 ugfx.flush()
 options = None
 install_path = None
