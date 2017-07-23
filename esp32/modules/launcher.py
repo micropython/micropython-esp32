@@ -107,6 +107,8 @@ ugfx.input_attach(ugfx.BTN_B, uninstall_it)
 ugfx.input_attach(ugfx.JOY_UP, lambda pushed: ugfx.flush() if pushed else 0)
 ugfx.input_attach(ugfx.JOY_DOWN, lambda pushed: ugfx.flush() if pushed else 0)
 
+ugfx.input_attach(ugfx.BTN_START, lambda pushed: appglue.start_app("") if pushed else 0)
+
 ugfx.set_lut(ugfx.LUT_FULL)
 ugfx.flush()
 ugfx.set_lut(ugfx.LUT_FASTER)
