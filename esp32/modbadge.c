@@ -319,6 +319,7 @@ STATIC mp_obj_t badge_leds_send_data_(mp_uint_t n_args, const mp_obj_t *args) {
   return mp_obj_new_int(badge_leds_send_data(leds, len));
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(badge_leds_send_data_obj, 2,2 ,badge_leds_send_data_);
+#endif
 
 #if defined(PORTEXP_PIN_NUM_VIBRATOR) || defined(MPR121_PIN_NUM_VIBRATOR)
 STATIC mp_obj_t badge_vibrator_init_() {
