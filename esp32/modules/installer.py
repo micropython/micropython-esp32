@@ -14,7 +14,7 @@ ugfx.string(20,25,"Connecting to:","Roboto_BlackItalic24",ugfx.WHITE)
 ugfx.string(140,75, "WiFi","PermanentMarker22",ugfx.WHITE)
 ugfx.flush()
 
-timeout = 500
+timeout = 250
 while not wifi.sta_if.isconnected():
     time.sleep(0.1)
     timeout = timeout - 1
