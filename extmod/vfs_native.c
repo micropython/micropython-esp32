@@ -400,7 +400,7 @@ STATIC mp_obj_t native_vfs_mount(mp_obj_t self_in, mp_obj_t readonly, mp_obj_t m
 
 	// mount the block device
 	const esp_vfs_fat_mount_config_t mount_config = {
-		.max_files              = 8,
+		.max_files              = 3, // every open file costs 4236 bytes of heap.
 		.format_if_mount_failed = true,
 	};
 
