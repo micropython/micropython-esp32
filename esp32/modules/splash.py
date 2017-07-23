@@ -320,7 +320,7 @@ def splashTimer_callback(tmr):
     global timer_loop_amount
     #print("[TIMER] "+str(loopCnt))
     #print("[BATTERY] "+str(badge.battery_volt_sense())+" ["+str(badge.battery_charge_status())+"]")
-        
+
     if loopCnt<1:
         loopCnt = timer_loop_amount
         cstate = badge.battery_charge_status()
