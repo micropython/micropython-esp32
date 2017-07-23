@@ -45,8 +45,6 @@ STATIC mp_obj_t badge_init_() {
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_init_obj, badge_init_);
 
 /*** nvs access ***/
-
-/* nvs: strings */
 static void _nvs_check_namespace_key(const char *namespace, const char *key) {
   if (strlen(namespace) == 0 || strlen(namespace) > 15) {
     mp_raise_msg(&mp_type_AttributeError, "Invalid namespace");
@@ -56,6 +54,20 @@ static void _nvs_check_namespace_key(const char *namespace, const char *key) {
   }
 }
 
+STATIC mp_obj_t badge_nvs_erase_key_(mp_obj_t _namespace, mp_obj_t _key) {
+  const char *namespace = mp_obj_str_get_str(_namespace);
+  const char *key       = mp_obj_str_get_str(_key);
+  _nvs_check_namespace_key(namespace, key);
+
+  esp_err_t err = badge_nvs_erase_key(namespace, key);
+  if (err != ESP_OK) {
+    mp_raise_msg(&mp_type_ValueError, "Failed to store data in nvs");
+  }
+
+  return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_2(badge_nvs_erase_key_obj, badge_nvs_erase_key_);
+/* nvs: strings */
 STATIC mp_obj_t badge_nvs_get_str_(mp_uint_t n_args, const mp_obj_t *args) {
   const char *namespace = mp_obj_str_get_str(args[0]);
   const char *key       = mp_obj_str_get_str(args[1]);
@@ -339,6 +351,7 @@ STATIC const mp_rom_map_elem_t badge_module_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR_eink_init), MP_ROM_PTR(&badge_eink_init_obj)},
     {MP_OBJ_NEW_QSTR(MP_QSTR_power_init), (mp_obj_t)&badge_power_init_obj},
 
+    {MP_ROM_QSTR(MP_QSTR_nvs_erase_key), MP_ROM_PTR(&badge_nvs_erase_key_obj)},
     {MP_ROM_QSTR(MP_QSTR_nvs_get_str), MP_ROM_PTR(&badge_nvs_get_str_obj)},
     {MP_ROM_QSTR(MP_QSTR_nvs_set_str), MP_ROM_PTR(&badge_nvs_set_str_obj)},
     {MP_ROM_QSTR(MP_QSTR_nvs_get_u8), MP_ROM_PTR(&badge_nvs_get_u8_obj)},
