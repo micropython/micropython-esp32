@@ -11,7 +11,7 @@ def store_settings(nickname):
 
 def is_developer(nickname):
     if (nickname==""):
-        badge.nvs_set_str('badge', 'setup.state', '2') # Skip the sponsors
+        badge.nvs_set_u8('badge', 'setup.state', 2) # Skip the sponsors
         return True
     return False
 
@@ -20,11 +20,11 @@ def action_home(pressed):
         appglue.start_app("")
 
 def set_setup_state():
-    s_old = int(badge.nvs_get_str('badge', 'setup.state', '0'))
+    s_old = badge.nvs_get_u8('badge', 'setup.state', 0)
     s_new = 2
     if (s_old==0):
         s_new = 1
-    badge.nvs_set_str('badge', 'setup.state', str(s_new))
+    badge.nvs_set_u8('badge', 'setup.state', s_new)
 
 def draw_setup_completed():
     ugfx.clear(ugfx.WHITE)
