@@ -61,19 +61,21 @@ def start_app(pushed):
         selected = packages[options.selected_index()]["slug"]
         appglue.start_app(selected)
 
+def start_launcher(pushed):
+    if(pushed):
+        appglue.start_app('launcher')
+
 ugfx.input_init()
 
 window = ugfx.Container(0, 0, ugfx.width(), ugfx.height())
 
 ugfx.input_attach(ugfx.JOY_UP, show_description)
 ugfx.input_attach(ugfx.JOY_DOWN, show_description)
+
 ugfx.input_attach(ugfx.BTN_A, woezel_it)
-ugfx.input_attach(ugfx.BTN_B, woezel_it)
+ugfx.input_attach(ugfx.BTN_B, start_launcher)
 
 ugfx.input_attach(ugfx.BTN_START, start_app)
-
-ugfx.input_attach(ugfx.JOY_LEFT, lambda pushed: ugfx.flush() if pushed else 0)
-ugfx.input_attach(ugfx.JOY_RIGHT, lambda pushed: ugfx.flush() if pushed else 0)
 
 text = ugfx.Textbox(int(ugfx.width()/2),0, int(ugfx.width()/2), ugfx.height())
 
