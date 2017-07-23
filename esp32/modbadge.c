@@ -28,6 +28,8 @@
  * THE SOFTWARE.
  */
 
+#include <string.h>
+
 #include "modbadge.h"
 
 #include "py/mperrno.h"
@@ -42,13 +44,28 @@ STATIC mp_obj_t badge_init_() {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_init_obj, badge_init_);
 
-// NVS
+/*** nvs access ***/
+
+/* nvs: strings */
+static void _nvs_check_namespace_key(const char *namespace, const char *key) {
+  if (strlen(namespace) == 0 || strlen(namespace) > 15) {
+    mp_raise_msg(&mp_type_AttributeError, "Invalid namespace");
+  }
+  if (strlen(key) == 0 || strlen(key) > 15) {
+    mp_raise_msg(&mp_type_AttributeError, "Invalid key");
+  }
+}
 
 STATIC mp_obj_t badge_nvs_get_str_(mp_uint_t n_args, const mp_obj_t *args) {
-  mp_uint_t len;
-  const char *namespace = mp_obj_str_get_data(args[0], &len);
-  const char *key = mp_obj_str_get_data(args[1], &len);
-  char value[256]; // TODO wut?
+  const char *namespace = mp_obj_str_get_str(args[0]);
+  const char *key       = mp_obj_str_get_str(args[1]);
+  _nvs_check_namespace_key(namespace, key);
+
+  // current max string length in esp-idf is 1984 bytes, but that
+  // would abuse our stack too much. we only allow strings with a
+  // max length of 255 chars.
+  char value[256];
+
   size_t length = sizeof(value);
   esp_err_t err = badge_nvs_get_str(namespace, key, value, &length);
   if (err != ESP_OK) {
@@ -57,70 +74,102 @@ STATIC mp_obj_t badge_nvs_get_str_(mp_uint_t n_args, const mp_obj_t *args) {
     }
     return mp_const_none;
   }
+
   return mp_obj_new_str(value, length-1, false);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(badge_nvs_get_str_obj, 2, 3, badge_nvs_get_str_);
 
-STATIC mp_obj_t badge_nvs_set_str_(mp_obj_t namespace, mp_obj_t key, mp_obj_t value) {
-  esp_err_t err = badge_nvs_set_str(mp_obj_str_get_str(namespace), mp_obj_str_get_str(key), mp_obj_str_get_str(value));
-  if (err != ESP_OK) {
-    mp_raise_msg(&mp_type_ValueError, "TODO error things");
+STATIC mp_obj_t badge_nvs_set_str_(mp_obj_t _namespace, mp_obj_t _key, mp_obj_t _value) {
+  const char *namespace = mp_obj_str_get_str(_namespace);
+  const char *key       = mp_obj_str_get_str(_key);
+  const char *value     = mp_obj_str_get_str(_value);
+  _nvs_check_namespace_key(namespace, key);
+  if (strlen(value) > 255) {
+    mp_raise_msg(&mp_type_AttributeError, "Value string too long");
   }
+
+  esp_err_t err = badge_nvs_set_str(namespace, key, value);
+  if (err != ESP_OK) {
+    mp_raise_msg(&mp_type_ValueError, "Failed to store data in nvs");
+  }
+
   return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_3(badge_nvs_set_str_obj, badge_nvs_set_str_);
 
-STATIC mp_obj_t badge_nvs_set_u8_(mp_obj_t namespace, mp_obj_t key, mp_obj_t value) {
-  uint8_t u8value = mp_obj_get_int(value);
-  esp_err_t err = badge_nvs_set_u8(mp_obj_str_get_str(namespace), mp_obj_str_get_str(key), u8value);
+/* nvs: u8 */
+STATIC mp_obj_t badge_nvs_get_u8_(mp_uint_t n_args, const mp_obj_t *args) {
+  const char *namespace = mp_obj_str_get_str(args[0]);
+  const char *key       = mp_obj_str_get_str(args[1]);
+  _nvs_check_namespace_key(namespace, key);
+
+  uint8_t value = 0;
+  esp_err_t err = badge_nvs_get_u8(namespace, key, &value);
   if (err != ESP_OK) {
-    mp_raise_msg(&mp_type_ValueError, "TODO error things");
+    if (n_args > 2) {
+      return args[2];
+    }
+    return mp_const_none;
   }
+
+  return mp_obj_new_int(value);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(badge_nvs_get_u8_obj, 2, 3, badge_nvs_get_u8_);
+
+STATIC mp_obj_t badge_nvs_set_u8_(mp_obj_t _namespace, mp_obj_t _key, mp_obj_t _value) {
+  const char *namespace = mp_obj_str_get_str(_namespace);
+  const char *key       = mp_obj_str_get_str(_key);
+  int value             = mp_obj_get_int(_value);
+  _nvs_check_namespace_key(namespace, key);
+  if (value < 0 || value > 255) {
+    mp_raise_msg(&mp_type_AttributeError, "Value out of range");
+  }
+
+  esp_err_t err = badge_nvs_set_u8(namespace, key, value);
+  if (err != ESP_OK) {
+    mp_raise_msg(&mp_type_ValueError, "Failed to store data in nvs");
+  }
+
   return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_3(badge_nvs_set_u8_obj, badge_nvs_set_u8_);
 
-STATIC mp_obj_t badge_nvs_get_u8_(mp_uint_t n_args, const mp_obj_t *args) {
-  mp_uint_t len;
-  const char *namespace = mp_obj_str_get_data(args[0], &len);
-  const char *key = mp_obj_str_get_data(args[1], &len);
-  uint8_t u8value = mp_obj_get_int(args[2]);
-  esp_err_t err = badge_nvs_get_u8(namespace, key, &u8value);
+/* nvs: u16 */
+STATIC mp_obj_t badge_nvs_get_u16_(mp_uint_t n_args, const mp_obj_t *args) {
+  const char *namespace = mp_obj_str_get_str(args[0]);
+  const char *key       = mp_obj_str_get_str(args[1]);
+  _nvs_check_namespace_key(namespace, key);
+
+  uint16_t value = 0;
+  esp_err_t err = badge_nvs_get_u16(namespace, key, &value);
   if (err != ESP_OK) {
     if (n_args > 2) {
       return args[2];
     }
     return mp_const_none;
   }
-  return mp_obj_new_int(u8value);
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(badge_nvs_get_u8_obj, 2, 3, badge_nvs_get_u8_);
 
-STATIC mp_obj_t badge_nvs_set_u16_(mp_obj_t namespace, mp_obj_t key, mp_obj_t value) {
-  uint16_t u16value = mp_obj_get_int(value);
-  esp_err_t err = badge_nvs_set_u16(mp_obj_str_get_str(namespace), mp_obj_str_get_str(key), u16value);
-  if (err != ESP_OK) {
-    mp_raise_msg(&mp_type_ValueError, "TODO error things");
+  return mp_obj_new_int(value);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(badge_nvs_get_u16_obj, 2, 3, badge_nvs_get_u16_);
+
+STATIC mp_obj_t badge_nvs_set_u16_(mp_obj_t _namespace, mp_obj_t _key, mp_obj_t _value) {
+  const char *namespace = mp_obj_str_get_str(_namespace);
+  const char *key       = mp_obj_str_get_str(_key);
+  int value             = mp_obj_get_int(_value);
+  _nvs_check_namespace_key(namespace, key);
+  if (value < 0 || value > 65535) {
+    mp_raise_msg(&mp_type_AttributeError, "Value out of range");
   }
+
+  esp_err_t err = badge_nvs_set_u16(namespace, key, value);
+  if (err != ESP_OK) {
+    mp_raise_msg(&mp_type_ValueError, "Failed to store data in nvs");
+  }
+
   return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_3(badge_nvs_set_u16_obj, badge_nvs_set_u16_);
-
-STATIC mp_obj_t badge_nvs_get_u16_(mp_uint_t n_args, const mp_obj_t *args) {
-  mp_uint_t len;
-  const char *namespace = mp_obj_str_get_data(args[0], &len);
-  const char *key = mp_obj_str_get_data(args[1], &len);
-  uint16_t u16value = mp_obj_get_int(args[2]);
-  esp_err_t err = badge_nvs_get_u16(namespace, key, &u16value);
-  if (err != ESP_OK) {
-    if (n_args > 2) {
-      return args[2];
-    }
-    return mp_const_none;
-  }
-  return mp_obj_new_int(u16value);
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(badge_nvs_get_u16_obj, 2, 3, badge_nvs_get_u16_);
 
 
 // EINK
