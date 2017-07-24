@@ -45,8 +45,6 @@ STATIC mp_obj_t badge_init_() {
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_init_obj, badge_init_);
 
 /*** nvs access ***/
-
-/* nvs: strings */
 static void _nvs_check_namespace_key(const char *namespace, const char *key) {
   if (strlen(namespace) == 0 || strlen(namespace) > 15) {
     mp_raise_msg(&mp_type_AttributeError, "Invalid namespace");
@@ -56,6 +54,20 @@ static void _nvs_check_namespace_key(const char *namespace, const char *key) {
   }
 }
 
+STATIC mp_obj_t badge_nvs_erase_key_(mp_obj_t _namespace, mp_obj_t _key) {
+  const char *namespace = mp_obj_str_get_str(_namespace);
+  const char *key       = mp_obj_str_get_str(_key);
+  _nvs_check_namespace_key(namespace, key);
+
+  esp_err_t err = badge_nvs_erase_key(namespace, key);
+  if (err != ESP_OK) {
+    mp_raise_msg(&mp_type_ValueError, "Failed to store data in nvs");
+  }
+
+  return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_2(badge_nvs_erase_key_obj, badge_nvs_erase_key_);
+/* nvs: strings */
 STATIC mp_obj_t badge_nvs_get_str_(mp_uint_t n_args, const mp_obj_t *args) {
   const char *namespace = mp_obj_str_get_str(args[0]);
   const char *key       = mp_obj_str_get_str(args[1]);
@@ -307,13 +319,6 @@ STATIC mp_obj_t badge_leds_send_data_(mp_uint_t n_args, const mp_obj_t *args) {
   return mp_obj_new_int(badge_leds_send_data(leds, len));
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(badge_leds_send_data_obj, 2,2 ,badge_leds_send_data_);
-
-STATIC mp_obj_t badge_leds_set_state_(mp_uint_t n_args, const mp_obj_t *args) {
-  mp_uint_t len;
-  uint8_t *leds = (uint8_t *)mp_obj_str_get_data(args[0], &len);
-  return mp_obj_new_int(badge_leds_send_data(leds, len));
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(badge_leds_set_state_obj, 1,1 ,badge_leds_set_state_);
 #endif
 
 #if defined(PORTEXP_PIN_NUM_VIBRATOR) || defined(MPR121_PIN_NUM_VIBRATOR)
@@ -339,6 +344,7 @@ STATIC const mp_rom_map_elem_t badge_module_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR_eink_init), MP_ROM_PTR(&badge_eink_init_obj)},
     {MP_OBJ_NEW_QSTR(MP_QSTR_power_init), (mp_obj_t)&badge_power_init_obj},
 
+    {MP_ROM_QSTR(MP_QSTR_nvs_erase_key), MP_ROM_PTR(&badge_nvs_erase_key_obj)},
     {MP_ROM_QSTR(MP_QSTR_nvs_get_str), MP_ROM_PTR(&badge_nvs_get_str_obj)},
     {MP_ROM_QSTR(MP_QSTR_nvs_set_str), MP_ROM_PTR(&badge_nvs_set_str_obj)},
     {MP_ROM_QSTR(MP_QSTR_nvs_get_u8), MP_ROM_PTR(&badge_nvs_get_u8_obj)},
@@ -352,7 +358,6 @@ STATIC const mp_rom_map_elem_t badge_module_globals_table[] = {
     {MP_OBJ_NEW_QSTR(MP_QSTR_leds_enable), (mp_obj_t)&badge_leds_enable_obj},
     {MP_OBJ_NEW_QSTR(MP_QSTR_leds_disable), (mp_obj_t)&badge_leds_disable_obj},
     {MP_OBJ_NEW_QSTR(MP_QSTR_leds_send_data), (mp_obj_t)&badge_leds_send_data_obj},
-    {MP_OBJ_NEW_QSTR(MP_QSTR_leds_set_state), (mp_obj_t)&badge_leds_set_state_obj},
 #endif
 
 #if defined(PORTEXP_PIN_NUM_VIBRATOR) || defined(MPR121_PIN_NUM_VIBRATOR)
