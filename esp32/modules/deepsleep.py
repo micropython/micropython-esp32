@@ -1,11 +1,11 @@
-import machine as m
+import machine
 
-p = m.Pin(25)
-r = m.RTC()
-r.wake_on_ext0(pin = p, level = 0)
+pin = machine.Pin(25)
+rtc = machine.RTC()
+rtc.wake_on_ext0(pin = pin, level = 0)
 
 def start_sleeping(time=0):
-    m.deepsleep(time)
+    machine.deepsleep(time)
 
 def reboot():
-    m.deepsleep(1)
+    machine.deepsleep(1)
