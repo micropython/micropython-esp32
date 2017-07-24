@@ -32,7 +32,7 @@ ESPTOOL ?= $(ESPCOMP)/esptool_py/esptool/esptool.py
 BADGE = $(IDF_PATH)/..
 
 # verify the ESP IDF version
-ESPIDF_SUPHASH := f2f337f6df006ed4e820d06f38a662c16df8c1a4
+ESPIDF_SUPHASH := ff86defb82fecef9d21b4f3fcf72b5be2881ec2d
 ESPIDF_CURHASH := $(shell git -C $(ESPIDF) show -s --pretty=format:'%H')
 ifneq ($(ESPIDF_CURHASH),$(ESPIDF_SUPHASH))
 $(info ** WARNING **)
