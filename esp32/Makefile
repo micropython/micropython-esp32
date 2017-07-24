@@ -49,45 +49,47 @@ INC += -I../lib/mp-readline
 INC += -I../lib/netutils
 INC += -I../lib/timeutils
 INC += -I$(BUILD)
-INC += -I$(ESPCOMP)/bootloader_support/include
-INC += -I$(ESPCOMP)/driver/include
-INC += -I$(ESPCOMP)/driver/include/driver
-INC += -I$(ESPCOMP)/nghttp/port/include
-INC += -I$(ESPCOMP)/nghttp/nghttp2/lib/includes
-INC += -I$(ESPCOMP)/esp32/include
-INC += -I$(ESPCOMP)/soc/include
-INC += -I$(ESPCOMP)/soc/esp32/include
-INC += -I$(ESPCOMP)/ethernet/include
-INC += -I$(ESPCOMP)/expat/include/expat
-INC += -I$(ESPCOMP)/expat/port/include
-INC += -I$(ESPCOMP)/heap/include
-INC += -I$(ESPCOMP)/json/include
-INC += -I$(ESPCOMP)/json/port/include
-INC += -I$(ESPCOMP)/log/include
-INC += -I$(ESPCOMP)/newlib/include
-INC += -I$(ESPCOMP)/nvs_flash/include
-INC += -I$(ESPCOMP)/freertos/include
-INC += -I$(ESPCOMP)/tcpip_adapter/include
-INC += -I$(ESPCOMP)/lwip/include/lwip
-INC += -I$(ESPCOMP)/lwip/include/lwip/port
-INC += -I$(ESPCOMP)/lwip/include/lwip/posix
-INC += -I$(ESPCOMP)/mbedtls/include
-INC += -I$(ESPCOMP)/mbedtls/port/include
-INC += -I$(ESPCOMP)/spi_flash/include
-INC += -I$(ESPCOMP)/vfs/include
-INC += -I$(ESPCOMP)/newlib/platform_include
-INC += -I$(ESPCOMP)/xtensa-debug-module/include
-INC += -I$(ESPCOMP)/wpa_supplicant/include
-INC += -I$(ESPCOMP)/wpa_supplicant/port/include
-INC += -I$(ESPCOMP)/ethernet/include
-INC += -I$(ESPCOMP)/app_trace/include
 
-CFLAGS = -std=gnu99 -Os -ffunction-sections -fdata-sections -fstrict-volatile-bitfields -mlongcalls -nostdlib -Wall -Werror -Wno-error=unused-function -Wno-error=unused-but-set-variable -Wno-error=unused-variable -Wno-error=deprecated-declarations -DMBEDTLS_CONFIG_FILE='"mbedtls/esp_config.h"' -DHAVE_CONFIG_H -DESP_PLATFORM  $(INC)
+INC_ESPCOMP += -I$(ESPCOMP)/bootloader_support/include
+INC_ESPCOMP += -I$(ESPCOMP)/driver/include
+INC_ESPCOMP += -I$(ESPCOMP)/driver/include/driver
+INC_ESPCOMP += -I$(ESPCOMP)/nghttp/port/include
+INC_ESPCOMP += -I$(ESPCOMP)/nghttp/nghttp2/lib/includes
+INC_ESPCOMP += -I$(ESPCOMP)/esp32/include
+INC_ESPCOMP += -I$(ESPCOMP)/soc/include
+INC_ESPCOMP += -I$(ESPCOMP)/soc/esp32/include
+INC_ESPCOMP += -I$(ESPCOMP)/ethernet/include
+INC_ESPCOMP += -I$(ESPCOMP)/expat/include/expat
+INC_ESPCOMP += -I$(ESPCOMP)/expat/port/include
+INC_ESPCOMP += -I$(ESPCOMP)/heap/include
+INC_ESPCOMP += -I$(ESPCOMP)/json/include
+INC_ESPCOMP += -I$(ESPCOMP)/json/port/include
+INC_ESPCOMP += -I$(ESPCOMP)/log/include
+INC_ESPCOMP += -I$(ESPCOMP)/newlib/include
+INC_ESPCOMP += -I$(ESPCOMP)/nvs_flash/include
+INC_ESPCOMP += -I$(ESPCOMP)/freertos/include
+INC_ESPCOMP += -I$(ESPCOMP)/tcpip_adapter/include
+INC_ESPCOMP += -I$(ESPCOMP)/lwip/include/lwip
+INC_ESPCOMP += -I$(ESPCOMP)/lwip/include/lwip/port
+INC_ESPCOMP += -I$(ESPCOMP)/lwip/include/lwip/posix
+INC_ESPCOMP += -I$(ESPCOMP)/mbedtls/include
+INC_ESPCOMP += -I$(ESPCOMP)/mbedtls/port/include
+INC_ESPCOMP += -I$(ESPCOMP)/spi_flash/include
+INC_ESPCOMP += -I$(ESPCOMP)/vfs/include
+INC_ESPCOMP += -I$(ESPCOMP)/newlib/platform_include
+INC_ESPCOMP += -I$(ESPCOMP)/xtensa-debug-module/include
+INC_ESPCOMP += -I$(ESPCOMP)/wpa_supplicant/include
+INC_ESPCOMP += -I$(ESPCOMP)/wpa_supplicant/port/include
+INC_ESPCOMP += -I$(ESPCOMP)/ethernet/include
+INC_ESPCOMP += -I$(ESPCOMP)/app_trace/include
+
+CFLAGS_BASE = -std=gnu99 -Os -ffunction-sections -fdata-sections -fstrict-volatile-bitfields -mlongcalls -nostdlib -Wall -Werror -Wno-error=unused-function -Wno-error=unused-but-set-variable -Wno-error=unused-variable -Wno-error=deprecated-declarations -DMBEDTLS_CONFIG_FILE='"mbedtls/esp_config.h"' -DHAVE_CONFIG_H -DESP_PLATFORM
+CFLAGS = $(CFLAGS_BASE) $(INC) $(INC_ESPCOMP)
 CFLAGS += -DIDF_VER=\"$(IDF_VER)\"
 CFLAGS += $(CFLAGS_MOD)
 
 # this is what ESPIDF uses for c++ compilation
-CXXFLAGS = -std=gnu++11 -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -fstrict-volatile-bitfields -mlongcalls -nostdlib -Wall -Werror -Wno-error=unused-function -Wno-error=unused-but-set-variable -Wno-error=unused-variable -Wno-error=deprecated-declarations -DESP_PLATFORM $(INC)
+CXXFLAGS = -std=gnu++11 -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -fstrict-volatile-bitfields -mlongcalls -nostdlib -Wall -Werror -Wno-error=unused-function -Wno-error=unused-but-set-variable -Wno-error=unused-variable -Wno-error=deprecated-declarations -DESP_PLATFORM $(INC) $(INC_ESPCOMP)
 
 LDFLAGS = -nostdlib -Map=$(@:.elf=.map) --cref
 LDFLAGS += --gc-sections -static -EL
@@ -274,12 +276,14 @@ ESPIDF_EXPAT_O = $(addprefix $(ESPCOMP)/expat/,\
 
 # Assembler .S files need only basic flags, and in particular should not have
 # -Os because that generates subtly different code.
+# We also need custom CFLAGS for .c files because FreeRTOS has headers with
+# generic names (eg queue.h) which can clash with other files in the port.
 CFLAGS_ASM = -I$(ESPCOMP)/esp32/include -I$(ESPCOMP)/soc/esp32/include -I$(ESPCOMP)/freertos/include/freertos -I.
 $(BUILD)/$(ESPCOMP)/freertos/portasm.o: CFLAGS = $(CFLAGS_ASM)
 $(BUILD)/$(ESPCOMP)/freertos/xtensa_context.o: CFLAGS = $(CFLAGS_ASM)
 $(BUILD)/$(ESPCOMP)/freertos/xtensa_intr_asm.o: CFLAGS = $(CFLAGS_ASM)
 $(BUILD)/$(ESPCOMP)/freertos/xtensa_vectors.o: CFLAGS = $(CFLAGS_ASM)
-$(BUILD)/$(ESPCOMP)/freertos/%.o: CFLAGS += -I$(ESPCOMP)/freertos/include/freertos
+$(BUILD)/$(ESPCOMP)/freertos/%.o: CFLAGS = $(CFLAGS_BASE) -I. $(INC_ESPCOMP) -I$(ESPCOMP)/freertos/include/freertos
 ESPIDF_FREERTOS_O = $(addprefix $(ESPCOMP)/freertos/,\
 	croutine.o \
 	event_groups.o \
