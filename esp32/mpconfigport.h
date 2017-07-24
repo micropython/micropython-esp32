@@ -41,7 +41,7 @@
 #define MICROPY_PY_BUILTINS_COMPLEX         (1)
 #define MICROPY_CPYTHON_COMPAT              (1)
 #define MICROPY_STREAMS_NON_BLOCK           (1)
-#define MICROPY_STREAMS_POSIX_API           (0)
+#define MICROPY_STREAMS_POSIX_API           (1)
 #define MICROPY_MODULE_BUILTIN_INIT         (1)
 #define MICROPY_MODULE_WEAK_LINKS           (1)
 #define MICROPY_MODULE_FROZEN_STR           (0)
@@ -139,7 +139,6 @@
 #define MICROPY_SSL_MBEDTLS                 (1)
 #define MICROPY_PY_WEBSOCKET                (0)
 #define MICROPY_PY_FRAMEBUF                 (1)
-#define MICROPY_PY_BTREE                    (0)
 
 // fatfs configuration
 #define MICROPY_FATFS_ENABLE_LFN            (1)
@@ -238,6 +237,8 @@ extern const struct _mp_obj_module_t mp_module_network;
 typedef int32_t mp_int_t; // must be pointer size
 typedef uint32_t mp_uint_t; // must be pointer size
 typedef long mp_off_t;
+// ssize_t, off_t as required by POSIX-signatured functions in stream.h
+#include <sys/types.h>
 
 // board specifics
 
