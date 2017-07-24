@@ -127,7 +127,7 @@ void mp_deinit(void) {
     //mp_obj_dict_free(&dict_main);
     //mp_map_deinit(&MP_STATE_VM(mp_loaded_modules_map));
 
-    // call port specific deinitialization if any 
+    // call port specific deinitialization if any
 #ifdef MICROPY_PORT_INIT_FUNC
     MICROPY_PORT_DEINIT_FUNC;
 #endif
@@ -1408,18 +1408,15 @@ mp_obj_t mp_parse_compile_execute(mp_lexer_t *lex, mp_parse_input_kind_t parse_i
 
 #endif // MICROPY_ENABLE_COMPILER
 
-void *m_malloc_fail(size_t num_bytes) {
+NORETURN void *m_malloc_fail(size_t num_bytes) {
     DEBUG_printf("memory allocation failed, allocating %u bytes\n", (uint)num_bytes);
-    if (0) {
-        // dummy
     #if MICROPY_ENABLE_GC
-    } else if (gc_is_locked()) {
+    if (gc_is_locked()) {
         mp_raise_msg(&mp_type_MemoryError, "memory allocation failed, heap is locked");
-    #endif
-    } else {
-        nlr_raise(mp_obj_new_exception_msg_varg(&mp_type_MemoryError,
-            "memory allocation failed, allocating %u bytes", (uint)num_bytes));
     }
+    #endif
+    nlr_raise(mp_obj_new_exception_msg_varg(&mp_type_MemoryError,
+        "memory allocation failed, allocating %u bytes", (uint)num_bytes));
 }
 
 NORETURN void mp_raise_msg(const mp_obj_type_t *exc_type, const char *msg) {

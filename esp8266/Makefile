@@ -68,7 +68,6 @@ SRC_C = \
 	lexerstr32.c \
 	uart.c \
 	esppwm.c \
-	esponewire.c \
 	espneopixel.c \
 	espapa102.c \
 	intr.c \
@@ -85,7 +84,6 @@ SRC_C = \
 	modnetwork.c \
 	modutime.c \
 	moduos.c \
-	modonewire.c \
 	ets_alt_task.c \
 	fatfs_port.c \
 	axtls_helpers.c \
@@ -94,6 +92,7 @@ SRC_C = \
 
 EXTMOD_SRC_C = $(addprefix extmod/,\
 	modlwip.c \
+	modonewire.c \
         )
 
 LIB_SRC_C = $(addprefix lib/,\
@@ -147,7 +146,7 @@ OBJ += $(addprefix $(BUILD)/, $(DRIVERS_SRC_C:.c=.o))
 #OBJ += $(BUILD)/pins_$(BOARD).o
 
 # List of sources for qstr extraction
-SRC_QSTR += $(SRC_C) $(EXTMOD_SRC_C) $(DRIVERS_SRC_C)
+SRC_QSTR += $(SRC_C) $(EXTMOD_SRC_C) $(LIB_SRC_C) $(DRIVERS_SRC_C)
 # Append any auto-generated sources that are needed by sources listed in SRC_QSTR
 SRC_QSTR_AUTO_DEPS +=
 
