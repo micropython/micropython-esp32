@@ -6,7 +6,7 @@ def setup():
     with open("/boot.py", "w") as f:
         f.write("""\
 # This file is executed on every boot (including wake-boot from deepsleep)
-import badge, machine, esp, ugfx, deepsleep
+import badge, machine, esp, ugfx
 badge.init()
 ugfx.init()
 esp.rtcmem_write(0,0)
@@ -21,10 +21,6 @@ else:
         splash = load_me
         print("starting %s" % load_me)
         esp.rtcmem_write_string("")
-try:
-    __import__(splash)
-exception:
-    badge.nvs_set_str('badge','boot.splash','splash')
-    deepsleep.reboot()
+__import__(splash)
 """)
     return vfs
