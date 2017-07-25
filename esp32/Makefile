@@ -18,7 +18,7 @@ include ../py/py.mk
 PORT ?= /dev/ttyUSB0
 BAUD ?= 921600
 FLASH_MODE ?= dio
-FLASH_FREQ ?= 40m
+FLASH_FREQ ?= 80m
 FLASH_SIZE ?= 16MB
 CROSS_COMPILE ?= xtensa-esp32-elf-
 
@@ -32,7 +32,7 @@ ESPTOOL ?= $(ESPCOMP)/esptool_py/esptool/esptool.py
 BADGE = $(IDF_PATH)/..
 
 # verify the ESP IDF version
-ESPIDF_SUPHASH := 9d7bd83209ab23b6df901c793e02e65532771d0e
+ESPIDF_SUPHASH := 8b274cd5a5d193a82b49aef384c303b105eda700
 ESPIDF_CURHASH := $(shell git -C $(ESPIDF) show -s --pretty=format:'%H')
 ifneq ($(ESPIDF_CURHASH),$(ESPIDF_SUPHASH))
 $(info ** WARNING **)
@@ -325,6 +325,7 @@ ESPIDF_APP_UPDATE_O = $(addprefix $(ESPCOMP)/app_update/,\
 
 ESPIDF_BOOTLOADER_O = $(addprefix $(ESPCOMP)/bootloader_support/src/,\
 	esp_image_format.o \
+	bootloader_sha.o \
 	bootloader_flash.o \
 	)
 
@@ -777,6 +778,7 @@ $(BUILD)/%.o: %.cpp
 $(BUILD)/bootloader/$(ESPCOMP)/%.o: CFLAGS += -DBOOTLOADER_BUILD=1 -I$(ESPCOMP)/bootloader_support/include_priv -I$(ESPCOMP)/bootloader/include -I$(ESPCOMP)/bootloader_support/include -I$(ESPCOMP)/micro-ecc/micro-ecc -I$(ESPCOMP)/esp32 -Wno-error=format
 BOOTLOADER_OBJ = $(addprefix $(BUILD)/bootloader/$(ESPCOMP)/,\
 	bootloader_support/src/bootloader_flash.o \
+	bootloader_support/src/bootloader_sha.o \
 	bootloader_support/src/bootloader_random.o \
 	bootloader_support/src/secure_boot_signatures.o \
 	bootloader_support/src/secure_boot.o \
