@@ -122,38 +122,55 @@ STATIC IRAM_ATTR mp_obj_t esp_flash_user_start(void) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(esp_flash_user_start_obj, esp_flash_user_start);
 
-STATIC mp_obj_t esp_rtcmem_write_(mp_obj_t pos, mp_obj_t val) {
-  esp_rtcmem_write(mp_obj_get_int(pos), mp_obj_get_int(val));
-  return mp_const_none;
+STATIC mp_obj_t esp_rtcmem_write_(mp_obj_t _pos, mp_obj_t _val) {
+	int pos = mp_obj_get_int(_pos);
+	int val = mp_obj_get_int(_val);
+
+	if (val < 0 || val > 255) {
+		mp_raise_msg(&mp_type_IndexError, "Value out of range");
+	}
+	int res = esp_rtcmem_write(pos, val);
+	if (res < 0) {
+		mp_raise_msg(&mp_type_IndexError, "Offset out of range");
+	}
+	return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(esp_rtcmem_write_obj, esp_rtcmem_write_);
 
-STATIC mp_obj_t esp_rtcmem_read_(mp_obj_t pos) {
-  uint8_t val = esp_rtcmem_read(mp_obj_get_int(pos));
-  return mp_obj_new_int(val);
+STATIC mp_obj_t esp_rtcmem_read_(mp_obj_t _pos) {
+	int pos = mp_obj_get_int(_pos);
+
+	int val = esp_rtcmem_read(pos);
+	if (val < 0) {
+		mp_raise_msg(&mp_type_IndexError, "Offset out of range");
+	}
+	return mp_obj_new_int(val);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(esp_rtcmem_read_obj, esp_rtcmem_read_);
 
 
 STATIC mp_obj_t esp_rtcmem_read_string_(mp_uint_t n_args, const mp_obj_t *args) {
-  int pos = 2;
-  if (n_args > 0){
-    pos = mp_obj_get_int(args[0]);
+	int pos = (n_args == 0) ? 2 : mp_obj_get_int(args[0]);
+
+	char str[256];
+	size_t str_len = sizeof(str);
+	int res = esp_rtcmem_read_string(pos, str, &str_len);
+	if (res < 0) {
+		mp_raise_msg(&mp_type_IndexError, "Offset out of range");
 	}
-  char words[USER_RTC_MEM_SIZE];
-  esp_rtcmem_read_string(pos, words);
-  return mp_obj_new_str(words, strlen(words), true);
+	return mp_obj_new_str(str, str_len-1, true);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(esp_rtcmem_read_string_obj, 0, 1, esp_rtcmem_read_string_);
 
 STATIC mp_obj_t esp_rtcmem_write_string_(mp_uint_t n_args, const mp_obj_t *args) {
-  int pos = 2;
-  if (n_args > 1){
-    pos = mp_obj_get_int(args[1]);
+	const char *str = mp_obj_str_get_str(args[0]);
+	int pos = (n_args == 1) ? 2 : mp_obj_get_int(args[1]);
+
+	int res = esp_rtcmem_write_string(pos, str);
+	if (res < 0) {
+		mp_raise_msg(&mp_type_IndexError, "Offset out of range");
 	}
-  mp_uint_t len;
-  esp_rtcmem_write_string(pos, mp_obj_str_get_data(args[0], &len));
-  return mp_const_none;
+	return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(esp_rtcmem_write_string_obj, 1, 2, esp_rtcmem_write_string_);
 

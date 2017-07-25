@@ -176,6 +176,7 @@ SRC_C = \
 	alloc.c \
 	coverage.c \
 	fatfs_port.c \
+	esp_log.c \
 	$(SRC_MOD)
 
 OPT_GFXDRIVER           = SDL

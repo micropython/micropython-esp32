@@ -1,2 +1,2 @@
-build = 1
-name = "Snorrende Snor"
+build = 2
+name = "Vlijtige Vlinder"
