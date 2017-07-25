@@ -78,16 +78,10 @@ def draw_home(do_BPP):
         # appglue.start_bpp() ## SHOULD BE THIS!!
         deepsleep.start_sleeping()
 
-# START LAUNCHER
-def press_start(pushed):
-    if pushed:
-        appglue.start_app("launcher", False)
-
 def start_ota(pushed):
     if pushed:
         appglue.start_ota()
-
-# NOTHING
+        
 def press_nothing(pushed):
     if pushed:
         global loopCount
