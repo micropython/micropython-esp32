@@ -84,7 +84,7 @@ def list_categories():
 	ugfx.input_attach(ugfx.BTN_START, lambda pushed: appglue.start_app("") if pushed else 0)
 
 	for category in categories:
-		options.add_item("%s >" % category["name"])
+		options.add_item("%s (%d) >" % (category["name"], category["eggs"]))
 
 	show_category(True)
 
