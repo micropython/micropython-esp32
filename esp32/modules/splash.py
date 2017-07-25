@@ -82,7 +82,7 @@ def draw_home(do_BPP):
 # START LAUNCHER
 def press_start(pushed):
     if pushed:
-        appglue.start_app("launcher")
+        appglue.start_app("launcher", False)
 
 def start_ota(pushed):
     if pushed:
@@ -98,7 +98,7 @@ def press_a(pushed):
         loopCnt = badge.nvs_get_u8('splash', 'timer.amount', 25)
         magic += 1
         if magic > 9:
-            appglue.start_app('magic')
+            appglue.start_app('magic', False)
         else:
             print("[SPLASH] Magic in "+str(10-magic)+"...")
 
