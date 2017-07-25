@@ -3,7 +3,6 @@ import ugfx, time, ntp, badge, machine, appglue, deepsleep, network, esp, gc, se
 # SHA2017 badge home screen
 #   Renze Nicolai
 #   Thomas Roos
-# TIME
 
 def set_time_ntp():
     draw_msg("Configuring clock...")
@@ -15,7 +14,6 @@ def set_time_ntp():
     else:
         return False
 
-# GRAPHICS
 def draw_msg(msg):
     global line_number
     try:
@@ -31,7 +29,6 @@ def draw_msg(msg):
         ugfx.flush()
         line_number += 1
 
-
 def draw_home(do_BPP):
 
     vBatt = badge.battery_volt_sense()
@@ -44,7 +41,6 @@ def draw_home(do_BPP):
         width = 0
     elif width < 38:
         width = 38
-
 
     ugfx.box(2,2,40,18,ugfx.BLACK)
     ugfx.box(42,7,2,8,ugfx.BLACK)
@@ -108,7 +104,6 @@ def press_a(pushed):
         else:
             print("[SPLASH] Magic in "+str(10-magic)+"...")
 
-
 def sleepIfEmpty(vbatt):
     global battery_volt_min
     if (vbatt > 100) and (vbatt < battery_volt_min):
@@ -119,7 +114,6 @@ def sleepIfEmpty(vbatt):
     else:
         return True
 
-# TIMER
 def splashTimer_callback(tmr):
     global loopCount
     try:
@@ -134,7 +128,6 @@ def splashTimer_callback(tmr):
                 if not services.loop(loopCount):
                     loopCount -= 1
 
-# WIFI
 def disableWiFi():
     nw = network.WLAN(network.STA_IF)
     nw.active(False)
@@ -159,8 +152,6 @@ def connectWiFi():
                 time.sleep(1)
                 return False
     return True
-
-# CHECK OTA VERSION
 
 def download_ota_info():
     import urequests as requests
@@ -197,7 +188,7 @@ def check_ota_available():
 
 def inputInit():
     ugfx.input_init()
-    ugfx.input_attach(ugfx.BTN_START, press_start)
+    ugfx.input_attach(ugfx.BTN_START, lambda p: appglue.start_app("launcher", False) if p else 0)
     ugfx.input_attach(ugfx.BTN_A, press_a)
     ugfx.input_attach(ugfx.BTN_B, press_nothing)
     ugfx.input_attach(ugfx.BTN_SELECT, press_nothing)
