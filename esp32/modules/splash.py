@@ -197,21 +197,21 @@ def inputInit():
     ugfx.input_attach(ugfx.JOY_RIGHT, press_nothing)
 
 def checkFirstBoot():
-    setupcompleted = int(badge.nvs_get_str('badge', 'setup.state', '0'))
+    setupcompleted = badge.nvs_get_u8('badge', 'setup.state', 0)
     if setupcompleted == 0: # First boot (open setup)
         print("[SPLASH] Setup not completed. Running setup!")
         appglue.start_app("setup")
     elif setupcompleted == 1: # Second boot (after setup)
         print("[SPLASH] Showing sponsors once...")
-        badge.nvs_set_str('badge', 'setup.state', '2') # Only force show sponsors once
+        badge.nvs_set_u8('badge', 'setup.state', 2) # Only force show sponsors once
         appglue.start_app("sponsors")
     elif setupcompleted == 2:
-        badge.nvs_set_str('badge', 'setup.state', '3')
+        badge.nvs_set_u8('badge', 'setup.state', 3)
         check_ota_available()
     else: # Setup completed
         print("[SPLASH] Normal boot.")
 
-nick = badge.nvs_get_str("owner", "name", 'John Doe')
+nick = badge.nvs_get_str("owner", "name", 'Jan de Boer')
 vMin = badge.nvs_get_u16('splash', 'bat.volt.min', 3600) # mV
 vMax = badge.nvs_get_u16('splash', 'bat.volt.max', 4200) # mV
 if badge.battery_charge_status() == False and badge.usb_volt_sense() > 4500 and badge.battery_volt_sense() > 2500:
