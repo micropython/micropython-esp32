@@ -26,28 +26,77 @@
  * THE SOFTWARE.
  */
 
-#include "py/mphal.h"
+#include <stdint.h>
+#include <string.h>
+
+#include <py/mphal.h>
 
 #include "esprtcmem.h"
 
-static uint8_t RTC_DATA_ATTR rtcmemcontents[USER_RTC_MEM_SIZE] = {0};
+static uint8_t RTC_DATA_ATTR rtcmemcontents[USER_RTC_MEM_SIZE] = { 0 };
 
-const uint8_t esp_rtcmem_read(uint32_t location) {
-    if (location<USER_RTC_MEM_SIZE) {
-      return rtcmemcontents[location];
-    } else {
-      return 0;
-    }
+// @return 0..255 is ok; -1 is error
+int
+esp_rtcmem_read(uint32_t location)
+{
+	if (location >= USER_RTC_MEM_SIZE)
+	{
+		return -1;
+	}
+
+	return rtcmemcontents[location];
 }
 
-void esp_rtcmem_read_string(uint32_t location, char *buffer) {
-  sprintf(buffer, "%s", rtcmemcontents+location);
+// @return 0 is ok; -1 is error
+int
+esp_rtcmem_write(uint32_t location, uint8_t value)
+{
+	if (location >= USER_RTC_MEM_SIZE)
+	{
+		return -1;
+	}
+
+	rtcmemcontents[location] = value;
+
+	return 0;
 }
 
-void esp_rtcmem_write_string(uint32_t location, const char *buffer) {
-  sprintf((char *)rtcmemcontents+location, "%s", buffer);
+// @return 0 is ok; -1 is error
+int
+esp_rtcmem_read_string(uint32_t location, char *buffer, size_t *buf_len)
+{
+	if (location >= USER_RTC_MEM_SIZE)
+	{
+		return -1;
+	}
+
+	size_t maxlen = USER_RTC_MEM_SIZE - location;
+	size_t len = strnlen((const char *) &rtcmemcontents[location], maxlen);
+	if (len == maxlen)
+	{
+		return -1;
+	}
+
+	if (*buf_len <= len)
+	{
+		return -1;
+	}
+	*buf_len = len + 1;
+	memcpy(buffer, &rtcmemcontents[location], len + 1);
+
+	return 0;
 }
 
-void esp_rtcmem_write(uint32_t location, uint8_t value) {
-    if (location<USER_RTC_MEM_SIZE) rtcmemcontents[location] = value;
+// @return 0 is ok; -1 is error
+int
+esp_rtcmem_write_string(uint32_t location, const char *buffer)
+{
+	if (location >= USER_RTC_MEM_SIZE || location + strlen(buffer) >= USER_RTC_MEM_SIZE)
+	{
+		return -1;
+	}
+
+	memcpy(&rtcmemcontents[location], buffer, strlen(buffer)+1);
+
+	return 0;
 }

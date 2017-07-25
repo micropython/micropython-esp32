@@ -73,6 +73,10 @@ def expandhome(s):
         s = s.replace("~/", h + "/")
     return s
 
+def gohome(pressed):
+    if(pressed):
+        appglue.home()
+
 def get_install_path():
     global install_path
     if install_path is None:

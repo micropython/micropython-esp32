@@ -224,16 +224,17 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_2(badge_display_picture_obj,
 
 /* PNG READER TEST */
 
-STATIC mp_obj_t badge_eink_png(mp_obj_t obj_x, mp_obj_t obj_y, mp_obj_t obj_filename) {
-	uint16_t x = mp_obj_get_int(obj_x);
-	uint16_t y = mp_obj_get_int(obj_y);
+STATIC mp_obj_t badge_eink_png(mp_obj_t obj_x, mp_obj_t obj_y, mp_obj_t obj_filename)
+{
+	int x = mp_obj_get_int(obj_x);
+	int y = mp_obj_get_int(obj_y);
+	const char* filename = mp_obj_str_get_str(obj_filename);
+
 	if (x >= BADGE_EINK_WIDTH || y >= BADGE_EINK_HEIGHT)
 	{
 		return mp_const_none;
 	}
 
-	mp_uint_t len;
-	const char* filename = mp_obj_str_get_data(obj_filename, &len);
 	struct lib_file_reader *fr = lib_file_new(filename, 1024);
 	if (fr == NULL)
 	{
@@ -249,7 +250,9 @@ STATIC mp_obj_t badge_eink_png(mp_obj_t obj_x, mp_obj_t obj_y, mp_obj_t obj_file
 		return mp_const_none;
 	}
 
-	int res = lib_png_load_image(pr, &badge_eink_fb[y * BADGE_EINK_WIDTH + x], BADGE_EINK_WIDTH - x, BADGE_EINK_HEIGHT - y, BADGE_EINK_WIDTH);
+	uint32_t dst_min_x = x < 0 ? -x : 0;
+	uint32_t dst_min_y = y < 0 ? -y : 0;
+	int res = lib_png_load_image(pr, &badge_eink_fb[y * BADGE_EINK_WIDTH + x], dst_min_x, dst_min_y, BADGE_EINK_WIDTH - x, BADGE_EINK_HEIGHT - y, BADGE_EINK_WIDTH);
 	lib_png_destroy(pr);
 	lib_file_destroy(fr);
 
