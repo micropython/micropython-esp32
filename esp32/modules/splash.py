@@ -12,6 +12,7 @@ def set_time_ntp():
         draw_msg("Time set!")
         return True
     else:
+        draw_msg('RTC not set! :(')
         return False
 
 def draw_msg(msg):
@@ -149,7 +150,6 @@ def connectWiFi():
             if (timeout<1):
                 draw_msg("Timeout while connecting!")
                 disableWiFi()
-                time.sleep(1)
                 return False
     return True
 
