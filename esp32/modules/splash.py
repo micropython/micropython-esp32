@@ -319,6 +319,8 @@ def splashTimer_callback(tmr):
     global loopCnt
     global timer_loop_amount
     #print("[TIMER] "+str(loopCnt))
+    #print("[BATTERY] "+str(badge.battery_volt_sense())+" ["+str(badge.battery_charge_status())+"]")
+
     if loopCnt<1:
         loopCnt = timer_loop_amount
         cstate = badge.battery_charge_status()
@@ -384,7 +386,6 @@ def wifi_connect():
     return True
     
 # CHECK OTA VERSION
-
 def download_ota_info():
     import gc
     import urequests as requests
@@ -433,13 +434,13 @@ def check_ota_available():
 
 # WELCOME (SETUP, SPONSORS OR CLOCK)
 def welcome():
-    setupcompleted = int(badge.nvs_get_str('badge', 'setup.state', '0'))
+    setupcompleted = badge.nvs_get_u8('badge', 'setup.state', 0)
     if (setupcompleted==0): # First boot (open setup)
         print("[SPLASH] Setup not completed. Running setup!")
         appglue.start_app("setup")
     elif (setupcompleted==1): # Second boot (after setup)
         print("[SPLASH] Showing sponsors once...")
-        badge.nvs_set_str('badge', 'setup.state', '2') # Only force show sponsors once
+        badge.nvs_set_u8('badge', 'setup.state', 2) # Only force show sponsors once
         appglue.start_app("sponsors")
     else: # Setup completed
         print("[SPLASH] Normal boot.")
@@ -474,19 +475,19 @@ def load_settings():
     #if (sleep_duration>120):
     #    print("[SPLASH] Sleep duration set to more than 120 seconds. Forcing 120 seconds.") 
     global battery_volt_min
-    battery_volt_min = badge.nvs_get_u16('splash', 'bat.volt.min', 3700) # mV
+    battery_volt_min = badge.nvs_get_u16('splash', 'batt.vmin', 3700) # mV
     global battery_volt_max
-    battery_volt_max = badge.nvs_get_u16('splash', 'bat.volt.max', 4200) # mV
+    battery_volt_max = badge.nvs_get_u16('splash', 'batt.vmax', 4200) # mV
     global battery_percent_empty
-    battery_percent_empty = badge.nvs_get_u8('splash', 'bat.perc.empty', 1) # %
+    battery_percent_empty = badge.nvs_get_u8('splash', 'batt.pempty', 1) # %
     global ntp_timeout
     ntp_timeout = badge.nvs_get_u8('splash', 'ntp.timeout', 40) #amount of tries
     global bpp_after_count
     bpp_after_count = badge.nvs_get_u8('splash', 'bpp.count', 5)
     global splash_timer_interval
-    splash_timer_interval = badge.nvs_get_u16('splash', 'timer.interval', 200)
+    splash_timer_interval = badge.nvs_get_u16('splash', 'tmr.interval', 200)
     global timer_loop_amount
-    timer_loop_amount = badge.nvs_get_u8('splash', 'timer.amount', 25)
+    timer_loop_amount = badge.nvs_get_u8('splash', 'tmr.amount', 25)
     global loopCnt
     loopCnt = timer_loop_amount
     
