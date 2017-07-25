@@ -18,10 +18,10 @@ def home():
 
 def start_ota():
     esp.rtcmem_write(0,1)
-    esp.rtcmem_write(1,~1)
+    esp.rtcmem_write(1,254)
     deepsleep.reboot()
 
 def start_bpp():
     esp.rtcmem_write(0,2)
-    esp.rtcmem_write(1,~2)
+    esp.rtcmem_write(1,253)
     deepsleep.reboot()
