@@ -1,34 +1,8 @@
 import ugfx, time, badge, machine, uos, appglue, deepsleep, network, esp
 
 # SHA2017 badge home screen
+# HOTFIX VERSION 26-07-2017
 # Renze Nicolai 2017
-
-# Reboot counter (Used for BPP)
-def get_reboot_counter():
-    return esp.rtcmem_read(1023)
-
-def set_reboot_counter(value):
-    esp.rtcmem_write(1023, value)
-    
-def increment_reboot_counter():
-    val = get_reboot_counter()
-    if (val<255):
-        val = val + 1
-    set_reboot_counter(val)
-    
-# BPP
-def bpp_execute():
-    print("[SPLASH] Executing BPP...")
-    set_reboot_counter(0)
-    esp.rtcmem_write(0,2)
-    esp.rtcmem_write(0,~2)
-    deepsleep.reboot()
-    
-def bpp_check():
-    global bpp_after_count
-    if (get_reboot_counter()>bpp_after_count):
-        return True
-    return False
 
 # SERVICES
 def setup_services():
@@ -239,8 +213,6 @@ def draw_home(percent, cstate, status, full_clear, going_to_sleep):
             draw_helper_battery(percent, cstate)
     if (going_to_sleep):
         info = "[ ANY: Wake up ]"
-    elif (status=="BPP"):
-        info = "[ ANY: Exit BPP ]"
     else:
         info = "[ START: LAUNCHER ]"
         
@@ -270,7 +242,6 @@ def start_launcher(pushed):
         print("[SPLASH] Starting launcher...")
         global splashTimer
         splashTimer.deinit()
-        increment_reboot_counter()
         appglue.start_app("launcher")
         
 def start_ota(pushed):
@@ -302,14 +273,12 @@ def start_magic(pushed):
       
 # SLEEP
 def badge_sleep():
-    increment_reboot_counter()
     global sleep_duration
     print("[SPLASH] Going to sleep now...")
     badge.eink_busy_wait() #Always wait for e-ink
     deepsleep.start_sleeping(sleep_duration*1000)
     
 def badge_sleep_forever():
-    increment_reboot_counter()
     print("[SPLASH] Going to sleep WITHOUT TIME WAKEUP now...")
     badge.eink_busy_wait() #Always wait for e-ink
     deepsleep.start_sleeping(0) #Sleep until button interrupt occurs
@@ -319,8 +288,6 @@ def splashTimer_callback(tmr):
     global loopCnt
     global timer_loop_amount
     #print("[TIMER] "+str(loopCnt))
-    #print("[BATTERY] "+str(badge.battery_volt_sense())+" ["+str(badge.battery_charge_status())+"]")
-
     if loopCnt<1:
         loopCnt = timer_loop_amount
         cstate = badge.battery_charge_status()
@@ -336,12 +303,8 @@ def splashTimer_callback(tmr):
                 ugfx.flush()
                 badge_sleep_forever()
             else:
-                if (bpp_check()):
-                    draw_home(percent, cstate, "BPP", False, True)
-                    bpp_execute()
-                else:
-                    draw_home(percent, cstate, "Zzz...", False, True)
-                    badge_sleep()
+                draw_home(percent, cstate, "Zzz...", False, True)
+                badge_sleep()
     else:
         if (loop_services(loopCnt)):
             loopCnt = timer_loop_amount
@@ -386,6 +349,7 @@ def wifi_connect():
     return True
     
 # CHECK OTA VERSION
+
 def download_ota_info():
     import gc
     import urequests as requests
@@ -409,38 +373,42 @@ def download_ota_info():
     return result
 
 def check_ota_available():
-    import wifi
-    import network
-    global update_available
-    global update_name
-    global update_build
-    if not wifi.sta_if.isconnected():
-        if not wifi_connect():
+    try:
+        import wifi
+        import network
+        global update_available
+        global update_name
+        global update_build
+        if not wifi.sta_if.isconnected():
+            if not wifi_connect():
+                disableWifi()
+                return False
+        json = download_ota_info()
+        if (json):
+            import version
+            if (json["build"]>version.build):
+                update_available = True
+                update_name = json["name"]
+                update_build = json["build"]
+                ugfx.input_attach(ugfx.BTN_B, start_ota)
+        else:
             disableWifi()
             return False
-    json = download_ota_info()
-    if (json):
-        import version
-        if (json["build"]>version.build):
-            update_available = True
-            update_name = json["name"]
-            update_build = json["build"]
-            ugfx.input_attach(ugfx.BTN_B, start_ota)
-    else:
         disableWifi()
+        return True
+    except:
+        print("OTA CHECK EXCEPTION")
         return False
-    disableWifi()
-    return True
 
 # WELCOME (SETUP, SPONSORS OR CLOCK)
 def welcome():
-    setupcompleted = badge.nvs_get_u8('badge', 'setup.state', 0)
+    setupcompleted = int(badge.nvs_get_str('badge', 'setup.state', '0'))
     if (setupcompleted==0): # First boot (open setup)
         print("[SPLASH] Setup not completed. Running setup!")
         appglue.start_app("setup")
     elif (setupcompleted==1): # Second boot (after setup)
         print("[SPLASH] Showing sponsors once...")
-        badge.nvs_set_u8('badge', 'setup.state', 2) # Only force show sponsors once
+        badge.nvs_set_str('badge', 'setup.state', '2') # Only force show sponsors once
         appglue.start_app("sponsors")
     else: # Setup completed
         print("[SPLASH] Normal boot.")
@@ -453,43 +421,44 @@ def welcome():
 
 # SETTINGS FROM NVS
 def load_settings():
-    header_inv = badge.nvs_get_u8('splash', 'header.invert', 0)
-    if (header_inv>0):
-        global header_fg
-        global header_bg
-        header_fg = ugfx.WHITE
-        header_bg = ugfx.BLACK
-    header_hws = badge.nvs_get_u8('splash', 'header.hws', 0) #Hide While Sleeping
-    if (header_hws>0):
-        global header_hide_while_sleeping
-        header_hide_while_sleeping = True
-    header_hbws = badge.nvs_get_u8('splash', 'header.hbws', 0) #Hide Battery While Sleeping
-    if (header_hbws>0):
-        global header_hide_battery_while_sleeping
-        header_hide_battery_while_sleeping = True
-    global sleep_duration
-    sleep_duration = badge.nvs_get_u8('splash', 'sleep.duration', 60)
-    if (sleep_duration<30):
-        print("[SPLASH] Sleep duration set to less than 30 seconds. Forcing 30 seconds.")
-        sleep_duration = 30
-    #if (sleep_duration>120):
-    #    print("[SPLASH] Sleep duration set to more than 120 seconds. Forcing 120 seconds.") 
-    global battery_volt_min
-    battery_volt_min = badge.nvs_get_u16('splash', 'batt.vmin', 3700) # mV
-    global battery_volt_max
-    battery_volt_max = badge.nvs_get_u16('splash', 'batt.vmax', 4200) # mV
-    global battery_percent_empty
-    battery_percent_empty = badge.nvs_get_u8('splash', 'batt.pempty', 1) # %
-    global ntp_timeout
-    ntp_timeout = badge.nvs_get_u8('splash', 'ntp.timeout', 40) #amount of tries
-    global bpp_after_count
-    bpp_after_count = badge.nvs_get_u8('splash', 'bpp.count', 5)
-    global splash_timer_interval
-    splash_timer_interval = badge.nvs_get_u16('splash', 'tmr.interval', 200)
-    global timer_loop_amount
-    timer_loop_amount = badge.nvs_get_u8('splash', 'tmr.amount', 25)
-    global loopCnt
-    loopCnt = timer_loop_amount
+    try:
+        header_inv = badge.nvs_get_u8('splash', 'header.invert', 0)
+        if (header_inv>0):
+            global header_fg
+            global header_bg
+            header_fg = ugfx.WHITE
+            header_bg = ugfx.BLACK
+        header_hws = badge.nvs_get_u8('splash', 'header.hws', 0) #Hide While Sleeping
+        if (header_hws>0):
+            global header_hide_while_sleeping
+            header_hide_while_sleeping = True
+        header_hbws = badge.nvs_get_u8('splash', 'header.hbws', 0) #Hide Battery While Sleeping
+        if (header_hbws>0):
+            global header_hide_battery_while_sleeping
+            header_hide_battery_while_sleeping = True
+        global sleep_duration
+        sleep_duration = badge.nvs_get_u8('splash', 'sleep.duration', 60)
+        if (sleep_duration<30):
+            print("[SPLASH] Sleep duration set to less than 30 seconds. Forcing 30 seconds.")
+            sleep_duration = 30
+        #if (sleep_duration>120):
+        #    print("[SPLASH] Sleep duration set to more than 120 seconds. Forcing 120 seconds.") 
+        global battery_volt_min
+        battery_volt_min = badge.nvs_get_u16('splash', 'bat.volt.min', 3500) # mV
+        global battery_volt_max
+        battery_volt_max = badge.nvs_get_u16('splash', 'bat.volt.max', 4200) # mV
+        global battery_percent_empty
+        battery_percent_empty = badge.nvs_get_u8('splash', 'bat.perc.empty', 1) # %
+        global ntp_timeout
+        ntp_timeout = badge.nvs_get_u8('splash', 'ntp.timeout', 40) #amount of tries
+        global splash_timer_interval
+        splash_timer_interval = badge.nvs_get_u16('splash', 'timer.interval', 200)
+        global timer_loop_amount
+        timer_loop_amount = badge.nvs_get_u8('splash', 'timer.amount', 25)
+        global loopCnt
+        loopCnt = timer_loop_amount
+    except:
+        print("SETTINGS LOAD ERROR")
     
 # MAIN
 def splash_main():   
@@ -506,7 +475,6 @@ def splash_main():
     global battery_percent_empty
     if (cstate) or (percent>battery_percent_empty) or (vbatt<100):
         ugfx.input_init()
-        welcome()
         ugfx.input_attach(ugfx.BTN_START, start_launcher)
         ugfx.input_attach(ugfx.BTN_A, start_magic)
         ugfx.input_attach(ugfx.BTN_B, nothing)
@@ -515,12 +483,14 @@ def splash_main():
         ugfx.input_attach(ugfx.JOY_DOWN, nothing)
         ugfx.input_attach(ugfx.JOY_LEFT, nothing)
         ugfx.input_attach(ugfx.JOY_RIGHT, nothing)
+        try:
+            welcome()
+        except:
+            print("Well fuck.")
         global splashTimer
         setup_services()
         start_sleep_counter()
         full_clear = False
-        if (get_reboot_counter()==0):
-            full_clear = True
         draw_home(percent, cstate, header_status_string, full_clear, False)
     else:
         draw_batterylow(percent)       
@@ -540,7 +510,6 @@ battery_volt_min = 3800
 battery_volt_max = 4300
 battery_percent_empty = 1
 ntp_timeout = 40
-bpp_after_count = 5
 header_status_string = ""
 splash_timer_interval = 500
 
