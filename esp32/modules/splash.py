@@ -15,17 +15,6 @@ def set_time_ntp():
     else:
         return False
 
-# BATTERY
-def battery_percent(vbatt):
-        global battery_volt_min
-        global battery_volt_max
-        percent = round(((vbatt-vempty)*100)/(vfull-vempty))
-        if (percent<0):
-            percent = 0
-        elif (percent>100):
-            percent = 100
-        return percent
-
 # GRAPHICS
 def draw_msg(title, desc):
     ugfx.clear(ugfx.WHITE)
