@@ -211,7 +211,7 @@ def checkFirstBoot():
     else: # Setup completed
         print("[SPLASH] Normal boot.")
 
-nick = badge.nvs_get_str("owner", "name", 'John Doe')
+nick = badge.nvs_get_str("owner", "name", 'Jan de Boer')
 vMin = badge.nvs_get_u16('splash', 'bat.volt.min', 3600) # mV
 vMax = badge.nvs_get_u16('splash', 'bat.volt.max', 4200) # mV
 if badge.battery_charge_status() == False and badge.usb_volt_sense() > 4500 and badge.battery_volt_sense() > 2500:
