@@ -96,7 +96,7 @@ esp_rtcmem_write_string(uint32_t location, const char *buffer)
 		return -1;
 	}
 
-	memcpy(&rtcmemcontents[location], buffer, strlen(buffer));
+	memcpy(&rtcmemcontents[location], buffer, strlen(buffer)+1);
 
 	return 0;
 }

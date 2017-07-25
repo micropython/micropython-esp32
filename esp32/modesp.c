@@ -150,7 +150,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(esp_rtcmem_read_obj, esp_rtcmem_read_);
 
 
 STATIC mp_obj_t esp_rtcmem_read_string_(mp_uint_t n_args, const mp_obj_t *args) {
-	int pos = (n_args == 0) ? 2 : mp_obj_get_int(args[1]);
+	int pos = (n_args == 0) ? 2 : mp_obj_get_int(args[0]);
 
 	char str[256];
 	size_t str_len = sizeof(str);
