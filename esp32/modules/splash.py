@@ -6,22 +6,30 @@ import ugfx, time, ntp, badge, machine, appglue, deepsleep, network, esp, gc, se
 # TIME
 
 def set_time_ntp():
-    draw_msg("Configuring clock...", "Connecting to WiFi...")
+    draw_msg("Configuring clock...")
     if connectWiFi():
-        draw_msg("Configuring clock...", "Setting time over NTP...")
+        draw_msg("Setting time over NTP...")
         ntp.set_NTP_time()
-        draw_msg("Configuring clock...", "Done!")
+        draw_msg("Time set!")
         return True
     else:
         return False
 
 # GRAPHICS
-def draw_msg(title, desc):
-    ugfx.clear(ugfx.WHITE)
-    ugfx.string(0, 0, title, "PermanentMarker22", ugfx.BLACK)
-    ugfx.string(0, 25, desc, "Roboto_Regular12", ugfx.BLACK)
-    ugfx.set_lut(ugfx.LUT_FASTEST)
-    ugfx.flush()
+def draw_msg(msg):
+    global line_number
+    try:
+        line_number
+    except:
+        line_number = 0
+        ugfx.clear(ugfx.WHITE)
+        ugfx.string(0, 0, 'Still Loading Anyway...', "PermanentMarker22", ugfx.BLACK)
+        ugfx.set_lut(ugfx.LUT_FASTER)
+        draw_msg(msg)
+    else:
+        ugfx.string(0, 30 + (line_number * 15), msg, "Roboto_Regular12", ugfx.BLACK)
+        ugfx.flush()
+        line_number += 1
 
 
 def draw_home(do_BPP):
@@ -139,14 +147,14 @@ def connectWiFi():
         password = badge.nvs_get_str('badge', 'wifi.password')
         nw.connect(ssid, password) if password else nw.connect(ssid)
 
-        draw_msg("Wi-Fi actived", "Connecting to '"+ssid+"'...")
+        draw_msg("Connecting to '"+ssid+"'...")
 
         timeout = badge.nvs_get_u8('splash', 'wifi.timeout', 40)
         while not nw.isconnected():
             time.sleep(0.1)
             timeout = timeout - 1
             if (timeout<1):
-                draw_msg("Error", "Timeout while connecting!")
+                draw_msg("Timeout while connecting!")
                 disableWiFi()
                 time.sleep(1)
                 return False
@@ -156,19 +164,19 @@ def connectWiFi():
 
 def download_ota_info():
     import urequests as requests
-    draw_msg("Loading...", "Downloading JSON...")
+    draw_msg("Downloading OTA status...")
     result = False
     try:
         data = requests.get("https://badge.sha2017.org/version")
     except:
-        draw_msg("Error", "Could not download JSON!")
+        draw_msg("Could not download JSON!")
         time.sleep(5)
         return False
     try:
         result = data.json()
     except:
         data.close()
-        draw_msg("Error", "Could not decode JSON!")
+        draw_msg("Could not decode JSON!")
         time.sleep(5)
         return False
     data.close()
