@@ -156,7 +156,7 @@ def install_app(active):
 
 		ugfx.clear(ugfx.BLACK)
 		ugfx.string(40,25,"Installing:","Roboto_BlackItalic24",ugfx.WHITE)
-		ugfx.string(75,75, packages[index]["name"],"PermanentMarker22",ugfx.WHITE)
+		ugfx.string(100,55, packages[index]["name"],"PermanentMarker22",ugfx.WHITE)
 		ugfx.flush()
 
 		import woezel
@@ -164,7 +164,7 @@ def install_app(active):
 
 		ugfx.clear(ugfx.WHITE)
 		ugfx.string(40,25,"Installed:","Roboto_BlackItalic24",ugfx.BLACK)
-		ugfx.string(75,75, packages[index]["name"],"PermanentMarker22",ugfx.BLACK)
+		ugfx.string(100,55, packages[index]["name"],"PermanentMarker22",ugfx.BLACK)
 		text = ugfx.Textbox(0,100, ugfx.width(), ugfx.height()-100)
 		text.text("Press A to start %s, or B to return to the installer" % packages[index]["name"])
 		
