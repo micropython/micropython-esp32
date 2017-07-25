@@ -47,8 +47,7 @@ options = ugfx.List(0,0,int(ugfx.width()/2),ugfx.height())
 text = ugfx.Textbox(int(ugfx.width()/2),0, int(ugfx.width()/2), ugfx.height())
 text.text("Downloading category list...")
 
-ugfx.set_lut(ugfx.LUT_FULL)
-ugfx.flush()
+ugfx.flush(ugfx.LUT_FULL)
 badge.eink_busy_wait()
 ugfx.set_lut(ugfx.LUT_FASTER)
 
@@ -111,8 +110,7 @@ def list_apps(slug):
 	text.destroy()
 	text = ugfx.Textbox(int(ugfx.width()/2),0, int(ugfx.width()/2), ugfx.height())
 	text.text("Downloading list of eggs...")
-	ugfx.set_lut(ugfx.LUT_FULL)
-	ugfx.flush()
+	ugfx.flush(ugfx.LUT_FULL)
 	badge.eink_busy_wait()
 
 	gc.collect()
