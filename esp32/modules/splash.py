@@ -40,7 +40,9 @@ def draw_home(do_BPP):
     vBatt = badge.battery_volt_sense()
     vBatt += vDrop
 
-    width = (vBatt-vMin) / (vMax-vMin) * 38
+    ugfx.clear(ugfx.WHITE)
+
+    width = round((vBatt-vMin) / (vMax-vMin) * 38)
     if width < 0:
         width = 0
     elif width < 38:
@@ -62,14 +64,13 @@ def draw_home(do_BPP):
     ugfx.string(47, 2, bat_status,'Roboto_Regular18',ugfx.BLACK)
 
 
-
     if do_BPP:
-        info = "[ ANY: Wake up ]"
+        info = '[ ANY: Wake up ]'
     elif OTA_available:
-        info = "[ B: OTA ] [ START: LAUNCHER ]"
-        ugfx.string(0, 108, 'OTA ready!', "Roboto_Regular18",ugfx.BLACK)
+        info = '[ B: OTA ] [ START: LAUNCHER ]'
+        ugfx.string(0, 108, 'OTA ready!', 'Roboto_Regular18', ugfx.BLACK)
     else:
-        info = "[ START: LAUNCHER ]"
+        info = '[ START: LAUNCHER ]'
 
     l = ugfx.get_string_width(info,"Roboto_Regular12")
     ugfx.string(296-l, 115, info, "Roboto_Regular12",ugfx.BLACK)
@@ -77,7 +78,12 @@ def draw_home(do_BPP):
     ugfx.string(0, 40, nick, "PermanentMarker36", ugfx.BLACK)
     services.draw()
 
-    ugfx.flush()
+    ugfx.flush(ugfx.LUT_FULL)
+
+    if do_BPP:
+        badge.eink_busy_wait()
+        # appglue.start_bpp() ## SHOULD BE THIS!!
+        deepsleep.start_sleeping()
 
 # START LAUNCHER
 def press_start(pushed):
@@ -91,11 +97,14 @@ def start_ota(pushed):
 # NOTHING
 def press_nothing(pushed):
     if pushed:
-        loopCnt = badge.nvs_get_u8('splash', 'timer.amount', 25)
+        global loopCount
+        loopCount = badge.nvs_get_u8('splash', 'timer.amount', 50)
 
 def press_a(pushed):
     if pushed:
-        loopCnt = badge.nvs_get_u8('splash', 'timer.amount', 25)
+        global loopCount
+        global magic
+        loopCount = badge.nvs_get_u8('splash', 'timer.amount', 50)
         magic += 1
         if magic > 9:
             appglue.start_app('magic', False)
@@ -115,17 +124,18 @@ def sleepIfEmpty(vbatt):
 
 # TIMER
 def splashTimer_callback(tmr):
+    global loopCount
     try:
         loopCount
-    except NameError:
-        loopCount = badge.nvs_get_u8('splash', 'timer.amount', 25)
+    except:
+        loopCount = badge.nvs_get_u8('splash', 'timer.amount', 50)
         draw_home(False)
     else:
-            if loopCnt<1:
+            if loopCount < 1:
                 draw_home(True)
             else:
-                if not services.loop(loopCnt):
-                    loopCnt -= 1
+                if not services.loop(loopCount):
+                    loopCount -= 1
 
 # WIFI
 def disableWiFi():
@@ -182,7 +192,10 @@ def check_ota_available():
             import version
             if (json["build"] > version.build):
                 ugfx.input_attach(ugfx.BTN_B, start_ota)
+                badge.nvs_set_u8('badge','OTA.ready',1)
                 return True
+            else:
+                badge.nvs_set_u8('badge','OTA.ready',0)
     return False
 
 def inputInit():
@@ -198,13 +211,16 @@ def inputInit():
 
 def checkFirstBoot():
     setupcompleted = int(badge.nvs_get_str('badge', 'setup.state', '0'))
-    if (setupcompleted==0): # First boot (open setup)
+    if setupcompleted == 0: # First boot (open setup)
         print("[SPLASH] Setup not completed. Running setup!")
         appglue.start_app("setup")
-    elif (setupcompleted==1): # Second boot (after setup)
+    elif setupcompleted == 1: # Second boot (after setup)
         print("[SPLASH] Showing sponsors once...")
         badge.nvs_set_str('badge', 'setup.state', '2') # Only force show sponsors once
         appglue.start_app("sponsors")
+    elif setupcompleted == 2:
+        badge.nvs_set_str('badge', 'setup.state', '3')
+        check_ota_available()
     else: # Setup completed
         print("[SPLASH] Normal boot.")
 
@@ -212,7 +228,7 @@ header_inv = badge.nvs_get_u8('splash', 'header.invert', 0)
 nick = badge.nvs_get_str("owner", "name", 'John Doe')
 vMin = badge.nvs_get_u16('splash', 'bat.volt.min', 3600) # mV
 vMax = badge.nvs_get_u16('splash', 'bat.volt.max', 4200) # mV
-vDrop = badge.nvs_get_u16('splash', 'bat.volt.drop', 100) # mV
+vDrop = badge.nvs_get_u16('splash', 'bat.volt.drop', 80) # mV
 
 inputInit()
 magic = 0
@@ -225,9 +241,11 @@ doOTA = set_time_ntp() if time.time() < 1482192000 else True
 if (machine.reset_cause() != machine.DEEPSLEEP_RESET) and doOTA:
     OTA_available = check_ota_available()
 else:
-    OTA_available = False
+    OTA_available = badge.nvs_get_u8('badge','OTA.ready',0)
 
 disableWiFi()
+ugfx.clear(ugfx.WHITE)
+ugfx.flush(ugfx.LUT_FASTER)
 
 foundService = services.setup()
 
