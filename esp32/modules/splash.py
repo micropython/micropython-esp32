@@ -1,8 +1,8 @@
 import ugfx, time, ntp, badge, machine, appglue, deepsleep, network, esp, gc, services
 
 # SHA2017 badge home screen
-#   Renze Nicolai
-#   Thomas Roos
+#   v2 Thomas Roos
+#   v1 Renze Nicolai
 
 def set_time_ntp():
     draw_msg("Configuring clock...")
@@ -77,6 +77,8 @@ def draw_home(do_BPP):
         badge.eink_busy_wait()
         # appglue.start_bpp() ## SHOULD BE THIS!!
         deepsleep.start_sleeping()
+    else:
+        ugfx.input_attach(ugfx.BTN_B, start_ota)
 
 def start_ota(pushed):
     if pushed:
@@ -177,7 +179,6 @@ def check_ota_available():
         if (json):
             import version
             if (json["build"] > version.build):
-                ugfx.input_attach(ugfx.BTN_B, start_ota)
                 badge.nvs_set_u8('badge','OTA.ready',1)
                 return True
             else:
