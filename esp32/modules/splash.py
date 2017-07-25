@@ -39,7 +39,7 @@ def draw_home(do_BPP):
     width = round((vBatt-vMin) / (vMax-vMin) * 38)
     if width < 0:
         width = 0
-    elif width < 38:
+    elif width > 38:
         width = 38
 
     ugfx.box(2,2,40,18,ugfx.BLACK)
@@ -60,7 +60,7 @@ def draw_home(do_BPP):
     if do_BPP:
         info = '[ ANY: Wake up ]'
     elif OTA_available:
-        info = '[ B: OTA ] [ START: LAUNCHER ]'
+        info = '[ B: UPDATE ] [ START: LAUNCHER ]'
         ugfx.string(0, 108, 'OTA ready!', 'Roboto_Regular18', ugfx.BLACK)
     else:
         info = '[ START: LAUNCHER ]'
@@ -81,11 +81,15 @@ def draw_home(do_BPP):
 def start_ota(pushed):
     if pushed:
         appglue.start_ota()
-        
+
 def press_nothing(pushed):
     if pushed:
         global loopCount
         loopCount = badge.nvs_get_u8('splash', 'timer.amount', 50)
+
+def press_start(pushed):
+    if pushed:
+        appglue.start_app("launcher", False)
 
 def press_a(pushed):
     if pushed:
@@ -116,7 +120,7 @@ def splashTimer_callback(tmr):
         loopCount = badge.nvs_get_u8('splash', 'timer.amount', 50)
         draw_home(False)
     else:
-            if loopCount < 1:
+            if loopCount < 1 and badge.usb_volt_sense() < 4500:
                 draw_home(True)
             else:
                 if not services.loop(loopCount):
@@ -182,7 +186,7 @@ def check_ota_available():
 
 def inputInit():
     ugfx.input_init()
-    ugfx.input_attach(ugfx.BTN_START, lambda p: appglue.start_app("launcher", False) if p else 0)
+    ugfx.input_attach(ugfx.BTN_START, press_start)
     ugfx.input_attach(ugfx.BTN_A, press_a)
     ugfx.input_attach(ugfx.BTN_B, press_nothing)
     ugfx.input_attach(ugfx.BTN_SELECT, press_nothing)
@@ -206,11 +210,13 @@ def checkFirstBoot():
     else: # Setup completed
         print("[SPLASH] Normal boot.")
 
-header_inv = badge.nvs_get_u8('splash', 'header.invert', 0)
 nick = badge.nvs_get_str("owner", "name", 'John Doe')
 vMin = badge.nvs_get_u16('splash', 'bat.volt.min', 3600) # mV
 vMax = badge.nvs_get_u16('splash', 'bat.volt.max', 4200) # mV
-vDrop = badge.nvs_get_u16('splash', 'bat.volt.drop', 80) # mV
+if badge.battery_charge_status() == False and badge.usb_volt_sense() > 4500 and badge.battery_volt_sense() > 2500:
+    badge.nvs_set_u16('splash', 'bat.volt.drop', 4200 - badge.battery_volt_sense()) # mV
+    print('Set vDrop to: ' + str(4200 - badge.battery_volt_sense()))
+vDrop = badge.nvs_get_u16('splash', 'bat.volt.drop', 0) # mV
 
 inputInit()
 magic = 0
