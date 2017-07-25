@@ -29,8 +29,6 @@ def setup():
                 except BaseException as msg:
                     print("Exception in service setup "+app+": ", msg)
                 break
-        if not found:
-            print("[SERVICES] App '"+app+"' has no service")
     return found
 
 def loop(lcnt):
