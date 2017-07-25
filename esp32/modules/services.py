@@ -11,7 +11,7 @@ def setup():
     except OSError:
         print("[SERVICES] Can't setup services: no lib folder!")
         return False
-    found = False    
+    found = False
     for app in apps:
         try:
             files = uos.listdir('lib/'+app)
@@ -55,3 +55,5 @@ def draw():
                 y = y - abs(space_used)
         except BaseException as msg:
             print("[SERVICES] Service draw exception: ", msg)
+
+services = []
