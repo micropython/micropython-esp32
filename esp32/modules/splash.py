@@ -61,8 +61,8 @@ def draw_home(do_BPP):
     if do_BPP:
         info = '[ ANY: Wake up ]'
     elif OTA_available:
-        info = '[ B: UPDATE ] [ START: LAUNCHER ]'
-        ugfx.string(0, 108, 'OTA ready!', 'Roboto_Regular18', ugfx.BLACK)
+        info = '[ SELECT: UPDATE | START: LAUNCHER ]'
+        ugfx.string(0, 115, 'OTA ready!', 'Roboto_Regular12', ugfx.BLACK)
     else:
         info = '[ START: LAUNCHER ]'
 
@@ -79,7 +79,7 @@ def draw_home(do_BPP):
         # appglue.start_bpp() ## SHOULD BE THIS!!
         deepsleep.start_sleeping()
     else:
-        ugfx.input_attach(ugfx.BTN_B, start_ota)
+        ugfx.input_attach(ugfx.BTN_SELECT, start_ota)
 
 def start_ota(pushed):
     if pushed:
@@ -232,7 +232,6 @@ if (machine.reset_cause() != machine.DEEPSLEEP_RESET) and doOTA:
 else:
     OTA_available = badge.nvs_get_u8('badge','OTA.ready',0)
 
-disableWiFi()
 ugfx.clear(ugfx.WHITE)
 ugfx.flush(ugfx.LUT_FASTER)
 
