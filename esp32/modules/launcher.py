@@ -53,12 +53,6 @@ def run_it(pushed):
     if (pushed):
         selected = options.selected_text()
         options.destroy()
-
-        ugfx.clear(ugfx.BLACK)
-        ugfx.string_box(0, 25, 296, 25,"Running:","Roboto_BlackItalic24",ugfx.WHITE, ugfx.justifyCenter)
-        ugfx.string_box(0, 51, 296, 23, selected, "PermanentMarker22", ugfx.WHITE, ugfx.justifyCenter)
-        ugfx.flush()
-        badge.eink_busy_wait()
         appglue.start_app(selected)
 
 def expandhome(s):
