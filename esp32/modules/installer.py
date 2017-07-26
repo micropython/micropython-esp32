@@ -149,7 +149,7 @@ def list_categories():
 		except:
 			draw_msg('Failed!')
 			draw_msg('Returning to launcher :(')
-			appglue.start_app('launcher')
+			appglue.start_app('launcher', False)
 
 			f.close()
 		draw_msg('Done!')
@@ -161,7 +161,7 @@ def list_categories():
 	ugfx.input_attach(ugfx.JOY_UP, lambda pushed: ugfx.flush() if pushed else 0)
 	ugfx.input_attach(ugfx.JOY_DOWN, lambda pushed: ugfx.flush() if pushed else 0)
 	ugfx.input_attach(ugfx.BTN_A, select_category)
-	ugfx.input_attach(ugfx.BTN_B, lambda pushed: appglue.start_app("launcher") if pushed else 0)
+	ugfx.input_attach(ugfx.BTN_B, lambda pushed: appglue.start_app("launcher", False) if pushed else 0)
 	ugfx.input_attach(ugfx.BTN_START, lambda pushed: appglue.start_app("") if pushed else 0)
 
 	ugfx.clear(ugfx.WHITE)
@@ -172,8 +172,8 @@ def list_categories():
 	for category in categories:
 		options.add_item("%s (%d) >" % (category["name"], category["eggs"]))
 
-	ugfx.string_box(148,0,148,26, "Hatchery", "Roboto_BlackItalic24", ugfx.BLACK, ugfx.justifyCenter)
 	text.text("Install or update eggs from the hatchery here\n\n\n\n")
+	ugfx.string_box(148,0,148,26, "Hatchery", "Roboto_BlackItalic24", ugfx.BLACK, ugfx.justifyCenter)
 	ugfx.line(148, 78, 296, 78, ugfx.BLACK)
 	ugfx.string_box(148,78,148,18, " A: Open catergory", "Roboto_Regular12", ugfx.BLACK, ugfx.justifyLeft)
 	ugfx.string_box(148,92,148,18, " B: Return to home", "Roboto_Regular12", ugfx.BLACK, ugfx.justifyLeft)
@@ -185,6 +185,6 @@ def list_categories():
 
 if not connectWiFi():
 	draw_msg('Returning to launcher :(')
-	appglue.start_app('launcher')
+	appglue.start_app('launcher', False)
 else:
 	list_categories()
