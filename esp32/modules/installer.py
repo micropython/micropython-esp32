@@ -152,7 +152,11 @@ def list_categories():
 			appglue.start_app('launcher')
 
 			f.close()
-			draw_msg('Done!')
+		draw_msg('Done!')
+		options = ugfx.List(0,0,int(ugfx.width()/2),ugfx.height())
+		text = ugfx.Textbox(int(ugfx.width()/2),0, int(ugfx.width()/2), ugfx.height())
+
+
 
 	ugfx.input_attach(ugfx.JOY_UP, lambda pushed: ugfx.flush() if pushed else 0)
 	ugfx.input_attach(ugfx.JOY_DOWN, lambda pushed: ugfx.flush() if pushed else 0)
@@ -183,6 +187,4 @@ if not connectWiFi():
 	draw_msg('Returning to launcher :(')
 	appglue.start_app('launcher')
 else:
-	options = ugfx.List(0,0,int(ugfx.width()/2),ugfx.height())
-	text = ugfx.Textbox(int(ugfx.width()/2),0, int(ugfx.width()/2), ugfx.height())
 	list_categories()
