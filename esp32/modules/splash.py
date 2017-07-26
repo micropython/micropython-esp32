@@ -47,11 +47,11 @@ def draw_home(do_BPP):
     ugfx.box(42,7,2,8,ugfx.BLACK)
     ugfx.area(3,3,width,16,ugfx.BLACK)
 
-
-    if badge.battery_charge_status():
-        bat_status = 'Charging...'
-    elif vBatt > 100:
-        bat_status = str(round(vBatt/1000, 2)) + 'v'
+    if vBatt > 500:
+        if badge.battery_charge_status():
+            bat_status = 'Charging...'
+        else:
+            bat_status = str(round(vBatt/1000, 2)) + 'v'
     else:
         bat_status = 'No battery'
 
