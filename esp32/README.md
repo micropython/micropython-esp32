@@ -83,6 +83,14 @@ this repository):
 $ make -C mpy-cross
 ```
 
+The ESP32 port has a dependency on Berkeley DB, which is an external
+dependency (git submodule). You'll need to have git initialize that
+module using the commands:
+```bash
+$ git submodule init lib/berkeley-db-1.xx
+$ git submodule update
+```
+
 Then to build MicroPython for the ESP32 run:
 ```bash
 $ cd esp32
