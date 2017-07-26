@@ -83,6 +83,7 @@ def draw_home(do_BPP):
 
 def start_ota(pushed):
     if pushed:
+        badge.nvs_set_u8('badge','OTA.ready',0)
         appglue.start_ota()
 
 def press_nothing(pushed):
