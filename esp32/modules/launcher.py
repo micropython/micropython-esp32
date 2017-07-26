@@ -1,14 +1,8 @@
-import ugfx, badge, sys, gc
-import uos as os
-import uerrno as errno
-import ujson as json
-import time
-import esp
-import appglue
-import version
+import ugfx, badge, sys, uos as os, appglue, version
 
 ugfx.init()
 ugfx.input_init()
+ugfx.set_lut(ugfx.LUT_FASTER)
 ugfx.clear(ugfx.BLACK)
 ugfx.flush()
 ugfx.clear(ugfx.WHITE)
@@ -31,8 +25,8 @@ ugfx.line(cursor_pos, 22, cursor_pos, 44, ugfx.BLACK)
 # Instructions
 ugfx.line(148, 78, 296, 78, ugfx.BLACK)
 ugfx.string_box(148,78,148,18, " A: Run", "Roboto_Regular12", ugfx.BLACK, ugfx.justifyLeft)
-ugfx.string_box(148,78,148,18, " B: Uninstall", "Roboto_Regular12", ugfx.BLACK, ugfx.justifyRight)
-ugfx.string_box(148,92,148,18, " START: Return to home", "Roboto_Regular12", ugfx.BLACK, ugfx.justifyLeft)
+ugfx.string_box(148,78,148,18, " B: Return to home", "Roboto_Regular12", ugfx.BLACK, ugfx.justifyRight)
+ugfx.string_box(148,92,148,18, " SELECT: Uninstall", "Roboto_Regular12", ugfx.BLACK, ugfx.justifyLeft)
 ugfx.line(148, 110, 296, 110, ugfx.BLACK)
 ugfx.string_box(148,110,148,18, " " + version.name, "Roboto_Regular12", ugfx.BLACK, ugfx.justifyLeft)
 
@@ -113,13 +107,12 @@ def uninstall_it(pushed):
 populate_it()
 
 ugfx.input_attach(ugfx.BTN_A, run_it)
-ugfx.input_attach(ugfx.BTN_B, uninstall_it)
+ugfx.input_attach(ugfx.BTN_SELECT, uninstall_it)
 
 ugfx.input_attach(ugfx.JOY_UP, lambda pushed: ugfx.flush() if pushed else 0)
 ugfx.input_attach(ugfx.JOY_DOWN, lambda pushed: ugfx.flush() if pushed else 0)
 
+ugfx.input_attach(ugfx.BTN_B, lambda pushed: appglue.start_app("") if pushed else 0)
 ugfx.input_attach(ugfx.BTN_START, lambda pushed: appglue.start_app("") if pushed else 0)
 
-ugfx.set_lut(ugfx.LUT_FULL)
-ugfx.flush()
-ugfx.set_lut(ugfx.LUT_FASTER)
+ugfx.flush(ugfx.LUT_FULL)
