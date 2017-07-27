@@ -216,9 +216,11 @@ TIM_HandleTypeDef *timer_tim6_init(uint freq) {
 
 // Interrupt dispatch
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
+    #if MICROPY_HW_ENABLE_SERVO
     if (htim == &TIM5_Handle) {
         servo_timer_irq_callback();
     }
+    #endif
 }
 
 // Get the frequency (in Hz) of the source clock for the given timer.
@@ -1147,7 +1149,7 @@ STATIC mp_obj_t pyb_timer_period(mp_uint_t n_args, const mp_obj_t *args) {
         // Reset the counter to zero. Otherwise, if counter >= period it will
         // continue counting until it wraps (at either 16 or 32 bits depending
         // on the timer).
-        __HAL_TIM_SetCounter(&self->tim, 0); 
+        __HAL_TIM_SetCounter(&self->tim, 0);
         return mp_const_none;
     }
 }
