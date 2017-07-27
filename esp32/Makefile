@@ -664,7 +664,7 @@ BADGE_COMPONENTS_O = $(addprefix $(BADGE)/components/,\
 	badge/badge_mpr121.o \
 	badge/badge_portexp.o \
 	badge/badge_gpiobutton.o \
-	badge/badge_touch.o \
+	badge/badge_cpt112s.o \
 	badge/badge_input.o \
 	badge/badge_sdcard.o \
 	badge/badge_vibrator.o \
