@@ -246,7 +246,7 @@ STATIC mp_obj_t os_urandom(mp_obj_t num) {
     vstr_t vstr;
     vstr_init_len(&vstr, n);
     FILE *fp = fopen("/dev/urandom", "r");
-    fread(&vstr.buf, 1, n, fp);
+    fread(vstr.buf, 1, n, fp);
     fclose(fp);
     return mp_obj_new_str_from_vstr(&mp_type_bytes, &vstr);
 }
