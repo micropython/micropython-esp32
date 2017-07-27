@@ -66,7 +66,7 @@ STATIC mp_obj_t badge_nvs_erase_all_(mp_obj_t _namespace) {
 
   esp_err_t err = badge_nvs_erase_all(namespace);
   if (err != ESP_OK) {
-    mp_raise_msg(&mp_type_ValueError, "Failed to store data in nvs");
+    mp_raise_msg(&mp_type_ValueError, "Failed to erase all keys in nvs");
   }
 
   return mp_const_none;
@@ -80,7 +80,7 @@ STATIC mp_obj_t badge_nvs_erase_key_(mp_obj_t _namespace, mp_obj_t _key) {
 
   esp_err_t err = badge_nvs_erase_key(namespace, key);
   if (err != ESP_OK) {
-    mp_raise_msg(&mp_type_ValueError, "Failed to store data in nvs");
+    mp_raise_msg(&mp_type_ValueError, "Failed to erase key in nvs");
   }
 
   return mp_const_none;
