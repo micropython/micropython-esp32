@@ -1,6 +1,5 @@
 import ugfx, badge, sys, uos as os, appglue, version
 
-ugfx.init()
 ugfx.input_init()
 ugfx.set_lut(ugfx.LUT_FASTER)
 ugfx.clear(ugfx.BLACK)
@@ -33,6 +32,19 @@ ugfx.string_box(148,110,148,18, " " + version.name, "Roboto_Regular12", ugfx.BLA
 # ugfx.flush()
 options = None
 install_path = None
+
+populate_it()
+
+ugfx.input_attach(ugfx.BTN_A, run_it)
+ugfx.input_attach(ugfx.BTN_SELECT, uninstall_it)
+
+ugfx.input_attach(ugfx.JOY_UP, lambda pushed: ugfx.flush() if pushed else 0)
+ugfx.input_attach(ugfx.JOY_DOWN, lambda pushed: ugfx.flush() if pushed else 0)
+
+ugfx.input_attach(ugfx.BTN_B, lambda pushed: appglue.start_app("") if pushed else 0)
+ugfx.input_attach(ugfx.BTN_START, lambda pushed: appglue.start_app("") if pushed else 0)
+
+ugfx.flush(ugfx.LUT_FULL)
 
 def populate_it():
     global options
@@ -97,16 +109,3 @@ def uninstall_it(pushed):
 
         import dialogs
         uninstall = dialogs.prompt_boolean('Are you sure you want to remove %s?' % selected, cb=perform_uninstall)
-
-populate_it()
-
-ugfx.input_attach(ugfx.BTN_A, run_it)
-ugfx.input_attach(ugfx.BTN_SELECT, uninstall_it)
-
-ugfx.input_attach(ugfx.JOY_UP, lambda pushed: ugfx.flush() if pushed else 0)
-ugfx.input_attach(ugfx.JOY_DOWN, lambda pushed: ugfx.flush() if pushed else 0)
-
-ugfx.input_attach(ugfx.BTN_B, lambda pushed: appglue.start_app("") if pushed else 0)
-ugfx.input_attach(ugfx.BTN_START, lambda pushed: appglue.start_app("") if pushed else 0)
-
-ugfx.flush(ugfx.LUT_FULL)

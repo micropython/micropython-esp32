@@ -50,8 +50,9 @@ def select_category(active):
 		global categories
 		global options
 		index = options.selected_index()
-		category = categories[index]["slug"]
-		list_apps(category)
+		if categories[index]["eggs"] > 0:
+			category = categories[index]["slug"]
+			list_apps(category)
 
 def list_apps(slug):
 	global options
@@ -67,7 +68,7 @@ def list_apps(slug):
 	while options.count() > 0:
 		options.remove_item(0)
 	text.text("Downloading list of eggs...")
-	ugfx.flush()
+	ugfx.flush(ugfx.LUT_FULL)
 
 	try:
 		f = urequests.get("https://badge.sha2017.org/eggs/category/%s/json" % slug)
@@ -77,15 +78,15 @@ def list_apps(slug):
 
 	for package in packages:
 		options.add_item("%s rev. %s" % (package["name"], package["revision"]))
+	options.selected_index(0)
 
 	ugfx.input_attach(ugfx.JOY_UP, show_description)
 	ugfx.input_attach(ugfx.JOY_DOWN, show_description)
 	ugfx.input_attach(ugfx.BTN_A, install_app)
-	ugfx.input_attach(ugfx.BTN_B, lambda pushed: list_categories() if pushed else 0)
-	ugfx.input_attach(ugfx.BTN_START, lambda pushed: appglue.start_app('') if pushed else 0)
+	ugfx.input_attach(ugfx.BTN_B, lambda pushed: list_categories() if pushed else False)
+	ugfx.input_attach(ugfx.BTN_START, lambda pushed: appglue.start_app('') if pushed else False)
 
 	show_description(True)
-	ugfx.set_lut(ugfx.LUT_FASTER)
 	gc.collect()
 
 def start_categories(pushed):
@@ -128,7 +129,7 @@ def install_app(active):
 
 		ugfx.input_attach(ugfx.BTN_A, start_app)
 		ugfx.input_attach(ugfx.BTN_B, start_categories)
-		ugfx.input_attach(ugfx.BTN_START, lambda pushed: appglue.start_app("") if pushed else 0)
+		ugfx.input_attach(ugfx.BTN_START, lambda pushed: appglue.start_app("") if pushed else False)
 
 		ugfx.flush()
 		gc.collect()
@@ -158,11 +159,11 @@ def list_categories():
 
 
 
-	ugfx.input_attach(ugfx.JOY_UP, lambda pushed: ugfx.flush() if pushed else 0)
-	ugfx.input_attach(ugfx.JOY_DOWN, lambda pushed: ugfx.flush() if pushed else 0)
+	ugfx.input_attach(ugfx.JOY_UP, lambda pushed: ugfx.flush() if pushed else False)
+	ugfx.input_attach(ugfx.JOY_DOWN, lambda pushed: ugfx.flush() if pushed else False)
 	ugfx.input_attach(ugfx.BTN_A, select_category)
-	ugfx.input_attach(ugfx.BTN_B, lambda pushed: appglue.start_app("launcher", False) if pushed else 0)
-	ugfx.input_attach(ugfx.BTN_START, lambda pushed: appglue.start_app("") if pushed else 0)
+	ugfx.input_attach(ugfx.BTN_B, lambda pushed: appglue.start_app("launcher", False) if pushed else False)
+	ugfx.input_attach(ugfx.BTN_START, lambda pushed: appglue.start_app("") if pushed else False)
 
 	ugfx.clear(ugfx.WHITE)
 	ugfx.flush()
@@ -171,11 +172,12 @@ def list_categories():
 		options.remove_item(0)
 	for category in categories:
 		options.add_item("%s (%d) >" % (category["name"], category["eggs"]))
+	options.selected_index(0)
 
 	text.text("Install or update eggs from the hatchery here\n\n\n\n")
 	ugfx.string_box(148,0,148,26, "Hatchery", "Roboto_BlackItalic24", ugfx.BLACK, ugfx.justifyCenter)
 	ugfx.line(148, 78, 296, 78, ugfx.BLACK)
-	ugfx.string_box(148,78,148,18, " A: Open catergory", "Roboto_Regular12", ugfx.BLACK, ugfx.justifyLeft)
+	ugfx.string_box(148,78,148,18, " A: Open category", "Roboto_Regular12", ugfx.BLACK, ugfx.justifyLeft)
 	ugfx.string_box(148,92,148,18, " B: Return to home", "Roboto_Regular12", ugfx.BLACK, ugfx.justifyLeft)
 	ugfx.line(148, 110, 296, 110, ugfx.BLACK)
 	ugfx.string_box(148,110,148,18, " badge.sha2017.org", "Roboto_Regular12", ugfx.BLACK, ugfx.justifyLeft)
