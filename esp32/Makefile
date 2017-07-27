@@ -680,6 +680,7 @@ BADGE_COMPONENTS_O = $(addprefix $(BADGE)/components/,\
 	ugfx-glue/gdisp_lld_framebuffer.o \
 	ugfx-glue/ginput_lld_toggle.o \
 	ugfx-glue/gfx_mk.o \
+	ugfx-glue/gfx_userfs.o \
 	sha2017/wildcard_sha2017_org.o \
 	sha2017/sha2017_ota_graphics.o \
 	sha2017/sha2017_ota.o \
