@@ -45,14 +45,33 @@ STATIC mp_obj_t badge_init_() {
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_init_obj, badge_init_);
 
 /*** nvs access ***/
-static void _nvs_check_namespace_key(const char *namespace, const char *key) {
+
+static void _nvs_check_namespace(const char *namespace) {
   if (strlen(namespace) == 0 || strlen(namespace) > 15) {
     mp_raise_msg(&mp_type_AttributeError, "Invalid namespace");
   }
+}
+
+static void _nvs_check_namespace_key(const char *namespace, const char *key) {
+  _nvs_check_namespace(namespace);
+
   if (strlen(key) == 0 || strlen(key) > 15) {
     mp_raise_msg(&mp_type_AttributeError, "Invalid key");
   }
 }
+
+STATIC mp_obj_t badge_nvs_erase_all_(mp_obj_t _namespace) {
+  const char *namespace = mp_obj_str_get_str(_namespace);
+  _nvs_check_namespace(namespace);
+
+  esp_err_t err = badge_nvs_erase_all(namespace);
+  if (err != ESP_OK) {
+    mp_raise_msg(&mp_type_ValueError, "Failed to erase all keys in nvs");
+  }
+
+  return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(badge_nvs_erase_all_obj, badge_nvs_erase_all_);
 
 STATIC mp_obj_t badge_nvs_erase_key_(mp_obj_t _namespace, mp_obj_t _key) {
   const char *namespace = mp_obj_str_get_str(_namespace);
@@ -61,7 +80,7 @@ STATIC mp_obj_t badge_nvs_erase_key_(mp_obj_t _namespace, mp_obj_t _key) {
 
   esp_err_t err = badge_nvs_erase_key(namespace, key);
   if (err != ESP_OK) {
-    mp_raise_msg(&mp_type_ValueError, "Failed to store data in nvs");
+    mp_raise_msg(&mp_type_ValueError, "Failed to erase key in nvs");
   }
 
   return mp_const_none;
@@ -347,6 +366,7 @@ STATIC const mp_rom_map_elem_t badge_module_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR_eink_init), MP_ROM_PTR(&badge_eink_init_obj)},
     {MP_OBJ_NEW_QSTR(MP_QSTR_power_init), (mp_obj_t)&badge_power_init_obj},
 
+    {MP_ROM_QSTR(MP_QSTR_nvs_erase_all), MP_ROM_PTR(&badge_nvs_erase_all_obj)},
     {MP_ROM_QSTR(MP_QSTR_nvs_erase_key), MP_ROM_PTR(&badge_nvs_erase_key_obj)},
     {MP_ROM_QSTR(MP_QSTR_nvs_get_str), MP_ROM_PTR(&badge_nvs_get_str_obj)},
     {MP_ROM_QSTR(MP_QSTR_nvs_set_str), MP_ROM_PTR(&badge_nvs_set_str_obj)},
