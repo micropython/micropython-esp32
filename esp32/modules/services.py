@@ -1,8 +1,10 @@
 import uos
 
-# SHA2017 badge services
-#   Renze Nicolai
-#   Thomas Roos
+# File: services.py
+# Description: Background services for SHA2017 badge
+# License: MIT
+# Authors: Renze Nicolai <renze@rnplus.nl>
+#          Thomas Roos   <?>
 
 def setup():
     global services
@@ -45,12 +47,12 @@ def loop(lcnt):
 def draw():
     global services
     x = 0
-    y = 114
+    y = 64
     for srv in services:
         try:
             space_used = srv.draw(x,y)
             if (space_used>0):
-                y = y - abs(space_used)
+                y = y + abs(space_used)
         except BaseException as msg:
             print("[SERVICES] Service draw exception: ", msg)
 

@@ -20,6 +20,8 @@
 #include "extmod/vfs_native.h"
 #include "lib/timeutils/timeutils.h"
 
+#include "bpp_init.h"
+
 #define mp_obj_native_vfs_t fs_user_mount_t
 
 static const char *TAG = "vfs_native.c";
@@ -413,6 +415,8 @@ STATIC mp_obj_t native_vfs_mount(mp_obj_t self_in, mp_obj_t readonly, mp_obj_t m
 	}
 
 	native_vfs_mounted = true;
+    
+    bpp_mount_ropart();
 
 	return mp_const_none;
 }
