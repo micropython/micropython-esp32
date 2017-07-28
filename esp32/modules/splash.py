@@ -12,7 +12,7 @@ import appglue, services
 ### FUNCTIONS
 
 # Graphics
-def splash_draw_battery():
+def splash_draw_battery(status=""):
     vBatt = badge.battery_volt_sense()
     vBatt += vDrop
 
@@ -35,6 +35,9 @@ def splash_draw_battery():
             bat_status = str(round(vBatt/1000, 2)) + 'v'
     else:
         bat_status = 'No battery'
+        
+    if status!="":
+        bat_status = status
 
     ugfx.string(47, 2, bat_status,'Roboto_Regular18',ugfx.BLACK)
 
@@ -43,22 +46,27 @@ def splash_draw_nickname():
     ugfx.string(0, 40, nick, "PermanentMarker36", ugfx.BLACK)
 
 def splash_draw_actions():
-   if splash_power_countdown_get()<1:
+    global otaAvailable
+    if splash_power_countdown_get()<1: # Badge is going to sleep
         info = '[ ANY: Wake up ]'
-    elif OTA_available:
+    elif otaAvailable: # OTA update available
         info = '[ SELECT: UPDATE ] [ START: LAUNCHER ]'
-        ugfx.string(0, 115, 'OTA ready!', 'Roboto_Regular12', ugfx.BLACK)
-    else:
+    else: # Normal operation
         info = '[ START: LAUNCHER ]'
 
     l = ugfx.get_string_width(info,"Roboto_Regular12")
-    ugfx.string(296-l, 115, info, "Roboto_Regular12",ugfx.BLACK)
+    ugfx.string(296-l, 0, info, "Roboto_Regular12",ugfx.BLACK)
 
 def splash_draw():
     global splashDrawMsgLineNumber
     splashDrawMsgLineNumber = 0
     ugfx.clear(ugfx.WHITE)
-    splash_draw_battery()
+    
+    status = ""
+    if otaAvailable:
+        status = "Update available!"
+    
+    splash_draw_battery(status)
     splash_draw_nickname()
     splash_draw_actions()
     services.draw()
@@ -74,12 +82,12 @@ def splash_draw_msg(message, clear=False):
         
     if clear:
         ugfx.clear(ugfx.WHITE)
-        ugfx.string(0, 0, 'Still Loading Anyway...', "PermanentMarker22", ugfx.BLACK)
+        ugfx.string(0, 0, message, "PermanentMarker22", ugfx.BLACK)
         ugfx.set_lut(ugfx.LUT_FASTER)
-        draw_msg(msg)
+        ugfx.flush()
         splashDrawMsgLineNumber = 0
     else:
-        ugfx.string(0, 30 + (splashDrawMsgLineNumber * 15), msg, "Roboto_Regular12", ugfx.BLACK)
+        ugfx.string(0, 30 + (splashDrawMsgLineNumber * 15), message, "Roboto_Regular12", ugfx.BLACK)
         ugfx.flush()
         splashDrawMsgLineNumber += 1
 
@@ -99,15 +107,15 @@ def splash_wifi_connect():
             password = badge.nvs_get_str('badge', 'wifi.password')
             nw.connect(ssid, password) if password else nw.connect(ssid)
 
-            draw_msg("Connecting to WiFi...", True)
-            draw_msg("("+ssid+")")
+            splash_draw_msg("Connecting to WiFi...", True)
+            splash_draw_msg("("+ssid+")")
 
             timeout = badge.nvs_get_u8('splash', 'wifi.timeout', 40)
             while not nw.isconnected():
                 time.sleep(0.1)
                 timeout = timeout - 1
                 if (timeout<1):
-                    draw_msg("Timeout while connecting!")
+                    splash_draw_msg("Timeout while connecting!")
                     splash_wifi_disable()
                     return False
         wifiStatus = True
@@ -134,9 +142,9 @@ def splash_ntp():
     if not splash_wifi_active():
         if not splash_wifi_connect():
             return False
-    draw_msg("Configuring clock...", True)
+    splash_draw_msg("Configuring clock...", True)
     ntp.set_NTP_time()
-    draw_msg("Done")
+    splash_draw_msg("Done")
     return True
     
 # OTA update checking
@@ -221,10 +229,14 @@ def splash_power_countdown_trigger():
         splashPowerCountdown
     except:
         splash_power_countdown_reset()
-        
+    
     splashPowerCountdown -= 1
     
-    if splashPowerCountdown<0:
+    if splashPowerCountdown<1:
+        if badge.usb_volt_sense() > 4500:
+            print("[SPLASH] USB connected, not sleeping.")
+            splash_power_countdown_reset()
+    elif splashPowerCountdown<0:
         print("[SPLASH] Going to sleep...")
         badge.eink_busy_wait()
         appglue.start_bpp()
@@ -237,15 +249,18 @@ def splash_power_countdown_trigger():
 def splash_input_start(pressed):
     # Pressing start always starts the launcher
     if pressed:
+        print("[SPLASH] Start button pressed")
         appglue.start_app("launcher", False)
 
 def splash_input_a(pressed):
     if pressed:
+        print("[SPLASH] A button pressed")
         splash_power_countdown_reset()
         splash_about_countdown_trigger()
 
 def splash_input_select(pressed):
     if pressed:
+        print("[SPLASH] Select button pressed")
         global otaAvailable
         if otaAvailable:
             splash_ota_start()
@@ -253,9 +268,11 @@ def splash_input_select(pressed):
 
 def splash_input_other(pressed):
     if pressed:
+        print("[SPLASH] Other button pressed")
         splash_power_countdown_reset()
 
 def splash_input_init():
+    print("[SPLASH] Inputs attached")
     ugfx.input_init()
     ugfx.input_attach(ugfx.BTN_START, splash_input_start)
     ugfx.input_attach(ugfx.BTN_A, splash_input_a)
@@ -274,7 +291,7 @@ def splash_timer_init():
         print("[SPLASH] Timer exists already")
     except:
         splashTimer = machine.Timer(-1)
-        splashTimer.init(period=badge.nvs_get_u16('splash', 'timer.period', 100), mode=machine.Timer.PERIODIC, callback=splash_timer_callback)
+        splashTimer.init(period=badge.nvs_get_u16('splash', 'timer.period', 250), mode=machine.Timer.ONE_SHOT, callback=splash_timer_callback)
         print("[SPLASH] Timer created")
     
 def splash_timer_callback(tmr):
@@ -284,6 +301,8 @@ def splash_timer_callback(tmr):
         pass
     splash_draw()
     splash_power_countdown_trigger()
+    tmr.init(period=badge.nvs_get_u16('splash', 'timer.period', 250), mode=machine.Timer.ONE_SHOT, callback=splash_timer_callback)
+    
     
 ### PROGRAM
 
@@ -316,7 +335,7 @@ elif setupState == 1: # Second boot: Show sponsors
     print("[SPLASH] Second boot...")
     badge.nvs_set_u8('badge', 'setup.state', 2)
     appglue.start_app("sponsors")
-elif setupcompleted == 2: # Third boot: force OTA check
+elif setupState == 2: # Third boot: force OTA check
     print("[SPLASH] Third boot...")
     badge.nvs_set_u8('badge', 'setup.state', 3)
     otaCheck = splash_ntp() if time.time() < 1482192000 else True
@@ -336,7 +355,7 @@ splash_wifi_disable()
 services.setup()
 
 # Initialize timer
-splash_timer_init()
+#splash_timer_init()
 
 # Clean memory
 gc.collect()
