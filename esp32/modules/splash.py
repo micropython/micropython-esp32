@@ -13,67 +13,101 @@ import appglue, services
 
 # Graphics
 def splash_draw_battery(status=""):
+    vUsb = badge.usb_volt_sense()
     vBatt = badge.battery_volt_sense()
     vBatt += vDrop
-
-    ugfx.clear(ugfx.WHITE)
-
-    width = round((vBatt-vMin) / (vMax-vMin) * 38)
-    if width < 0:
-        width = 0
-    elif width > 38:
-        width = 38
-
-    ugfx.box(2,2,40,18,ugfx.BLACK)
-    ugfx.box(42,7,2,8,ugfx.BLACK)
-    ugfx.area(3,3,width,16,ugfx.BLACK)
-
-    if vBatt > 500:
-        if badge.battery_charge_status() and badge.usb_volt_sense() > 4000:
-            bat_status = 'Charging...'
-        else:
-            bat_status = str(round(vBatt/1000, 2)) + 'v'
+    
+    if vBatt>500 and badge.battery_charge_status() and vUsb>4000:
+        try:
+            badge.eink_png(0,0,'/chrg.png')
+        except:
+            ugfx.string(0, 0, "CHRG",'Roboto_Regular12',ugfx.BLACK)
+    elif vUsb>4000:
+        try:
+            badge.eink_png(0,0,'/usb.png')
+        except:
+            ugfx.string(0, 0, "USB",'Roboto_Regular12',ugfx.BLACK)
+    elif vBatt<500:
+        try:
+            badge.eink_png(0,0,'/nobatt.png')
+        except:
+            ugfx.string(0, 0, "NO BATT",'Roboto_Regular12',ugfx.BLACK)
     else:
-        bat_status = 'No battery'
-        
+        width = round((vBatt-vMin) / (vMax-vMin) * 38)
+        if width < 0:
+            width = 0
+        elif width > 38:
+            width = 38
+        ugfx.box(2,2,40,18,ugfx.BLACK)
+        ugfx.box(42,7,2,8,ugfx.BLACK)
+        ugfx.area(3,3,width,16,ugfx.BLACK)
+
     if status!="":
         bat_status = status
+    elif vUsb < 4000 and splash_power_countdown_get()<2:
+        bat_status = "Zzz..."
+    elif vBatt > 500:
+        bat_status = str(round(vBatt/1000, 2)) + 'v ('+str(splash_power_countdown_get())+')'
+    else:
+        bat_status = 'No battery'
 
     ugfx.string(47, 2, bat_status,'Roboto_Regular18',ugfx.BLACK)
 
 def splash_draw_nickname():
     global nick
-    ugfx.string(0, 40, nick, "PermanentMarker36", ugfx.BLACK)
+    ugfx.string(0, 25, nick, "PermanentMarker36", ugfx.BLACK)
 
 def splash_draw_actions():
     global otaAvailable
     if splash_power_countdown_get()<1: # Badge is going to sleep
-        info = '[ ANY: Wake up ]'
-    elif otaAvailable: # OTA update available
-        info = '[ SELECT: UPDATE ] [ START: LAUNCHER ]'
-    else: # Normal operation
-        info = '[ START: LAUNCHER ]'
+        info1 = '[ ANY:    WAKE UP  ]'
+    else:
+        info1 = '[ START:  LAUNCHER ]'
+        if otaAvailable:
+            info2 = '[ SELECT: UPDATE   ]'
+        else:
+            info2 = ''
 
-    l = ugfx.get_string_width(info,"Roboto_Regular12")
-    ugfx.string(296-l, 0, info, "Roboto_Regular12",ugfx.BLACK)
+    l = ugfx.get_string_width(info1,"Roboto_Regular12")
+    ugfx.string(296-l, 0, info1, "Roboto_Regular12",ugfx.BLACK)
+    l = ugfx.get_string_width(info2,"Roboto_Regular12")
+    ugfx.string(296-l, 12, info2, "Roboto_Regular12",ugfx.BLACK)
 
-def splash_draw():
-    global splashDrawMsgLineNumber
-    splashDrawMsgLineNumber = 0
-    ugfx.clear(ugfx.WHITE)
+def splash_draw(full=False):
+    global splashDrawMsg
+    if splashDrawMsg:
+        splashDrawMsg = False
+        full = True
+        global splashDrawMsgLineNumber
+        splashDrawMsgLineNumber = 0
+        
+    if splash_power_countdown_get()<1:
+        full= True
+    
+    if full:
+        ugfx.clear(ugfx.WHITE)
+        splash_draw_nickname()
+    else:
+        ugfx.area(0,0,ugfx.width(),24,ugfx.WHITE)
+        ugfx.area(0,ugfx.height()-64,ugfx.width(),64,ugfx.WHITE)
     
     status = ""
     if otaAvailable:
         status = "Update available!"
-    
     splash_draw_battery(status)
-    splash_draw_nickname()
     splash_draw_actions()
+    
     services.draw()
-    ugfx.flush(ugfx.LUT_FULL)
+    
+    if full:
+        ugfx.flush(ugfx.LUT_FULL)
+    else:
+        ugfx.flush(ugfx.LUT_FASTEST)
     
 
 def splash_draw_msg(message, clear=False):
+    global splashDrawMsg
+    splashDrawMsg = True
     global splashDrawMsgLineNumber
     try:
         splashDrawMsgLineNumber
@@ -231,17 +265,17 @@ def splash_power_countdown_trigger():
         splash_power_countdown_reset()
     
     splashPowerCountdown -= 1
-    
+        
     if splashPowerCountdown<1:
         if badge.usb_volt_sense() > 4500:
-            print("[SPLASH] USB connected, not sleeping.")
+            #print("[SPLASH] USB connected, not sleeping.")
             splash_power_countdown_reset()
     elif splashPowerCountdown<0:
         print("[SPLASH] Going to sleep...")
         badge.eink_busy_wait()
         appglue.start_bpp()
-    else:
-        print("[SPLASH] Sleep in "+str(splashPowerCountdown)+"...")
+    #else:
+    #    print("[SPLASH] Sleep in "+str(splashPowerCountdown)+"...")
 
 
 # Button input
@@ -265,6 +299,10 @@ def splash_input_select(pressed):
         if otaAvailable:
             splash_ota_start()
         splash_power_countdown_reset()
+        
+def splash_input_left(pressed):
+    if pressed:
+        appglue.start_bpp()
 
 def splash_input_other(pressed):
     if pressed:
@@ -280,7 +318,7 @@ def splash_input_init():
     ugfx.input_attach(ugfx.BTN_SELECT, splash_input_select)
     ugfx.input_attach(ugfx.JOY_UP, splash_input_other)
     ugfx.input_attach(ugfx.JOY_DOWN, splash_input_other)
-    ugfx.input_attach(ugfx.JOY_LEFT, splash_input_other)
+    ugfx.input_attach(ugfx.JOY_LEFT, splash_input_left)
     ugfx.input_attach(ugfx.JOY_RIGHT, splash_input_other)
 
 # Event timer
@@ -291,7 +329,7 @@ def splash_timer_init():
         print("[SPLASH] Timer exists already")
     except:
         splashTimer = machine.Timer(-1)
-        splashTimer.init(period=badge.nvs_get_u16('splash', 'timer.period', 250), mode=machine.Timer.ONE_SHOT, callback=splash_timer_callback)
+        splashTimer.init(period=badge.nvs_get_u16('splash', 'timer.period', 100), mode=machine.Timer.ONE_SHOT, callback=splash_timer_callback)
         print("[SPLASH] Timer created")
     
 def splash_timer_callback(tmr):
@@ -301,14 +339,14 @@ def splash_timer_callback(tmr):
         pass
     splash_draw()
     splash_power_countdown_trigger()
-    tmr.init(period=badge.nvs_get_u16('splash', 'timer.period', 250), mode=machine.Timer.ONE_SHOT, callback=splash_timer_callback)
+    tmr.init(period=badge.nvs_get_u16('splash', 'timer.period', 100), mode=machine.Timer.ONE_SHOT, callback=splash_timer_callback)
     
     
 ### PROGRAM
 
 # Load settings from NVS
 nick = badge.nvs_get_str("owner", "name", 'Jan de Boer')
-vMin = badge.nvs_get_u16('splash', 'bat.volt.min', 3600) # mV
+vMin = badge.nvs_get_u16('splash', 'bat.volt.min', 3700) # mV
 vMax = badge.nvs_get_u16('splash', 'bat.volt.max', 4200) # mV
 
 # Calibrate battery voltage drop
@@ -316,6 +354,9 @@ if badge.battery_charge_status() == False and badge.usb_volt_sense() > 4500 and 
     badge.nvs_set_u16('splash', 'bat.volt.drop', 5200 - badge.battery_volt_sense()) # mV
     print('Set vDrop to: ' + str(4200 - badge.battery_volt_sense()))
 vDrop = badge.nvs_get_u16('splash', 'bat.volt.drop', 1000) - 1000 # mV
+
+# Set global variables
+splashDrawMsg = False
 
 # Initialize user input subsystem
 splash_input_init()
@@ -355,10 +396,10 @@ splash_wifi_disable()
 services.setup()
 
 # Initialize timer
-#splash_timer_init()
+splash_timer_init()
 
 # Clean memory
 gc.collect()
 
 # Draw homescreen
-splash_draw()
+splash_draw(True)
