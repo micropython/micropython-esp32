@@ -52,7 +52,6 @@
 #include "modmachine.h"
 #include "mpthreadport.h"
 #include "bpp_init.h"
-#include "badge_portexp.h"
 #include "badge_pins.h"
 #include "badge_base.h"
 #include "badge_first_run.h"
