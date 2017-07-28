@@ -29,7 +29,7 @@ def connectWiFi():
 
         draw_msg("Connecting to '"+ssid+"'...")
 
-        timeout = badge.nvs_get_u8('splash', 'wifi.timeout', 40)
+        timeout = 150
         while not nw.isconnected():
             time.sleep(0.1)
             timeout = timeout - 1
