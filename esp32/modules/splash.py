@@ -11,6 +11,30 @@ import appglue, services
 
 ### FUNCTIONS
 
+# RTC
+def splash_rtc_string(date=False, time=True):
+    [year, month, mday, wday, hour, min, sec, usec] = machine.RTC().datetime()
+    monthstr = str(month)
+    if (month<10):
+      monthstr = "0"+monthstr
+    daystr = str(mday)
+    if (mday<10):
+      daystr = "0"+daystr
+    hourstr = str(hour)
+    if (hour<10):
+      hourstr = "0"+hourstr
+    minstr = str(min)
+    if (min<10):
+      minstr = "0"+minstr 
+    output = ""
+    if date:
+        output += daystr+"-"+monthstr+"-"+str(year)
+        if time:
+            output += " "
+    if time:
+        output += hourstr+":"+minstr
+    return output
+
 # Graphics
 def splash_draw_battery(status=""):
     vUsb = badge.usb_volt_sense()
@@ -47,7 +71,7 @@ def splash_draw_battery(status=""):
     elif vUsb < 4000 and splash_power_countdown_get()<2:
         bat_status = "Zzz..."
     elif vBatt > 500:
-        bat_status = str(round(vBatt/1000, 2)) + 'v ('+str(splash_power_countdown_get())+')'
+        bat_status = str(round(vBatt/1000, 2)) + 'v'
     else:
         bat_status = 'No battery'
 
@@ -66,7 +90,7 @@ def splash_draw_actions():
         if otaAvailable:
             info2 = '[ SELECT: UPDATE   ]'
         else:
-            info2 = ''
+            info2 = splash_rtc_string(True, True)
 
     l = ugfx.get_string_width(info1,"Roboto_Regular12")
     ugfx.string(296-l, 0, info1, "Roboto_Regular12",ugfx.BLACK)
