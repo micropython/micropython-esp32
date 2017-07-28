@@ -300,9 +300,9 @@ def splash_input_select(pressed):
             splash_ota_start()
         splash_power_countdown_reset()
         
-def splash_input_left(pressed):
-    if pressed:
-        appglue.start_bpp()
+#def splash_input_left(pressed):
+#    if pressed:
+#        appglue.start_bpp()
 
 def splash_input_other(pressed):
     if pressed:
@@ -318,7 +318,7 @@ def splash_input_init():
     ugfx.input_attach(ugfx.BTN_SELECT, splash_input_select)
     ugfx.input_attach(ugfx.JOY_UP, splash_input_other)
     ugfx.input_attach(ugfx.JOY_DOWN, splash_input_other)
-    ugfx.input_attach(ugfx.JOY_LEFT, splash_input_left)
+    ugfx.input_attach(ugfx.JOY_LEFT, splash_input_other)
     ugfx.input_attach(ugfx.JOY_RIGHT, splash_input_other)
 
 # Event timer
