@@ -358,7 +358,8 @@ def splash_timer_init():
     
 def splash_timer_callback(tmr):
     try:
-        services.loop(splash_power_countdown_get())
+        if services.loop(splash_power_countdown_get()):
+            splash_power_countdown_reset() # A service is keeping the badge awake
     except:
         pass
     splash_draw()
