@@ -662,7 +662,7 @@ BADGE_COMPONENTS_O = $(addprefix $(BADGE)/components/,\
 	badge/badge_i2c.o \
 	badge/badge_leds.o \
 	badge/badge_mpr121.o \
-	badge/badge_portexp.o \
+	badge/badge_fxl6408.o \
 	badge/badge_gpiobutton.o \
 	badge/badge_cpt112s.o \
 	badge/badge_input.o \
