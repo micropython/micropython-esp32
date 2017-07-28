@@ -47,12 +47,12 @@ def loop(lcnt):
 def draw():
     global services
     x = 0
-    y = 114
+    y = 64
     for srv in services:
         try:
             space_used = srv.draw(x,y)
             if (space_used>0):
-                y = y - abs(space_used)
+                y = y + abs(space_used)
         except BaseException as msg:
             print("[SERVICES] Service draw exception: ", msg)
 
