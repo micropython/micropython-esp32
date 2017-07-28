@@ -43,3 +43,6 @@ ugfx.input_attach(ugfx.BTN_A, lambda pressed: render('A', pressed))
 ugfx.input_attach(ugfx.BTN_B, lambda pressed: render('B', pressed))
 ugfx.input_attach(ugfx.BTN_START, start_app)
 ugfx.input_attach(ugfx.BTN_SELECT, lambda pressed: render('Select', pressed))
+
+while True:
+    pass
