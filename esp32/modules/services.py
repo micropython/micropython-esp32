@@ -1,8 +1,10 @@
 import uos
 
-# SHA2017 badge services
-#   Renze Nicolai
-#   Thomas Roos
+# File: services.py
+# Description: Background services for SHA2017 badge
+# License: MIT
+# Authors: Renze Nicolai <renze@rnplus.nl>
+#          Thomas Roos   <?>
 
 def setup():
     global services
