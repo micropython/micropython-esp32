@@ -14,6 +14,8 @@ def populate_it():
 
     for app in apps:
         options.add_item(app)
+        
+    options.add_item('bpp')
 
 def run_it(pushed):
     if (pushed):
