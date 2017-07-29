@@ -38,37 +38,32 @@ def splash_rtc_string(date=False, time=True):
 # Graphics
 def splash_draw_battery(vUsb, vBatt):
     
-    if vBatt>500 and badge.battery_charge_status() and vUsb>4000:
+    if badge.battery_charge_status() and vUsb>4000:
         try:
-            badge.eink_png(0,0,'/chrg.png')
+            badge.eink_png(0,0,'/lib/resources/chrg.png')
         except:
             ugfx.string(0, 0, "CHRG",'Roboto_Regular12',ugfx.BLACK)
     elif vUsb>4000:
         try:
-            badge.eink_png(0,0,'/usb.png')
+            badge.eink_png(0,0,'/lib/resources/usb.png')
         except:
             ugfx.string(0, 0, "USB",'Roboto_Regular12',ugfx.BLACK)
-    elif vBatt<500:
-        try:
-            badge.eink_png(0,0,'/nobatt.png')
-        except:
-            ugfx.string(0, 0, "NO BATT",'Roboto_Regular12',ugfx.BLACK)
     else:
-        width = round((vBatt-vMin) / (vMax-vMin) * 38)
+        width = round((vBatt-vMin) / (vMax-vMin) * 44)
         if width < 0:
             width = 0
         elif width > 38:
             width = 38
-        ugfx.box(2,2,40,18,ugfx.BLACK)
-        ugfx.box(42,7,2,8,ugfx.BLACK)
+        ugfx.box(2,2,46,18,ugfx.BLACK)
+        ugfx.box(48,7,2,8,ugfx.BLACK)
         ugfx.area(3,3,width,16,ugfx.BLACK)
         
     global splashPowerCountdown
     
     if splashPowerCountdown>0:
-        bat_status = str(round(vBatt/1000, 1)) + 'v'  
-        bat_status = bat_status + ' ' + str(splashPowerCountdown)
-        ugfx.string(47, 0, bat_status,'Roboto_Regular12',ugfx.BLACK)
+        ugfx.string(52, 0, str(round(vBatt/1000, 1)) + 'v','Roboto_Regular12',ugfx.BLACK)
+        if splashPowerCountdown>0 and splashPowerCountdown<badge.nvs_get_u8('splash', 'timer.amount', 30):
+            ugfx.string(52, 13, "Sleeping in "+str(splashPowerCountdown)+"...",'Roboto_Regular12',ugfx.BLACK)
 
 def splash_draw_nickname():
     global nick
@@ -241,6 +236,33 @@ def splash_ota_check():
 
 def splash_ota_start():
     appglue.start_ota()
+    
+# Resources
+def splash_resources_install():
+    splash_draw_msg("Installing resources...",True)
+    if not splash_wifi_active():
+        if not splash_wifi_connect():
+            return False
+    import woezel
+    woezel.install("resources")
+    appglue.home()
+
+def splash_resources_check():
+    needToInstall = True
+    try:
+        fp = open("/lib/resources/version", "r")
+        version = int(fp.read(99))
+        print("[SPLASH] Current resources version: "+str(version))
+        if version>=2:
+            needToInstall = False
+    except:
+        pass
+    if needToInstall:
+        print("[SPLASH] Resources need to be updated!")
+        splash_resources_install()
+        return True
+    return False
+
 
 # About
 
@@ -412,6 +434,9 @@ else: # Normal boot
         otaAvailable = splash_ota_check()
     else:
         otaAvailable = badge.nvs_get_u8('badge','OTA.ready',0)
+    
+# Download resources to fatfs
+splash_resources_check()
     
 # Disable WiFi if active
 splash_wifi_disable()
