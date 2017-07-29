@@ -13,7 +13,8 @@ def populate_it():
     options.add_item('ota_update')
 
     for app in apps:
-        options.add_item(app)
+        if not app=="resources":
+            options.add_item(app)
         
 def run_it(pushed):
     if (pushed):
