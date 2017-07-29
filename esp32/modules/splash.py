@@ -62,11 +62,13 @@ def splash_draw_battery(vUsb, vBatt):
         ugfx.box(2,2,40,18,ugfx.BLACK)
         ugfx.box(42,7,2,8,ugfx.BLACK)
         ugfx.area(3,3,width,16,ugfx.BLACK)
-
-    bat_status = str(round(vBatt/1000, 2)) + 'v'  
+        
     global splashPowerCountdown
-    bat_status = bat_status + ' ' + str(splashPowerCountdown)
-    ugfx.string(47, 0, bat_status,'Roboto_Regular12',ugfx.BLACK)
+    
+    if splashPowerCountdown>0:
+        bat_status = str(round(vBatt/1000, 1)) + 'v'  
+        bat_status = bat_status + ' ' + str(splashPowerCountdown)
+        ugfx.string(47, 0, bat_status,'Roboto_Regular12',ugfx.BLACK)
 
 def splash_draw_nickname():
     global nick
