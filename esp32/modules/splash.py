@@ -36,10 +36,7 @@ def splash_rtc_string(date=False, time=True):
     return output
 
 # Graphics
-def splash_draw_battery(status=""):
-    vUsb = badge.usb_volt_sense()
-    vBatt = badge.battery_volt_sense()
-    vBatt += vDrop
+def splash_draw_battery(vUsb, vBatt):
     
     if vBatt>500 and badge.battery_charge_status() and vUsb>4000:
         try:
@@ -66,29 +63,24 @@ def splash_draw_battery(status=""):
         ugfx.box(42,7,2,8,ugfx.BLACK)
         ugfx.area(3,3,width,16,ugfx.BLACK)
 
-    if status!="":
-        bat_status = status
-    elif vUsb < 4000 and splash_power_countdown_get()<2:
-        bat_status = "Zzz..."
-    elif vBatt > 500:
-        bat_status = str(round(vBatt/1000, 2)) + 'v'
-    else:
-        bat_status = 'No battery'
-
-    ugfx.string(47, 2, bat_status,'Roboto_Regular18',ugfx.BLACK)
+    bat_status = str(round(vBatt/1000, 2)) + 'v'  
+    global splashPowerCountdown
+    bat_status = bat_status + ' ' + str(splashPowerCountdown)
+    ugfx.string(47, 0, bat_status,'Roboto_Regular12',ugfx.BLACK)
 
 def splash_draw_nickname():
     global nick
     ugfx.string(0, 25, nick, "PermanentMarker36", ugfx.BLACK)
 
-def splash_draw_actions():
+def splash_draw_actions(sleeping):
     global otaAvailable
-    if splash_power_countdown_get()<1: # Badge is going to sleep
-        info1 = '[ ANY:    WAKE UP  ]'
+    if sleeping:
+        info1 = 'Sleeping... Press any key to wake'
+        info2 = splash_rtc_string(True, True)
     else:
-        info1 = '[ START:  LAUNCHER ]'
+        info1 = 'Press start to open the launcher'
         if otaAvailable:
-            info2 = '[ SELECT: UPDATE   ]'
+            info2 = 'Press select to start OTA update'
         else:
             info2 = splash_rtc_string(True, True)
 
@@ -97,13 +89,17 @@ def splash_draw_actions():
     l = ugfx.get_string_width(info2,"Roboto_Regular12")
     ugfx.string(296-l, 12, info2, "Roboto_Regular12",ugfx.BLACK)
 
-def splash_draw(full=False):
+def splash_draw(full=False,sleeping=False):    
     global splashDrawMsg
     if splashDrawMsg:
         splashDrawMsg = False
         full = True
         global splashDrawMsgLineNumber
         splashDrawMsgLineNumber = 0
+        
+    vUsb = badge.usb_volt_sense()
+    vBatt = badge.battery_volt_sense()
+    vBatt += vDrop
         
     if splash_power_countdown_get()<1:
         full= True
@@ -115,18 +111,15 @@ def splash_draw(full=False):
         ugfx.area(0,0,ugfx.width(),24,ugfx.WHITE)
         ugfx.area(0,ugfx.height()-64,ugfx.width(),64,ugfx.WHITE)
     
-    status = ""
-    if otaAvailable:
-        status = "Update available!"
-    splash_draw_battery(status)
-    splash_draw_actions()
+    splash_draw_battery(vUsb, vBatt)
+    splash_draw_actions(sleeping)
     
     services.draw()
     
     if full:
         ugfx.flush(ugfx.LUT_FULL)
     else:
-        ugfx.flush(ugfx.LUT_FASTEST)
+        ugfx.flush(ugfx.LUT_NORMAL)
     
 
 def splash_draw_msg(message, clear=False):
@@ -245,7 +238,7 @@ def splash_ota_check():
     return False
 
 def splash_ota_start():
-    pass
+    appglue.start_ota()
 
 # About
 
@@ -271,7 +264,7 @@ def splash_about_countdown_trigger():
 
 def splash_power_countdown_reset():
     global splashPowerCountdown
-    splashPowerCountdown = badge.nvs_get_u8('splash', 'timer.amount', 50)
+    splashPowerCountdown = badge.nvs_get_u8('splash', 'timer.amount', 30)
 
 def splash_power_countdown_get():
     global splashPowerCountdown
@@ -289,17 +282,18 @@ def splash_power_countdown_trigger():
         splash_power_countdown_reset()
     
     splashPowerCountdown -= 1
-        
-    if splashPowerCountdown<1:
-        if badge.usb_volt_sense() > 4500:
-            #print("[SPLASH] USB connected, not sleeping.")
-            splash_power_countdown_reset()
+    if badge.usb_volt_sense() > 4000:
+        splash_power_countdown_reset()
+        return False
     elif splashPowerCountdown<0:
         print("[SPLASH] Going to sleep...")
+        splash_draw(True,True)
         badge.eink_busy_wait()
         appglue.start_bpp()
-    #else:
-    #    print("[SPLASH] Sleep in "+str(splashPowerCountdown)+"...")
+        return True
+    else:
+        print("[SPLASH] Sleep in "+str(splashPowerCountdown)+"...")
+        return False
 
 
 # Button input
@@ -359,11 +353,11 @@ def splash_timer_init():
 def splash_timer_callback(tmr):
     try:
         if services.loop(splash_power_countdown_get()):
-            splash_power_countdown_reset() # A service is keeping the badge awake
+            splash_power_countdown_reset()
     except:
         pass
-    splash_draw()
-    splash_power_countdown_trigger()
+    if not splash_power_countdown_trigger():
+        splash_draw(False, False)
     tmr.init(period=badge.nvs_get_u16('splash', 'timer.period', 100), mode=machine.Timer.ONE_SHOT, callback=splash_timer_callback)
     
     
@@ -427,4 +421,4 @@ splash_timer_init()
 gc.collect()
 
 # Draw homescreen
-splash_draw(True)
+splash_draw(True, False)
