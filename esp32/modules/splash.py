@@ -75,8 +75,8 @@ def splash_draw_nickname():
 def splash_draw_actions(sleeping):
     global otaAvailable
     if sleeping:
-        info1 = 'Sleeping... Press any key to wake'
-        info2 = splash_rtc_string(True, True)
+        info1 = 'Sleeping...'
+        info2 = 'Press any key to wake up'
     else:
         info1 = 'Press start to open the launcher'
         if otaAvailable:
@@ -289,7 +289,10 @@ def splash_power_countdown_trigger():
         print("[SPLASH] Going to sleep...")
         splash_draw(True,True)
         badge.eink_busy_wait()
-        appglue.start_bpp()
+        #now = time.time()
+        #wake_at = round(now + badge.nvs_get_u16('splash', 'sleep.duration', 120)*1000)
+        #appglue.start_bpp()
+        deepsleep.start_sleeping(badge.nvs_get_u16('splash', 'sleep.duration', 120)*1000)
         return True
     else:
         print("[SPLASH] Sleep in "+str(splashPowerCountdown)+"...")
