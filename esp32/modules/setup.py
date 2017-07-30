@@ -1,8 +1,11 @@
-# SETUP APPLICATION
-# v2 by Thomas Roos
-# v1 by Renze Nicolai
+# File: setup.py
+# Version: 3
+# Description: Setup for SHA2017 badge
+# License: MIT
+# Authors: Renze Nicolai <renze@rnplus.nl>
+#          Thomas Roos   <?>
 
-import ugfx, badge, appglue, dialogs
+import ugfx, badge, appglue, dialogs, easydraw, time
 
 def asked_nickname(value):
     if value:
@@ -13,16 +16,22 @@ def asked_nickname(value):
         badge.nvs_set_u8('badge', 'setup.state', newState)
 
         # Show the user that we are done
-        ugfx.clear(ugfx.WHITE)
-        ugfx.string(0, 0, "Hi, " + value, "PermanentMarker22", ugfx.BLACK)
-        ugfx.string(0, 25, "Your nick is stored to flash!", "Roboto_Regular12", ugfx.BLACK)
-        ugfx.flush(ugfx.LUT_FASTER)
+        easydraw.msg("Hi "+value+"!",True)
+        easydraw.msg("Your nick has been stored to flash!")
+        time.sleep(0.5)
     else:
         badge.nvs_set_u8('badge', 'setup.state', 2) # Skip the sponsors
+        badge.nvs_set_u8('sponsors', 'shown', 1)
+        easydraw.msg("Hi developer!",True)
+        time.sleep(0.5)
 
     badge.eink_busy_wait()
-    appglue.start_app("")
+    appglue.home()
 
 ugfx.init()
 nickname = badge.nvs_get_str("owner", "name", "")
+
+easydraw.msg("Welcome to SHA2017!",True)
+time.sleep(1)
+
 dialogs.prompt_text("Nickname", nickname, cb=asked_nickname)

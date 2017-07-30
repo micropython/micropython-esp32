@@ -1,4 +1,4 @@
-import ugfx, badge, sys, uos as os, appglue, version
+import ugfx, badge, sys, uos as os, appglue, version, easydraw
 
 def populate_it():
     global options
@@ -15,6 +15,8 @@ def populate_it():
     for app in apps:
         if not app=="resources":
             options.add_item(app)
+            
+    options.add_item('setup')
         
 def run_it(pushed):
     if (pushed):
@@ -51,10 +53,8 @@ def uninstall_it(pushed):
 
         def perform_uninstall(ok):
             if ok:
-                ugfx.clear(ugfx.BLACK)
-                ugfx.string_box(0, 25, 296, 25,"Uninstalling:","Roboto_BlackItalic24",ugfx.WHITE, ugfx.justifyCenter)
-                ugfx.string_box(0, 51, 296, 23, selected, "PermanentMarker22", ugfx.WHITE, ugfx.justifyCenter)
-                ugfx.flush()
+                easydraw.msg("Uninstalling:",True)
+                easydraw.msg(selected)
                 install_path = get_install_path()
                 for rm_file in os.listdir("%s/%s" % (install_path, selected)):
                     os.remove("%s/%s/%s" % (install_path, selected, rm_file))
@@ -107,7 +107,7 @@ ugfx.input_attach(ugfx.BTN_SELECT, uninstall_it)
 ugfx.input_attach(ugfx.JOY_UP, lambda pushed: ugfx.flush() if pushed else 0)
 ugfx.input_attach(ugfx.JOY_DOWN, lambda pushed: ugfx.flush() if pushed else 0)
 
-ugfx.input_attach(ugfx.BTN_B, lambda pushed: appglue.start_app("") if pushed else 0)
-ugfx.input_attach(ugfx.BTN_START, lambda pushed: appglue.start_app("") if pushed else 0)
+ugfx.input_attach(ugfx.BTN_B, lambda pushed: appglue.home() if pushed else 0)
+#ugfx.input_attach(ugfx.BTN_START, lambda pushed: appglue.home() if pushed else 0)
 
 ugfx.flush(ugfx.LUT_FULL)
