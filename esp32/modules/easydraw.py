@@ -18,12 +18,10 @@ def msg(message, clear=False):
     if clear:
         ugfx.clear(ugfx.WHITE)
         ugfx.string(0, 0, message, "PermanentMarker22", ugfx.BLACK)
-        ugfx.set_lut(ugfx.LUT_FASTER)
-        ugfx.flush()
         msgLineNumber = 0
     else:
         ugfx.string(0, 30 + (msgLineNumber * 15), message, "Roboto_Regular12", ugfx.BLACK)
-        ugfx.flush()
+        ugfx.flush(ugfx.LUT_FASTER)
         msgLineNumber += 1
 
 def nickname(y = 25, font = "PermanentMarker36", color = ugfx.BLACK):
