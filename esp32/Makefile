@@ -1,3 +1,13 @@
+ifndef PROJECT_PATH
+PROJECT_PATH := $(abspath $(dir $(firstword $(MAKEFILE_LIST)))/../..)
+export PROJECT_PATH
+endif
+
+ifndef IDF_PATH
+IDF_PATH := $(PROJECT_PATH)/esp-idf
+export IDF_PATH
+endif
+
 include ../py/mkenv.mk
 
 # qstr definitions (must come before including py.mk)
@@ -23,13 +33,9 @@ FLASH_SIZE ?= 16MB
 CROSS_COMPILE ?= xtensa-esp32-elf-
 
 # paths to ESP IDF and its components
-ifeq ($(IDF_PATH),)
-$(error Please configure the ESPIDF variable)
-endif
 ESPIDF = $(IDF_PATH)
 ESPCOMP = $(ESPIDF)/components
 ESPTOOL ?= $(ESPCOMP)/esptool_py/esptool/esptool.py
-BADGE = $(IDF_PATH)/..
 
 # verify the ESP IDF version
 ESPIDF_SUPHASH := 8b274cd5a5d193a82b49aef384c303b105eda700
@@ -658,7 +664,7 @@ OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_SDMMC_O))
 # Badge magic
 
 $(BUILD)/components/%.o:
-BADGE_COMPONENTS_O = $(addprefix $(BADGE)/components/,\
+BADGE_COMPONENTS_O = $(addprefix $(PROJECT_PATH)/components/,\
 	badge/badge_base.o \
 	badge/badge_eink.o \
 	badge/badge_i2c.o \
