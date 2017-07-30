@@ -206,7 +206,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_3(badge_nvs_set_u16_obj, badge_nvs_set_u16_);
 // EINK
 
 STATIC mp_obj_t badge_eink_init_() {
-  badge_eink_init();
+  badge_eink_init(BADGE_EINK_DEFAULT);
   return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_eink_init_obj, badge_eink_init_);
