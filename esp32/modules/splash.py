@@ -138,6 +138,40 @@ def splash_resources_check():
         return True
     return False
 
+# Sponsors
+
+def splash_sponsors_install():
+    if not easywifi.status():
+        if not easywifi.enable():
+            return False
+    print("[SPLASH] Installing sponsors...")
+    easydraw.msg("Installing sponsors...",True)
+    import woezel
+    woezel.install("sponsors")
+    easydraw.msg("Done.")
+
+def splash_sponsors_show():
+    needToInstall = True
+    version = 0
+    try:
+        fp = open("/lib/sponsors/version", "r")
+        version = int(fp.read(99))
+        print("[SPLASH] Current sponsors version: "+str(version))
+    except:
+        print("[SPLASH] Sponsors not installed.")
+    if version>=14:
+        needToInstall = False 
+    if needToInstall:
+        splash_sponsors_install()
+    try:
+        fp = open("/lib/sponsors/version", "r")
+        version = int(fp.read(99))
+        # Now we know for sure that a version of the sponsors app has been installed
+        badge.nvs_set_u8('sponsors', 'shown', 1)
+        appglue.start_app("sponsors")
+    except:
+        pass
+    
 
 # About
 
@@ -293,7 +327,7 @@ if setupState == 0: #First boot
 elif setupState == 1: # Second boot: Show sponsors
     print("[SPLASH] Second boot...")
     badge.nvs_set_u8('badge', 'setup.state', 2)
-    appglue.start_app("sponsors")
+    splash_sponsors_show()
 elif setupState == 2: # Third boot: force OTA check
     print("[SPLASH] Third boot...")
     badge.nvs_set_u8('badge', 'setup.state', 3)
@@ -309,6 +343,10 @@ else: # Normal boot
     
 # Download resources to fatfs
 splash_resources_check()
+
+# Show updated sponsors if not yet shown
+if badge.nvs_get_u8('sponsors', 'shown', 0)<1:
+    splash_sponsors_show()
 
 # Initialize services
 services.setup()
