@@ -30,41 +30,37 @@ def splash_draw_actions(sleeping):
     l = ugfx.get_string_width(info2,"Roboto_Regular12")
     ugfx.string(296-l, 12, info2, "Roboto_Regular12",ugfx.BLACK)
 
-def splash_draw(full=False,sleeping=False):    
-    if easydraw.msgShown:
-        easydraw.msgShown = False
-        easydraw.msgLineNumber = 0
-        full = True
-        
+def splash_draw(full=False,sleeping=False):
+
     vUsb = badge.usb_volt_sense()
     vBatt = badge.battery_volt_sense()
     vBatt += vDrop
     charging = badge.battery_charge_status()
-        
+
     if splash_power_countdown_get()<1:
         full= True
-    
+
     if full:
         ugfx.clear(ugfx.WHITE)
         easydraw.nickname()
     else:
         ugfx.area(0,0,ugfx.width(),24,ugfx.WHITE)
         ugfx.area(0,ugfx.height()-64,ugfx.width(),64,ugfx.WHITE)
-    
-    easydraw.battery(vUsb, vBatt, charging)    
-    
+
+    easydraw.battery(vUsb, vBatt, charging)
+
     global splashPowerCountdown
-    
+
     if splashPowerCountdown>0:
         if vBatt>500:
             ugfx.string(52, 0, str(round(vBatt/1000, 1)) + 'v','Roboto_Regular12',ugfx.BLACK)
         if splashPowerCountdown>0 and splashPowerCountdown<badge.nvs_get_u8('splash', 'timer.amount', 30):
             ugfx.string(52, 13, "Sleeping in "+str(splashPowerCountdown)+"...",'Roboto_Regular12',ugfx.BLACK)
-    
+
     splash_draw_actions(sleeping)
-    
+
     services.draw()
-    
+
     if full:
         ugfx.flush(ugfx.LUT_FULL)
     else:
@@ -74,21 +70,19 @@ def splash_draw(full=False,sleeping=False):
 
 def splash_ota_download_info():
     import urequests as requests
-    easydraw.msg("Checking for updates...", True)
+    easydraw.msg("Checking for updates...")
     result = False
     try:
         data = requests.get("https://badge.sha2017.org/version")
     except:
-        easydraw.msg("Error:")
-        easydraw.msg("Could not download JSON!")
+        easydraw.msg("Error: could not download JSON!")
         time.sleep(5)
         return False
     try:
         result = data.json()
     except:
         data.close()
-        easydraw.msg("Error:")
-        easydraw.msg("Could not decode JSON!")
+        easydraw.msg("Error: could not decode JSON!")
         time.sleep(5)
         return False
     data.close()
@@ -98,7 +92,7 @@ def splash_ota_check():
     if not easywifi.status():
         if not easywifi.enable():
             return False
-        
+
     info = splash_ota_download_info()
     if info:
         import version
@@ -111,10 +105,10 @@ def splash_ota_check():
 
 def splash_ota_start():
     appglue.start_ota()
-    
+
 # Resources
 def splash_resources_install():
-    easydraw.msg("Installing resources...",True)
+    easydraw.msg("Installing resources...")
     if not easywifi.status():
         if not easywifi.enable():
             return False
@@ -145,10 +139,10 @@ def splash_sponsors_install():
         if not easywifi.enable():
             return False
     print("[SPLASH] Installing sponsors...")
-    easydraw.msg("Installing sponsors...",True)
+    easydraw.msg("Installing sponsors...")
     import woezel
     woezel.install("sponsors")
-    easydraw.msg("Done.")
+    easydraw.msg("Done!")
 
 def splash_sponsors_show():
     needToInstall = True
@@ -160,7 +154,7 @@ def splash_sponsors_show():
     except:
         print("[SPLASH] Sponsors not installed.")
     if version>=14:
-        needToInstall = False 
+        needToInstall = False
     if needToInstall:
         splash_sponsors_install()
     try:
@@ -171,14 +165,14 @@ def splash_sponsors_show():
         appglue.start_app("sponsors")
     except:
         pass
-    
+
 
 # About
 
 def splash_about_countdown_reset():
     global splashAboutCountdown
     splashAboutCountdown = badge.nvs_get_u8('splash', 'about.amount', 10)
-    
+
 def splash_about_countdown_trigger():
     global splashAboutCountdown
     try:
@@ -191,7 +185,7 @@ def splash_about_countdown_trigger():
         appglue.start_app('magic', False)
     else:
         print("[SPLASH] Magic in "+str(splashAboutCountdown)+"...")
-            
+
 
 # Power management
 
@@ -206,14 +200,14 @@ def splash_power_countdown_get():
     except:
         splash_power_countdown_reset()
     return splashPowerCountdown
-  
+
 def splash_power_countdown_trigger():
     global splashPowerCountdown
     try:
         splashPowerCountdown
     except:
         splash_power_countdown_reset()
-    
+
     splashPowerCountdown -= 1
     if badge.usb_volt_sense() > 4000:
         splash_power_countdown_reset()
@@ -253,7 +247,7 @@ def splash_input_select(pressed):
         if otaAvailable:
             splash_ota_start()
         splash_power_countdown_reset()
-        
+
 #def splash_input_left(pressed):
 #    if pressed:
 #        appglue.start_bpp()
@@ -285,7 +279,7 @@ def splash_timer_init():
         splashTimer = machine.Timer(-1)
         splashTimer.init(period=badge.nvs_get_u16('splash', 'timer.period', 100), mode=machine.Timer.ONE_SHOT, callback=splash_timer_callback)
         print("[SPLASH] Timer created")
-    
+
 def splash_timer_callback(tmr):
     try:
         if services.loop(splash_power_countdown_get()):
@@ -295,8 +289,8 @@ def splash_timer_callback(tmr):
     if not splash_power_countdown_trigger():
         splash_draw(False, False)
     tmr.init(period=badge.nvs_get_u16('splash', 'timer.period', 100), mode=machine.Timer.ONE_SHOT, callback=splash_timer_callback)
-    
-    
+
+
 ### PROGRAM
 
 # Load settings from NVS
@@ -316,7 +310,7 @@ splash_power_countdown_reset()
 
 # Initialize about subsystem
 splash_about_countdown_reset()
-    
+
 # Setup / Sponsors / OTA check / NTP clock sync
 setupState = badge.nvs_get_u8('badge', 'setup.state', 0)
 if setupState == 0: #First boot
@@ -338,7 +332,7 @@ else: # Normal boot
         otaAvailable = splash_ota_check()
     else:
         otaAvailable = badge.nvs_get_u8('badge','OTA.ready',0)
-    
+
 # Download resources to fatfs
 splash_resources_check()
 
@@ -348,7 +342,7 @@ if badge.nvs_get_u8('sponsors', 'shown', 0)<1:
 
 # Initialize services
 services.setup()
-    
+
 # Disable WiFi if active
 easywifi.disable()
 

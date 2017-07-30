@@ -6,28 +6,30 @@
 
 import ugfx, badge
 
-# Globals
-msgLineNumber = 0
-msgShown = False
-
 # Functions
-def msg(message, clear=False):
-    global msgShown
-    msgShown = True
-    global msgLineNumber
-    if clear:
+def msg(message, title = 'Still Loading Anyway...', reset = False):
+    """Show a terminal style loading screen with title
+
+    title can be optionaly set when resetting or first call
+    """
+    global lineNumber
+    if reset:
+        del lineNumber
+    try:
+        lineNumber
+    except:
         ugfx.clear(ugfx.WHITE)
-        ugfx.string(0, 0, message, "PermanentMarker22", ugfx.BLACK)
-        msgLineNumber = 0
+        ugfx.string(0, 0, title, "PermanentMarker22", ugfx.BLACK)
+        lineNumber = 0
     else:
-        ugfx.string(0, 30 + (msgLineNumber * 15), message, "Roboto_Regular12", ugfx.BLACK)
+        ugfx.string(0, 30 + (lineNumber * 15), message, "Roboto_Regular12", ugfx.BLACK)
         ugfx.flush(ugfx.LUT_FASTER)
-        msgLineNumber += 1
+        lineNumber += 1
 
 def nickname(y = 25, font = "PermanentMarker36", color = ugfx.BLACK):
     nick = badge.nvs_get_str("owner", "name", 'Jan de Boer')
     ugfx.string_box(0,y,296,38, nick, font, color, ugfx.justifyCenter)
-        
+
 def battery(vUsb, vBatt, charging):
     vMin = badge.nvs_get_u16('batt', 'vmin', 3700) # mV
     vMax = badge.nvs_get_u16('batt', 'vmax', 4200) # mV
