@@ -13,40 +13,6 @@ import easydraw, easywifi, easyrtc
 ### FUNCTIONS
 
 # Graphics
-def splash_draw_battery(vUsb, vBatt):
-    
-    if badge.battery_charge_status() and vUsb>4000:
-        try:
-            badge.eink_png(0,0,'/lib/resources/chrg.png')
-        except:
-            ugfx.string(0, 0, "CHRG",'Roboto_Regular12',ugfx.BLACK)
-    elif vUsb>4000:
-        try:
-            badge.eink_png(0,0,'/lib/resources/usb.png')
-        except:
-            ugfx.string(0, 0, "USB",'Roboto_Regular12',ugfx.BLACK)
-    else:
-        width = round((vBatt-vMin) / (vMax-vMin) * 44)
-        if width < 0:
-            width = 0
-        elif width > 38:
-            width = 38
-        ugfx.box(2,2,46,18,ugfx.BLACK)
-        ugfx.box(48,7,2,8,ugfx.BLACK)
-        ugfx.area(3,3,width,16,ugfx.BLACK)
-        
-    global splashPowerCountdown
-    
-    if splashPowerCountdown>0:
-        if vBatt>500:
-            ugfx.string(52, 0, str(round(vBatt/1000, 1)) + 'v','Roboto_Regular12',ugfx.BLACK)
-        if splashPowerCountdown>0 and splashPowerCountdown<badge.nvs_get_u8('splash', 'timer.amount', 30):
-            ugfx.string(52, 13, "Sleeping in "+str(splashPowerCountdown)+"...",'Roboto_Regular12',ugfx.BLACK)
-
-def splash_draw_nickname():
-    global nick
-    ugfx.string(0, 25, nick, "PermanentMarker36", ugfx.BLACK)
-
 def splash_draw_actions(sleeping):
     global otaAvailable
     if sleeping:
@@ -65,28 +31,36 @@ def splash_draw_actions(sleeping):
     ugfx.string(296-l, 12, info2, "Roboto_Regular12",ugfx.BLACK)
 
 def splash_draw(full=False,sleeping=False):    
-    global splashDrawMsg
-    if splashDrawMsg:
-        splashDrawMsg = False
+    if easydraw.msgShown:
+        easydraw.msgShown = False
+        easydraw.msgLineNumber = 0
         full = True
-        global splashDrawMsgLineNumber
-        splashDrawMsgLineNumber = 0
         
     vUsb = badge.usb_volt_sense()
     vBatt = badge.battery_volt_sense()
     vBatt += vDrop
+    charging = badge.battery_charge_status()
         
     if splash_power_countdown_get()<1:
         full= True
     
     if full:
         ugfx.clear(ugfx.WHITE)
-        splash_draw_nickname()
+        easydraw.nickname()
     else:
         ugfx.area(0,0,ugfx.width(),24,ugfx.WHITE)
         ugfx.area(0,ugfx.height()-64,ugfx.width(),64,ugfx.WHITE)
     
-    splash_draw_battery(vUsb, vBatt)
+    easydraw.battery(vUsb, vBatt, charging)    
+    
+    global splashPowerCountdown
+    
+    if splashPowerCountdown>0:
+        if vBatt>500:
+            ugfx.string(52, 0, str(round(vBatt/1000, 1)) + 'v','Roboto_Regular12',ugfx.BLACK)
+        if splashPowerCountdown>0 and splashPowerCountdown<badge.nvs_get_u8('splash', 'timer.amount', 30):
+            ugfx.string(52, 13, "Sleeping in "+str(splashPowerCountdown)+"...",'Roboto_Regular12',ugfx.BLACK)
+    
     splash_draw_actions(sleeping)
     
     services.draw()
@@ -292,18 +266,15 @@ def splash_timer_callback(tmr):
 ### PROGRAM
 
 # Load settings from NVS
-nick = badge.nvs_get_str("owner", "name", 'Jan de Boer')
 vMin = badge.nvs_get_u16('splash', 'bat.volt.min', 3700) # mV
 vMax = badge.nvs_get_u16('splash', 'bat.volt.max', 4200) # mV
+otaAvailable = badge.nvs_get_u8('badge','OTA.ready',0)
 
 # Calibrate battery voltage drop
 if badge.battery_charge_status() == False and badge.usb_volt_sense() > 4500 and badge.battery_volt_sense() > 2500:
     badge.nvs_set_u16('splash', 'bat.volt.drop', 5200 - badge.battery_volt_sense()) # mV
     print('Set vDrop to: ' + str(4200 - badge.battery_volt_sense()))
 vDrop = badge.nvs_get_u16('splash', 'bat.volt.drop', 1000) - 1000 # mV
-
-# Set global variables
-splashDrawMsg = False
 
 # Initialize user input subsystem
 splash_input_init()
