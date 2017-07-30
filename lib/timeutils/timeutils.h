@@ -24,9 +24,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-
-#ifndef __MICROPY_INCLUDED_LIB_TIMEUTILS_H__
-#define __MICROPY_INCLUDED_LIB_TIMEUTILS_H__
+#ifndef MICROPY_INCLUDED_LIB_TIMEUTILS_TIMEUTILS_H
+#define MICROPY_INCLUDED_LIB_TIMEUTILS_TIMEUTILS_H
 
 typedef int64_t mp_time_t;
 
@@ -63,4 +62,4 @@ mp_time_t timeutils_seconds_since_epoch(mp_uint_t year, mp_uint_t month,
 mp_time_t timeutils_mktime_epoch(mp_uint_t year, mp_int_t month, mp_int_t mday,
     mp_int_t hours, mp_int_t minutes, mp_int_t seconds);
 
-#endif // __MICROPY_INCLUDED_LIB_TIMEUTILS_H__
+#endif // MICROPY_INCLUDED_LIB_TIMEUTILS_TIMEUTILS_H
