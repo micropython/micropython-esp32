@@ -300,8 +300,6 @@ def splash_timer_callback(tmr):
 ### PROGRAM
 
 # Load settings from NVS
-vMin = badge.nvs_get_u16('splash', 'bat.volt.min', 3700) # mV
-vMax = badge.nvs_get_u16('splash', 'bat.volt.max', 4200) # mV
 otaAvailable = badge.nvs_get_u8('badge','OTA.ready',0)
 
 # Calibrate battery voltage drop
