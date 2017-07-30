@@ -1,75 +1,18 @@
-import ugfx, time, ntp, badge, machine, deepsleep, network, esp, gc
-import appglue, services
-
 # File: splash.py
-# Version: 3
+# Version: 4
 # Description: Homescreen for SHA2017 badge
 # License: MIT
 # Authors: Renze Nicolai <renze@rnplus.nl>
 #          Thomas Roos   <?>
 
+import ugfx, time, ntp, badge, machine, deepsleep, network, esp, gc
+import appglue, services
+
+import easydraw, easywifi, easyrtc
 
 ### FUNCTIONS
 
-# RTC
-def splash_rtc_string(date=False, time=True):
-    [year, month, mday, wday, hour, min, sec, usec] = machine.RTC().datetime()
-    monthstr = str(month)
-    if (month<10):
-      monthstr = "0"+monthstr
-    daystr = str(mday)
-    if (mday<10):
-      daystr = "0"+daystr
-    hourstr = str(hour)
-    if (hour<10):
-      hourstr = "0"+hourstr
-    minstr = str(min)
-    if (min<10):
-      minstr = "0"+minstr 
-    output = ""
-    if date:
-        output += daystr+"-"+monthstr+"-"+str(year)
-        if time:
-            output += " "
-    if time:
-        output += hourstr+":"+minstr
-    return output
-
 # Graphics
-def splash_draw_battery(vUsb, vBatt):
-    
-    if badge.battery_charge_status() and vUsb>4000:
-        try:
-            badge.eink_png(0,0,'/lib/resources/chrg.png')
-        except:
-            ugfx.string(0, 0, "CHRG",'Roboto_Regular12',ugfx.BLACK)
-    elif vUsb>4000:
-        try:
-            badge.eink_png(0,0,'/lib/resources/usb.png')
-        except:
-            ugfx.string(0, 0, "USB",'Roboto_Regular12',ugfx.BLACK)
-    else:
-        width = round((vBatt-vMin) / (vMax-vMin) * 44)
-        if width < 0:
-            width = 0
-        elif width > 38:
-            width = 38
-        ugfx.box(2,2,46,18,ugfx.BLACK)
-        ugfx.box(48,7,2,8,ugfx.BLACK)
-        ugfx.area(3,3,width,16,ugfx.BLACK)
-        
-    global splashPowerCountdown
-    
-    if splashPowerCountdown>0:
-        if vBatt>500:
-            ugfx.string(52, 0, str(round(vBatt/1000, 1)) + 'v','Roboto_Regular12',ugfx.BLACK)
-        if splashPowerCountdown>0 and splashPowerCountdown<badge.nvs_get_u8('splash', 'timer.amount', 30):
-            ugfx.string(52, 13, "Sleeping in "+str(splashPowerCountdown)+"...",'Roboto_Regular12',ugfx.BLACK)
-
-def splash_draw_nickname():
-    global nick
-    ugfx.string(0, 25, nick, "PermanentMarker36", ugfx.BLACK)
-
 def splash_draw_actions(sleeping):
     global otaAvailable
     if sleeping:
@@ -80,7 +23,7 @@ def splash_draw_actions(sleeping):
         if otaAvailable:
             info2 = 'Press select to start OTA update'
         else:
-            info2 = splash_rtc_string(True, True)
+            info2 = easyrtc.string(True, True)
 
     l = ugfx.get_string_width(info1,"Roboto_Regular12")
     ugfx.string(296-l, 0, info1, "Roboto_Regular12",ugfx.BLACK)
@@ -88,28 +31,36 @@ def splash_draw_actions(sleeping):
     ugfx.string(296-l, 12, info2, "Roboto_Regular12",ugfx.BLACK)
 
 def splash_draw(full=False,sleeping=False):    
-    global splashDrawMsg
-    if splashDrawMsg:
-        splashDrawMsg = False
+    if easydraw.msgShown:
+        easydraw.msgShown = False
+        easydraw.msgLineNumber = 0
         full = True
-        global splashDrawMsgLineNumber
-        splashDrawMsgLineNumber = 0
         
     vUsb = badge.usb_volt_sense()
     vBatt = badge.battery_volt_sense()
     vBatt += vDrop
+    charging = badge.battery_charge_status()
         
     if splash_power_countdown_get()<1:
         full= True
     
     if full:
         ugfx.clear(ugfx.WHITE)
-        splash_draw_nickname()
+        easydraw.nickname()
     else:
         ugfx.area(0,0,ugfx.width(),24,ugfx.WHITE)
         ugfx.area(0,ugfx.height()-64,ugfx.width(),64,ugfx.WHITE)
     
-    splash_draw_battery(vUsb, vBatt)
+    easydraw.battery(vUsb, vBatt, charging)    
+    
+    global splashPowerCountdown
+    
+    if splashPowerCountdown>0:
+        if vBatt>500:
+            ugfx.string(52, 0, str(round(vBatt/1000, 1)) + 'v','Roboto_Regular12',ugfx.BLACK)
+        if splashPowerCountdown>0 and splashPowerCountdown<badge.nvs_get_u8('splash', 'timer.amount', 30):
+            ugfx.string(52, 13, "Sleeping in "+str(splashPowerCountdown)+"...",'Roboto_Regular12',ugfx.BLACK)
+    
     splash_draw_actions(sleeping)
     
     services.draw()
@@ -118,111 +69,34 @@ def splash_draw(full=False,sleeping=False):
         ugfx.flush(ugfx.LUT_FULL)
     else:
         ugfx.flush(ugfx.LUT_NORMAL)
-    
 
-def splash_draw_msg(message, clear=False):
-    global splashDrawMsg
-    splashDrawMsg = True
-    global splashDrawMsgLineNumber
-    try:
-        splashDrawMsgLineNumber
-    except:
-        splashDrawMsgLineNumber = 0
-        
-    if clear:
-        ugfx.clear(ugfx.WHITE)
-        ugfx.string(0, 0, message, "PermanentMarker22", ugfx.BLACK)
-        ugfx.set_lut(ugfx.LUT_FASTER)
-        ugfx.flush()
-        splashDrawMsgLineNumber = 0
-    else:
-        ugfx.string(0, 30 + (splashDrawMsgLineNumber * 15), message, "Roboto_Regular12", ugfx.BLACK)
-        ugfx.flush()
-        splashDrawMsgLineNumber += 1
-
-# WiFi
-def splash_wifi_connect():
-    global wifiStatus
-    try:
-        wifiStatus
-    except:
-        wifiStatus = False
-       
-    if not wifiStatus:
-        nw = network.WLAN(network.STA_IF)
-        if not nw.isconnected():
-            nw.active(True)
-            ssid = badge.nvs_get_str('badge', 'wifi.ssid', 'SHA2017-insecure')
-            password = badge.nvs_get_str('badge', 'wifi.password')
-            nw.connect(ssid, password) if password else nw.connect(ssid)
-
-            splash_draw_msg("Connecting to WiFi...", True)
-            splash_draw_msg("("+ssid+")")
-
-            timeout = badge.nvs_get_u8('splash', 'wifi.timeout', 40)
-            while not nw.isconnected():
-                time.sleep(0.1)
-                timeout = timeout - 1
-                if (timeout<1):
-                    splash_draw_msg("Timeout while connecting!")
-                    splash_wifi_disable()
-                    return False
-        wifiStatus = True
-        return True
-    return False
-
-def splash_wifi_active():
-    global wifiStatus
-    try:
-        wifiStatus
-    except:
-        wifiStatus = False
-    return wifiStatus
-        
-    
-def splash_wifi_disable():
-    global wifiStatus
-    wifiStatus = False
-    nw = network.WLAN(network.STA_IF)
-    nw.active(False)
-    
-# NTP clock configuration
-def splash_ntp():
-    if not splash_wifi_active():
-        if not splash_wifi_connect():
-            return False
-    splash_draw_msg("Configuring clock...", True)
-    ntp.set_NTP_time()
-    splash_draw_msg("Done")
-    return True
-    
 # OTA update checking
 
 def splash_ota_download_info():
     import urequests as requests
-    splash_draw_msg("Checking for updates...", True)
+    easydraw.msg("Checking for updates...", True)
     result = False
     try:
         data = requests.get("https://badge.sha2017.org/version")
     except:
-        splash_draw_msg("Error:")
-        splash_draw_msg("Could not download JSON!")
+        easydraw.msg("Error:")
+        easydraw.msg("Could not download JSON!")
         time.sleep(5)
         return False
     try:
         result = data.json()
     except:
         data.close()
-        splash_draw_msg("Error:")
-        splash_draw_msg("Could not decode JSON!")
+        easydraw.msg("Error:")
+        easydraw.msg("Could not decode JSON!")
         time.sleep(5)
         return False
     data.close()
     return result
 
 def splash_ota_check():
-    if not splash_wifi_active():
-        if not splash_wifi_connect():
+    if not easywifi.status():
+        if not easywifi.enable():
             return False
         
     info = splash_ota_download_info()
@@ -240,9 +114,9 @@ def splash_ota_start():
     
 # Resources
 def splash_resources_install():
-    splash_draw_msg("Installing resources...",True)
-    if not splash_wifi_active():
-        if not splash_wifi_connect():
+    easydraw.msg("Installing resources...",True)
+    if not easywifi.status():
+        if not easywifi.enable():
             return False
     import woezel
     woezel.install("resources")
@@ -264,6 +138,40 @@ def splash_resources_check():
         return True
     return False
 
+# Sponsors
+
+def splash_sponsors_install():
+    if not easywifi.status():
+        if not easywifi.enable():
+            return False
+    print("[SPLASH] Installing sponsors...")
+    easydraw.msg("Installing sponsors...",True)
+    import woezel
+    woezel.install("sponsors")
+    easydraw.msg("Done.")
+
+def splash_sponsors_show():
+    needToInstall = True
+    version = 0
+    try:
+        fp = open("/lib/sponsors/version", "r")
+        version = int(fp.read(99))
+        print("[SPLASH] Current sponsors version: "+str(version))
+    except:
+        print("[SPLASH] Sponsors not installed.")
+    if version>=14:
+        needToInstall = False 
+    if needToInstall:
+        splash_sponsors_install()
+    try:
+        fp = open("/lib/sponsors/version", "r")
+        version = int(fp.read(99))
+        # Now we know for sure that a version of the sponsors app has been installed
+        badge.nvs_set_u8('sponsors', 'shown', 1)
+        appglue.start_app("sponsors")
+    except:
+        pass
+    
 
 # About
 
@@ -392,18 +300,15 @@ def splash_timer_callback(tmr):
 ### PROGRAM
 
 # Load settings from NVS
-nick = badge.nvs_get_str("owner", "name", 'Jan de Boer')
 vMin = badge.nvs_get_u16('splash', 'bat.volt.min', 3700) # mV
 vMax = badge.nvs_get_u16('splash', 'bat.volt.max', 4200) # mV
+otaAvailable = badge.nvs_get_u8('badge','OTA.ready',0)
 
 # Calibrate battery voltage drop
 if badge.battery_charge_status() == False and badge.usb_volt_sense() > 4500 and badge.battery_volt_sense() > 2500:
     badge.nvs_set_u16('splash', 'bat.volt.drop', 5200 - badge.battery_volt_sense()) # mV
     print('Set vDrop to: ' + str(4200 - badge.battery_volt_sense()))
 vDrop = badge.nvs_get_u16('splash', 'bat.volt.drop', 1000) - 1000 # mV
-
-# Set global variables
-splashDrawMsg = False
 
 # Initialize user input subsystem
 splash_input_init()
@@ -422,15 +327,15 @@ if setupState == 0: #First boot
 elif setupState == 1: # Second boot: Show sponsors
     print("[SPLASH] Second boot...")
     badge.nvs_set_u8('badge', 'setup.state', 2)
-    appglue.start_app("sponsors")
+    splash_sponsors_show()
 elif setupState == 2: # Third boot: force OTA check
     print("[SPLASH] Third boot...")
     badge.nvs_set_u8('badge', 'setup.state', 3)
-    otaCheck = splash_ntp() if time.time() < 1482192000 else True
+    otaCheck = easyrtc.configure() if time.time() < 1482192000 else True
     otaAvailable = splash_ota_check()
 else: # Normal boot
     print("[SPLASH] Normal boot...")
-    otaCheck = splash_ntp() if time.time() < 1482192000 else True
+    otaCheck = easyrtc.configure() if time.time() < 1482192000 else True
     if (machine.reset_cause() != machine.DEEPSLEEP_RESET) and otaCheck:
         otaAvailable = splash_ota_check()
     else:
@@ -438,12 +343,16 @@ else: # Normal boot
     
 # Download resources to fatfs
 splash_resources_check()
-    
-# Disable WiFi if active
-splash_wifi_disable()
+
+# Show updated sponsors if not yet shown
+if badge.nvs_get_u8('sponsors', 'shown', 0)<1:
+    splash_sponsors_show()
 
 # Initialize services
 services.setup()
+    
+# Disable WiFi if active
+easywifi.disable()
 
 # Initialize timer
 splash_timer_init()
