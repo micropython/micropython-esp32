@@ -21,10 +21,10 @@ def msg(message, title = 'Still Loading Anyway...', reset = False):
         ugfx.clear(ugfx.WHITE)
         ugfx.string(0, 0, title, "PermanentMarker22", ugfx.BLACK)
         lineNumber = 0
-    else:
-        ugfx.string(0, 30 + (lineNumber * 15), message, "Roboto_Regular12", ugfx.BLACK)
-        ugfx.flush(ugfx.LUT_FASTER)
-        lineNumber += 1
+
+    ugfx.string(0, 30 + (lineNumber * 15), message, "Roboto_Regular12", ugfx.BLACK)
+    ugfx.flush(ugfx.LUT_FASTER)
+    lineNumber += 1
 
 def nickname(y = 25, font = "PermanentMarker36", color = ugfx.BLACK):
     nick = badge.nvs_get_str("owner", "name", 'Jan de Boer')
