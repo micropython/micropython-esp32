@@ -29,13 +29,10 @@ def msg(message, title = 'Still Loading Anyway...', reset = False):
         messageTitle = title
         messageHistory = []
 
-    print("LEN: "+str(len(messageHistory)))
-
     if len(messageHistory)<6:
         ugfx.string(0, 30 + (len(messageHistory) * 15), message, "Roboto_Regular12", ugfx.BLACK)
         messageHistory.append(message)
     else:
-        print("REDRAW NEEDED")
         messageHistory.pop(0)
         messageHistory.append(message)
         ugfx.clear(ugfx.WHITE)
