@@ -188,6 +188,9 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(get_wlan_obj, 0, 1, get_wlan);
 STATIC mp_obj_t esp_initialize() {
     static int initialized = 0;
     if (!initialized) {
+        // wifi binary does not listens to compuiler log level, and must be set at runtime
+        esp_log_level_set("wifi", ESP_LOG_WARN);
+        
         ESP_LOGD("modnetwork", "Initializing TCP/IP");
         tcpip_adapter_init();
         ESP_LOGD("modnetwork", "Initializing Event Loop");
