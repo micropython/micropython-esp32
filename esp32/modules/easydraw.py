@@ -12,21 +12,15 @@ def msg(message, title = 'Still Loading Anyway...', reset = False):
 
     title can be optionaly set when resetting or first call
     """
-    global messageTitle
     global messageHistory
-    if reset:
-        try:
-            messageHistory
-            del messageHistory
-        except:
-            pass
-        
+
     try:
         messageHistory
+        if reset:
+            raise exception
     except:
         ugfx.clear(ugfx.WHITE)
         ugfx.string(0, 0, title, "PermanentMarker22", ugfx.BLACK)
-        messageTitle = title
         messageHistory = []
 
     if len(messageHistory)<6:
@@ -35,11 +29,10 @@ def msg(message, title = 'Still Loading Anyway...', reset = False):
     else:
         messageHistory.pop(0)
         messageHistory.append(message)
-        ugfx.clear(ugfx.WHITE)
-        ugfx.string(0, 0, messageTitle, "PermanentMarker22", ugfx.BLACK)
-        for i in range(0, len(messageHistory)):
-            ugfx.string(0, 30 + (i * 15), messageHistory[i], "Roboto_Regular12", ugfx.BLACK)
-        
+        ugfx.area(0,30, 296, 98, ugfx.WHITE)
+        for i, message in enumerate(messageHistory):
+            ugfx.string(0, 30 + (i * 15), message, "Roboto_Regular12", ugfx.BLACK)
+
     ugfx.flush(ugfx.LUT_FASTER)
 
 def nickname(y = 25, font = "PermanentMarker36", color = ugfx.BLACK):
