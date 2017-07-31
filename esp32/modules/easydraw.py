@@ -12,24 +12,38 @@ def msg(message, title = 'Still Loading Anyway...', reset = False):
 
     title can be optionaly set when resetting or first call
     """
-    global lineNumber
+    global messageTitle
+    global messageHistory
     if reset:
         try:
-            lineNumber
-            del lineNumber
+            messageHistory
+            del messageHistory
         except:
             pass
         
     try:
-        lineNumber
+        messageHistory
     except:
         ugfx.clear(ugfx.WHITE)
         ugfx.string(0, 0, title, "PermanentMarker22", ugfx.BLACK)
-        lineNumber = 0
+        messageTitle = title
+        messageHistory = []
 
-    ugfx.string(0, 30 + (lineNumber * 15), message, "Roboto_Regular12", ugfx.BLACK)
+    print("LEN: "+str(len(messageHistory)))
+
+    if len(messageHistory)<6:
+        ugfx.string(0, 30 + (len(messageHistory) * 15), message, "Roboto_Regular12", ugfx.BLACK)
+        messageHistory.append(message)
+    else:
+        print("REDRAW NEEDED")
+        messageHistory.pop(0)
+        messageHistory.append(message)
+        ugfx.clear(ugfx.WHITE)
+        ugfx.string(0, 0, messageTitle, "PermanentMarker22", ugfx.BLACK)
+        for i in range(0, len(messageHistory)):
+            ugfx.string(0, 30 + (i * 15), messageHistory[i], "Roboto_Regular12", ugfx.BLACK)
+        
     ugfx.flush(ugfx.LUT_FASTER)
-    lineNumber += 1
 
 def nickname(y = 25, font = "PermanentMarker36", color = ugfx.BLACK):
     nick = badge.nvs_get_str("owner", "name", 'Jan de Boer')
