@@ -37,7 +37,7 @@ def configure():
     if not easywifi.status():
         if not easywifi.enable():
             return False
-    easydraw.msg("Configuring clock...", True)
+    easydraw.msg("Configuring clock...")
     ntp.set_NTP_time()
     easydraw.msg("Done")
     return True

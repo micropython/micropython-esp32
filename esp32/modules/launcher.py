@@ -53,8 +53,7 @@ def uninstall_it(pushed):
 
         def perform_uninstall(ok):
             if ok:
-                easydraw.msg("Uninstalling:",True)
-                easydraw.msg(selected)
+                easydraw.msg(selected,"Uninstalling...",True)
                 install_path = get_install_path()
                 for rm_file in os.listdir("%s/%s" % (install_path, selected)):
                     os.remove("%s/%s/%s" % (install_path, selected, rm_file))
