@@ -18,7 +18,7 @@ def force_enable():
     enable()
 
 def enable():
-    global state       
+    global state
     if not state:
         nw = network.WLAN(network.STA_IF)
         if not nw.isconnected():
@@ -27,18 +27,13 @@ def enable():
             password = badge.nvs_get_str('badge', 'wifi.password')
             nw.connect(ssid, password) if password else nw.connect(ssid)
 
-            easydraw.msg("Connecting to WiFi...", True)
-            easydraw.msg("SSID: "+ssid)
-
             timeout = badge.nvs_get_u8('badge', 'wifi.timeout', 40)
             while not nw.isconnected():
                 time.sleep(0.1)
                 timeout = timeout - 1
                 if (timeout<1):
-                    easydraw.msg("Timeout while connecting!")
                     disable()
                     return False
-            easydraw.msg("Connected!")
             state = True
     return True
 
