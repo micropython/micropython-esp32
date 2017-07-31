@@ -203,13 +203,26 @@ STATIC mp_obj_t badge_nvs_set_u16_(mp_obj_t _namespace, mp_obj_t _key, mp_obj_t 
 STATIC MP_DEFINE_CONST_FUN_OBJ_3(badge_nvs_set_u16_obj, badge_nvs_set_u16_);
 
 
-// EINK
+// E-Ink (badge_eink.h)
 
 STATIC mp_obj_t badge_eink_init_() {
   badge_eink_init(BADGE_EINK_DEFAULT);
   return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_eink_init_obj, badge_eink_init_);
+
+STATIC mp_obj_t badge_eink_deep_sleep_() {
+  badge_eink_deep_sleep();
+  return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_eink_deep_sleep_obj, badge_eink_deep_sleep_);
+
+STATIC mp_obj_t badge_eink_wakeup_() {
+  badge_eink_wakeup();
+  return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_eink_wakeup_obj, badge_eink_wakeup_);
+
 
 /**
 #define NUM_PICTURES 7
@@ -382,7 +395,11 @@ STATIC const mp_rom_map_elem_t badge_module_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_badge)},
 
     {MP_ROM_QSTR(MP_QSTR_init), MP_ROM_PTR(&badge_init_obj)},
+
+    // E-Ink
     {MP_ROM_QSTR(MP_QSTR_eink_init), MP_ROM_PTR(&badge_eink_init_obj)},
+    {MP_ROM_QSTR(MP_QSTR_eink_deep_sleep), MP_ROM_PTR(&badge_eink_deep_sleep_obj)},
+    {MP_ROM_QSTR(MP_QSTR_eink_wakeup), MP_ROM_PTR(&badge_eink_wakeup_obj)},
 
     // Power
     {MP_OBJ_NEW_QSTR(MP_QSTR_power_init), (mp_obj_t)&badge_power_init_obj},
