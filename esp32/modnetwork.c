@@ -305,10 +305,15 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(esp_scan_obj, esp_scan);
 
 STATIC mp_obj_t esp_isconnected(mp_obj_t self_in) {
     wlan_if_obj_t *self = MP_OBJ_TO_PTR(self_in);
-    require_if(self_in, WIFI_IF_STA);
-    tcpip_adapter_ip_info_t info;
-    tcpip_adapter_get_ip_info(self->if_id, &info);
-    return mp_obj_new_bool(info.ip.addr != 0);
+    if (self->if_id == WIFI_IF_STA) {
+        tcpip_adapter_ip_info_t info;
+        tcpip_adapter_get_ip_info(WIFI_IF_STA, &info);
+        return mp_obj_new_bool(info.ip.addr != 0);
+    } else {
+        wifi_sta_list_t sta;
+        esp_wifi_ap_get_sta_list(&sta);
+        return mp_obj_new_bool(sta.num != 0);
+    }
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(esp_isconnected_obj, esp_isconnected);
 
