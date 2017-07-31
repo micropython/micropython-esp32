@@ -14,7 +14,12 @@ def msg(message, title = 'Still Loading Anyway...', reset = False):
     """
     global lineNumber
     if reset:
-        del lineNumber
+        try:
+            lineNumber
+            del lineNumber
+        except:
+            pass
+        
     try:
         lineNumber
     except:
