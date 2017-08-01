@@ -6,6 +6,7 @@
  * The MIT License (MIT)
  *
  * Copyright (c) 2016 Damien P. George
+ * Copyright (c) 2017 Anne Jan Brouwer
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -32,9 +33,11 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_system.h"
-#include "nvs_flash.h"
 #include "esp_task.h"
 #include "soc/cpu.h"
+
+#include "sha2017_ota.h"
+#include "esprtcmem.h"
 
 #include "py/stackctrl.h"
 #include "py/nlr.h"
@@ -48,16 +51,24 @@
 #include "uart.h"
 #include "modmachine.h"
 #include "mpthreadport.h"
+#include "bpp_init.h"
+#include "badge_pins.h"
+#include "badge_base.h"
+#include "badge_first_run.h"
+#include <badge_input.h>
+#include <badge.h>
 
 // MicroPython runs as a task under FreeRTOS
 #define MP_TASK_PRIORITY        (ESP_TASK_PRIO_MIN + 1)
-#define MP_TASK_STACK_SIZE      (16 * 1024)
+#define MP_TASK_STACK_SIZE      ( 8 * 1024)
 #define MP_TASK_STACK_LEN       (MP_TASK_STACK_SIZE / sizeof(StackType_t))
-#define MP_TASK_HEAP_SIZE       (96 * 1024)
+#define MP_TASK_HEAP_SIZE       (88 * 1024)
 
 STATIC StaticTask_t mp_task_tcb;
 STATIC StackType_t mp_task_stack[MP_TASK_STACK_LEN] __attribute__((aligned (8)));
 STATIC uint8_t mp_task_heap[MP_TASK_HEAP_SIZE];
+
+extern uint32_t reset_cause;
 
 void mp_task(void *pvParameter) {
     volatile uint32_t sp = (uint32_t)get_sp();
@@ -65,6 +76,7 @@ void mp_task(void *pvParameter) {
     mp_thread_init(&mp_task_stack[0], MP_TASK_STACK_LEN);
     #endif
     uart_init();
+    machine_init();
 
 soft_reset:
     // initialise the stack pointer for the main thread
@@ -84,9 +96,9 @@ soft_reset:
     // run boot-up scripts
     pyexec_frozen_module("_boot.py");
     pyexec_file("boot.py");
-    if (pyexec_mode_kind == PYEXEC_MODE_FRIENDLY_REPL) {
-        pyexec_file("main.py");
-    }
+    // if (pyexec_mode_kind == PYEXEC_MODE_FRIENDLY_REPL) {
+    //     pyexec_file("main.py");
+    // }
 
     for (;;) {
         if (pyexec_mode_kind == PYEXEC_MODE_RAW_REPL) {
@@ -104,20 +116,67 @@ soft_reset:
     mp_thread_deinit();
     #endif
 
-    mp_hal_stdout_tx_str("PYB: soft reboot\r\n");
+    mp_hal_stdout_tx_str("SHA2017Badge: soft reboot\r\n");
 
     // deinitialise peripherals
     machine_pins_deinit();
 
     mp_deinit();
     fflush(stdout);
+    reset_cause = MACHINE_SOFT_RESET;
     goto soft_reset;
 }
 
+void do_bpp_bgnd() {
+    // Kick off bpp
+    bpp_init();
+
+    printf("Bpp inited.\n");
+
+    // immediately abort and reboot when touchpad detects something
+    while (badge_input_get_event(1000) == 0) { }
+
+    printf("Touch detected. Exiting bpp, rebooting.\n");
+    esp_restart();
+}
+
 void app_main(void) {
-    nvs_flash_init();
-    xTaskCreateStaticPinnedToCore(mp_task, "mp_task", MP_TASK_STACK_LEN, NULL, MP_TASK_PRIORITY,
-                                  &mp_task_stack[0], &mp_task_tcb, 0);
+	badge_check_first_run();
+	badge_base_init();
+
+	uint8_t magic = esp_rtcmem_read(0);
+	uint8_t inv_magic = esp_rtcmem_read(1);
+
+	if (magic == (uint8_t)~inv_magic) {
+		printf("Magic checked out!\n");
+		switch (magic) {
+			case 1:
+				printf("Starting OTA\n");
+				sha2017_ota_update();
+				break;
+
+#ifdef CONFIG_SHA_BPP_ENABLE
+			case 2:
+				badge_init();
+				if (badge_input_button_state == 0) {
+					printf("Starting bpp.\n");
+					do_bpp_bgnd();
+				} else {
+          printf("Touch wake after bpp.\n");
+      		xTaskCreateStaticPinnedToCore(mp_task, "mp_task", MP_TASK_STACK_LEN, NULL, MP_TASK_PRIORITY,
+      				&mp_task_stack[0], &mp_task_tcb, 0);
+      	}
+				break;
+#endif
+
+			case 3:
+				badge_first_run();
+		}
+
+	} else {
+		xTaskCreateStaticPinnedToCore(mp_task, "mp_task", MP_TASK_STACK_LEN, NULL, MP_TASK_PRIORITY,
+				&mp_task_stack[0], &mp_task_tcb, 0);
+	}
 }
 
 void nlr_jump_fail(void *val) {
