@@ -137,7 +137,6 @@ STATIC const mp_arg_t file_open_args[] = {
 
 STATIC mp_obj_t file_open(fs_user_mount_t *vfs, const mp_obj_type_t *type, mp_arg_val_t *args) {
 	pyb_file_obj_t *o = m_new_obj_with_finaliser(pyb_file_obj_t);
-	o->base.type = type;
 
 	const char *fname = mp_obj_str_get_str(args[0].u_obj);
 	const char *mode_s = mp_obj_str_get_str(args[1].u_obj);
@@ -180,6 +179,8 @@ STATIC mp_obj_t file_open(fs_user_mount_t *vfs, const mp_obj_type_t *type, mp_ar
 #endif
 		}
 	}
+
+	o->base.type = type;
 
 	assert(vfs != NULL);
 	int fd = open(fname, mode_x | mode_rw, 0644);
