@@ -188,14 +188,15 @@ def draw_timer_callback(tmr):
     drawCallback(False) # Prepare draw
     
     newDrawCallbacks = drawCallbacks
-    for cb in drawCallbacks:
+    for i in range(0, len(drawCallbacks)):
+        cb = drawCallbacks[i]
         rqi = 0
         try:
             [rqi, space_used] = cb(y)
             y = y - space_used
         except BaseException as msg:
             print("[SERVICES] Exception in service draw: ", msg)
-            newDrawCallbacks.pop(cb)
+            newDrawCallbacks.pop(i)
             continue
         if rqi>0 and rqi<requestedInterval:
             # Service wants to loop again in rqi seconds
@@ -237,4 +238,3 @@ def force_draw(disableTimer):
                 y = y - space_used
             except BaseException as msg:
                 print("[SERVICES] Exception in service draw: ", msg)
-                newDrawCallbacks.pop(cb)
