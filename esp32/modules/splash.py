@@ -10,61 +10,99 @@ import appglue, services
 
 import easydraw, easywifi, easyrtc
 
-### FUNCTIONS
+# Power management
+
+enableBpp = True
+requestedStandbyTime = 0
+
+def power_management(timeUntilNextTick):
+    global requestedStandbyTime
+    requestedStandbyTime = timeUntilNextTick
+    if timeUntilNextTick<0 or timeUntilNextTick>=60*5:
+        print("[PM] Next tick after more than 5 minutes (MAY BPP).")
+        global enableBpp
+        enableBpp = True
+        power_countdown_reset(0)
+    elif (timeUntilNextTick<=30):
+        print("[PM] Next loop in "+str(timeUntilNextTick)+" seconds (STAY AWAKE).")
+        power_countdown_reset(timeUntilNextTick)
+        return True #Service loop timer can be restarted
+    else:
+        print("[PM] Next loop in "+str(timeUntilNextTick)+" seconds (MAY SLEEP).")
+        global enableBpp
+        enableBpp = False
+        power_countdown_reset(0)
+    return False
+
+powerCountdownOffset = 0
+def power_countdown_reset(timeUntilNextTick=-1):
+    global powerTimer
+    global powerCountdownOffset
+    try:
+        powerTimer.deinit()
+    except:
+        print("POWER TIMER DEINIT FAILED?!?!?")
+    if timeUntilNextTick>=0:
+        powerCountdownOffset = timeUntilNextTick
+    newTarget = powerCountdownOffset+badge.nvs_get_u8('splash', 'urt', 5) #User React Time (in seconds)
+    print("[SPLASH] Power countdown reset to "+str(newTarget))
+    powerTimer.init(period=newTarget*1000, mode=machine.Timer.ONE_SHOT, callback=power_countdown_callback)
+    
+def power_countdown_callback(tmr):
+    global enableBpp
+    draw(False, True)
+    services.force_draw(True)
+    draw(True, True)
+    global requestedStandbyTime
+    if requestedStandbyTime>0:
+        if enableBpp:
+            print("[PM] BPP for "+str(requestedStandbyTime)+" seconds.")
+            #appglue.start_bpp(round(requestedStandbyTime/60)) #BPP needs time in minutes
+            deepsleep.start_sleeping(requestedStandbyTime*1000)
+        else:
+            print("[PM] Sleep for "+str(round())+" seconds.")
+            deepsleep.start_sleeping(requestedStandbyTime*1000)
+    else:
+            print("[PM] BPP forever.")
+            #appglue.start_bpp(-1)
+            deepsleep.start_sleeping()
 
 # Graphics
-def splash_draw_actions(sleeping):
-    global otaAvailable
-    if sleeping:
-        info1 = 'Sleeping...'
-        info2 = 'Press any key to wake up'
+
+def draw(mode, goingToSleep=False):
+    if mode:
+        # We flush the buffer and wait
+        ugfx.flush(ugfx.LUT_FULL)
+        badge.eink_busy_wait()
     else:
-        info1 = 'Press start to open the launcher'
-        if otaAvailable:
-            info2 = 'Press select to start OTA update'
-        else:
-            info2 = easyrtc.string(True, True)
-
-    l = ugfx.get_string_width(info1,"Roboto_Regular12")
-    ugfx.string(296-l, 0, info1, "Roboto_Regular12",ugfx.BLACK)
-    l = ugfx.get_string_width(info2,"Roboto_Regular12")
-    ugfx.string(296-l, 12, info2, "Roboto_Regular12",ugfx.BLACK)
-
-def splash_draw(full=False,sleeping=False):
-
-    vUsb = badge.usb_volt_sense()
-    vBatt = badge.battery_volt_sense()
-    vBatt += vDrop
-    charging = badge.battery_charge_status()
-
-    if splash_power_countdown_get()<1:
-        full= True
-
-    if full:
+        # We prepare the screen refresh
         ugfx.clear(ugfx.WHITE)
+        if goingToSleep:
+            info1 = 'Sleeping...'
+            info2 = 'Press any key to wake up'
+        else:
+            info1 = 'Press start to open the launcher'
+            global otaAvailable
+            if otaAvailable:
+                info2 = 'Press select to start OTA update'
+            else:
+                info2 = ''
+        l = ugfx.get_string_width(info1,"Roboto_Regular12")
+        ugfx.string(296-l, 0, info1, "Roboto_Regular12",ugfx.BLACK)
+        l = ugfx.get_string_width(info2,"Roboto_Regular12")
+        ugfx.string(296-l, 12, info2, "Roboto_Regular12",ugfx.BLACK)
+        
         easydraw.nickname()
-    else:
-        ugfx.area(0,0,ugfx.width(),24,ugfx.WHITE)
-        ugfx.area(0,ugfx.height()-64,ugfx.width(),64,ugfx.WHITE)
+        
+        vUsb = badge.usb_volt_sense()
+        vBatt = badge.battery_volt_sense()
+        vBatt += vDrop
+        charging = badge.battery_charge_status()
 
-    easydraw.battery(vUsb, vBatt, charging)
-
-    global splashPowerCountdown
-
-    if splashPowerCountdown>0:
+        easydraw.battery(vUsb, vBatt, charging)
+        
         if vBatt>500:
             ugfx.string(52, 0, str(round(vBatt/1000, 1)) + 'v','Roboto_Regular12',ugfx.BLACK)
-        if splashPowerCountdown>0 and splashPowerCountdown<badge.nvs_get_u8('splash', 'timer.amount', 30):
-            ugfx.string(52, 13, "Sleeping in "+str(splashPowerCountdown)+"...",'Roboto_Regular12',ugfx.BLACK)
-
-    splash_draw_actions(sleeping)
-
-    services.draw()
-
-    if full:
-        ugfx.flush(ugfx.LUT_FULL)
-    else:
-        ugfx.flush(ugfx.LUT_NORMAL)
 
 # OTA update checking
 
@@ -186,46 +224,6 @@ def splash_about_countdown_trigger():
     else:
         print("[SPLASH] Magic in "+str(splashAboutCountdown)+"...")
 
-
-# Power management
-
-def splash_power_countdown_reset():
-    global splashPowerCountdown
-    splashPowerCountdown = badge.nvs_get_u8('splash', 'timer.amount', 30)
-
-def splash_power_countdown_get():
-    global splashPowerCountdown
-    try:
-        splashPowerCountdown
-    except:
-        splash_power_countdown_reset()
-    return splashPowerCountdown
-
-def splash_power_countdown_trigger():
-    global splashPowerCountdown
-    try:
-        splashPowerCountdown
-    except:
-        splash_power_countdown_reset()
-
-    splashPowerCountdown -= 1
-    if badge.usb_volt_sense() > 4000:
-        splash_power_countdown_reset()
-        return False
-    elif splashPowerCountdown<0:
-        print("[SPLASH] Going to sleep...")
-        splash_draw(True,True)
-        badge.eink_busy_wait()
-        #now = time.time()
-        #wake_at = round(now + badge.nvs_get_u16('splash', 'sleep.duration', 120)*1000)
-        #appglue.start_bpp()
-        deepsleep.start_sleeping(badge.nvs_get_u16('splash', 'sleep.duration', 120)*1000)
-        return True
-    else:
-        print("[SPLASH] Sleep in "+str(splashPowerCountdown)+"...")
-        return False
-
-
 # Button input
 
 def splash_input_start(pressed):
@@ -237,8 +235,8 @@ def splash_input_start(pressed):
 def splash_input_a(pressed):
     if pressed:
         print("[SPLASH] A button pressed")
-        splash_power_countdown_reset()
         splash_about_countdown_trigger()
+        power_countdown_reset()
 
 def splash_input_select(pressed):
     if pressed:
@@ -246,7 +244,7 @@ def splash_input_select(pressed):
         global otaAvailable
         if otaAvailable:
             splash_ota_start()
-        splash_power_countdown_reset()
+        power_countdown_reset()
 
 #def splash_input_left(pressed):
 #    if pressed:
@@ -255,7 +253,7 @@ def splash_input_select(pressed):
 def splash_input_other(pressed):
     if pressed:
         print("[SPLASH] Other button pressed")
-        splash_power_countdown_reset()
+        power_countdown_reset()
 
 def splash_input_init():
     print("[SPLASH] Inputs attached")
@@ -269,29 +267,9 @@ def splash_input_init():
     ugfx.input_attach(ugfx.JOY_LEFT, splash_input_other)
     ugfx.input_attach(ugfx.JOY_RIGHT, splash_input_other)
 
-# Event timer
-def splash_timer_init():
-    global splashTimer
-    try:
-        splashTimer
-        print("[SPLASH] Timer exists already")
-    except:
-        splashTimer = machine.Timer(-1)
-        splashTimer.init(period=badge.nvs_get_u16('splash', 'timer.period', 100), mode=machine.Timer.ONE_SHOT, callback=splash_timer_callback)
-        print("[SPLASH] Timer created")
-
-def splash_timer_callback(tmr):
-    try:
-        if services.loop(splash_power_countdown_get()):
-            splash_power_countdown_reset()
-    except:
-        pass
-    if not splash_power_countdown_trigger():
-        splash_draw(False, False)
-    tmr.init(period=badge.nvs_get_u16('splash', 'timer.period', 100), mode=machine.Timer.ONE_SHOT, callback=splash_timer_callback)
-
-
 ### PROGRAM
+
+powerTimer = machine.Timer(2) #TODO: how to get this number?!?
 
 # Load settings from NVS
 otaAvailable = badge.nvs_get_u8('badge','OTA.ready',0)
@@ -305,32 +283,30 @@ vDrop = badge.nvs_get_u16('splash', 'bat.volt.drop', 1000) - 1000 # mV
 # Initialize user input subsystem
 splash_input_init()
 
-# Initialize power management subsystem
-splash_power_countdown_reset()
-
 # Initialize about subsystem
 splash_about_countdown_reset()
 
 # Setup / Sponsors / OTA check / NTP clock sync
 setupState = badge.nvs_get_u8('badge', 'setup.state', 0)
 if setupState == 0: #First boot
-    print("[SPLASH] First boot...")
+    print("[SPLASH] First boot (start setup)...")
     appglue.start_app("setup")
 elif setupState == 1: # Second boot: Show sponsors
-    print("[SPLASH] Second boot...")
+    print("[SPLASH] Second boot (show sponsors)...")
     badge.nvs_set_u8('badge', 'setup.state', 2)
     splash_sponsors_show()
 elif setupState == 2: # Third boot: force OTA check
-    print("[SPLASH] Third boot...")
+    print("[SPLASH] Third boot (force ota check)...")
     badge.nvs_set_u8('badge', 'setup.state', 3)
-    otaCheck = easyrtc.configure() if time.time() < 1482192000 else True
     otaAvailable = splash_ota_check()
 else: # Normal boot
-    print("[SPLASH] Normal boot...")
-    otaCheck = easyrtc.configure() if time.time() < 1482192000 else True
-    if (machine.reset_cause() != machine.DEEPSLEEP_RESET) and otaCheck:
+    print("[SPLASH] Normal boot... ")
+    print("RESET CAUSE: "+str(machine.reset_cause()))
+    if (machine.reset_cause() != machine.DEEPSLEEP_RESET):
+        print("... from reset: checking for ota update")
         otaAvailable = splash_ota_check()
     else:
+        print("... from deep sleep: loading ota state from nvs")
         otaAvailable = badge.nvs_get_u8('badge','OTA.ready',0)
 
 # Download resources to fatfs
@@ -341,16 +317,30 @@ if badge.nvs_get_u8('sponsors', 'shown', 0)<1:
     splash_sponsors_show()
 
 # Initialize services
-services.setup()
+print("Initialize services")
+[srvDoesSleep, srvDoesDraw] = services.setup(power_management, draw)
 
 # Disable WiFi if active
+print("Disable WiFi if active")
 easywifi.disable()
 
-# Initialize timer
-splash_timer_init()
-
 # Clean memory
+print("Clean memory")
 gc.collect()
 
 # Draw homescreen
-splash_draw(True, False)
+print("Draw homescreen")
+if not srvDoesDraw:
+    print("[SPLASH] No service draw, manually drawing...")
+    draw(False)
+    draw(True)
+
+if not srvDoesSleep:
+    print("[SPLASH] No service sleep!")
+
+power_countdown_reset(-1)
+
+print("----")
+print("WARNING: NOT IN REPL MODE, POWER MANAGEMENT ACTIVE")
+print("TO USE REPL RESET AND HIT CTRL+C BEFORE SPLASH STARTS")
+print("----")

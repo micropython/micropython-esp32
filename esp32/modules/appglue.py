@@ -21,7 +21,8 @@ def start_ota():
     esp.rtcmem_write(1,254)
     deepsleep.reboot()
 
-def start_bpp():
+def start_bpp(duration):
+    print("[BPP] Duration = "+str(duration))
     esp.rtcmem_write(0,2)
     esp.rtcmem_write(1,253)
     deepsleep.reboot()
