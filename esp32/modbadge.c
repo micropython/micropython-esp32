@@ -368,11 +368,24 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_leds_disable_obj, badge_leds_disable_);
 
 
 STATIC mp_obj_t badge_leds_send_data_(mp_uint_t n_args, const mp_obj_t *args) {
-  mp_uint_t len = mp_obj_get_int(args[1]);
+  bool is_bytes = MP_OBJ_IS_TYPE(args[0], &mp_type_bytes);
+
+  if (!is_bytes) {
+    printf("badge.leds_send_data() used with string object instead of bytestring object.\n");
+  }
+
+  mp_uint_t len;
   uint8_t *leds = (uint8_t *)mp_obj_str_get_data(args[0], &len);
+  if (n_args > 1) {
+    mp_uint_t arglen = mp_obj_get_int(args[1]);
+    if (len != arglen) {
+      printf("badge.leds_send_data() len mismatch. (%d != %d)\n", len, arglen);
+    }
+  }
+
   return mp_obj_new_int(badge_leds_send_data(leds, len));
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(badge_leds_send_data_obj, 2,2 ,badge_leds_send_data_);
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(badge_leds_send_data_obj, 1,2 ,badge_leds_send_data_);
 #endif
 
 #if defined(PORTEXP_PIN_NUM_VIBRATOR) || defined(MPR121_PIN_NUM_VIBRATOR)
