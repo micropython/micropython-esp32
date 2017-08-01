@@ -57,13 +57,15 @@ def power_countdown_callback(tmr):
     if requestedStandbyTime>0:
         if enableBpp:
             print("[PM] BPP for "+str(round(timeUntilNextTick/60))+" minutes.")
-            appglue.start_bpp(round(requestedStandbyTime/60)) #BPP needs time in minutes
+            #appglue.start_bpp(round(requestedStandbyTime/60)) #BPP needs time in minutes
+            deepsleep.start_sleeping(requestedStandbyTime*1000)
         else:
             print("[PM] Sleep for "+str(round())+" seconds.")
-            deepsleep.start_sleeping(requestedStandbyTime*1000)
+            deepsleep.start_sleeping(requestedStandbyTime*1000) #Sleep needs time in milliseconds
     else:
             print("[PM] BPP forever.")
-            appglue.start_bpp(-1)
+            #appglue.start_bpp(-1)
+            deepsleep.start_sleeping()
 
 # Graphics
 
@@ -298,7 +300,8 @@ elif setupState == 2: # Third boot: force OTA check
     badge.nvs_set_u8('badge', 'setup.state', 3)
     otaAvailable = splash_ota_check()
 else: # Normal boot
-    print("[SPLASH] Normal boot...")
+    print("[SPLASH] Normal boot... ")
+    print("RESET CAUSE: "+str(machine.reset_cause()))
     if (machine.reset_cause() != machine.DEEPSLEEP_RESET):
         print("... from reset: checking for ota update")
         otaAvailable = splash_ota_check()
