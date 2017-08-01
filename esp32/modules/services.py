@@ -85,8 +85,8 @@ def setup(pmCb=False, drawCb=False):
         # Import the service.py script
         try:
             srv = __import__('lib/'+app+'/service')
-        except:
-            print("[SERVICES] Could not import service of app "+app)
+        except BaseException as msg:
+            print("[SERVICES] Could not import service of app "+app+": ", msg)
             continue #Skip the app
         
         if wifiInSetup:
