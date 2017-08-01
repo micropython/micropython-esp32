@@ -183,6 +183,7 @@ def loop_timer_callback(tmr):
     easywifi.disable() # Always disable wifi
     
     try:
+        global pmCallback
         if pmCallback(requestedInterval):
             print("[SERVICES] Loop timer (re-)started")
             tmr.init(period=requestedInterval*1000, mode=machine.Timer.ONE_SHOT, callback=loop_timer_callback)
