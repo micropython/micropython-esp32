@@ -56,7 +56,7 @@ def power_countdown_callback(tmr):
     global requestedStandbyTime
     if requestedStandbyTime>0:
         if enableBpp:
-            print("[PM] BPP for "+str(round(timeUntilNextTick/60))+" minutes.")
+            print("[PM] BPP for "+str(round(requestedStandbyTime/60))+" minutes.")
             #appglue.start_bpp(round(requestedStandbyTime/60)) #BPP needs time in minutes
             deepsleep.start_sleeping(requestedStandbyTime*1000)
         else:
