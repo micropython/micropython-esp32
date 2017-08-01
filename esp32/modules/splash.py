@@ -18,17 +18,17 @@ requestedStandbyTime = 0
 def power_management(timeUntilNextTick):
     global requestedStandbyTime
     requestedStandbyTime = timeUntilNextTick
-    if timeUntilNextTick<0 or timeUntilNextTick>=60*5:
-        print("[PM] Next tick after more than 5 minutes (MAY BPP).")
+    if timeUntilNextTick<0 or timeUntilNextTick>=60*5000:
+        print("[PM] Next tick after more than 5 minutes (can do bpp).")
         global enableBpp
         enableBpp = True
         power_countdown_reset(0)
-    elif (timeUntilNextTick<=30):
-        print("[PM] Next loop in "+str(timeUntilNextTick)+" seconds (STAY AWAKE).")
+    elif (timeUntilNextTick<=30000):
+        print("[PM] Next loop in "+str(timeUntilNextTick)+" ms (stay awake).")
         power_countdown_reset(timeUntilNextTick)
         return True #Service loop timer can be restarted
     else:
-        print("[PM] Next loop in "+str(timeUntilNextTick)+" seconds (MAY SLEEP).")
+        print("[PM] Next loop in "+str(timeUntilNextTick)+" ms (can sleep).")
         global enableBpp
         enableBpp = False
         power_countdown_reset(0)
@@ -44,9 +44,9 @@ def power_countdown_reset(timeUntilNextTick=-1):
         print("POWER TIMER DEINIT FAILED?!?!?")
     if timeUntilNextTick>=0:
         powerCountdownOffset = timeUntilNextTick
-    newTarget = powerCountdownOffset+badge.nvs_get_u8('splash', 'urt', 5) #User React Time (in seconds)
+    newTarget = powerCountdownOffset+badge.nvs_get_u16('splash', 'urt', 5000) #User React Time (in ms)
     print("[SPLASH] Power countdown reset to "+str(newTarget))
-    powerTimer.init(period=newTarget*1000, mode=machine.Timer.ONE_SHOT, callback=power_countdown_callback)
+    powerTimer.init(period=newTarget, mode=machine.Timer.ONE_SHOT, callback=power_countdown_callback)
     
 def power_countdown_callback(tmr):
     global enableBpp
@@ -55,16 +55,10 @@ def power_countdown_callback(tmr):
     draw(True, True)
     global requestedStandbyTime
     if requestedStandbyTime>0:
-        if enableBpp:
-            print("[PM] BPP for "+str(requestedStandbyTime)+" seconds.")
-            #appglue.start_bpp(round(requestedStandbyTime/60)) #BPP needs time in minutes
-            deepsleep.start_sleeping(requestedStandbyTime*1000)
-        else:
-            print("[PM] Sleep for "+str(round())+" seconds.")
-            deepsleep.start_sleeping(requestedStandbyTime*1000)
+            print("[PM] Sleep for "+str(requestedStandbyTime)+" ms.")
+            deepsleep.start_sleeping(requestedStandbyTime)
     else:
             print("[PM] BPP forever.")
-            #appglue.start_bpp(-1)
             deepsleep.start_sleeping()
 
 # Graphics
@@ -269,7 +263,7 @@ def splash_input_init():
 
 ### PROGRAM
 
-powerTimer = machine.Timer(2) #TODO: how to get this number?!?
+powerTimer = machine.Timer(0) #TODO: how to get this number?!?
 
 # Load settings from NVS
 otaAvailable = badge.nvs_get_u8('badge','OTA.ready',0)
@@ -318,7 +312,7 @@ if badge.nvs_get_u8('sponsors', 'shown', 0)<1:
 
 # Initialize services
 print("Initialize services")
-[srvDoesSleep, srvDoesDraw] = services.setup(power_management, draw)
+[srvDoesSleep, srvDoesDraw] = services.setup(power_management, draw, 1)
 
 # Disable WiFi if active
 print("Disable WiFi if active")

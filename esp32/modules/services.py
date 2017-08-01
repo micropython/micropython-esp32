@@ -1,5 +1,5 @@
 # File: services.py
-# Version: 2
+# Version: 3
 # API version: 1
 # Description: Background services for SHA2017 badge
 # License: MIT
@@ -12,7 +12,7 @@ services = [] #List containing all the service objects
 loopCallbacks = {} #Dict containing: {<FUNCTION>:<Wifi required on next run>}
 drawCallbacks = [] #List containing draw functions
 
-def setup(pmCb=None, drawCb=None):
+def setup(pmCb=None, drawCb=None, timerId=0):
     global services
     global loopCallbacks
     global drawCallbacks
@@ -133,7 +133,7 @@ def setup(pmCb=None, drawCb=None):
     global loopTimer
     if len(loopCallbacks)>0:
         print("[SERVICES] There are loop callbacks, starting loop timer!")
-        loopTimer = machine.Timer(0) #TODO: how to get this number?!?
+        loopTimer = machine.Timer(timerId)
         loop_timer_callback(loopTimer)
         hasLoopTimer = True
         
@@ -142,7 +142,7 @@ def setup(pmCb=None, drawCb=None):
     global drawTimer
     if len(drawCallbacks)>0 and drawCb:
         print("[SERVICES] There are draw callbacks, starting draw timer!")
-        drawTimer = machine.Timer(1) #TODO: how to get this number?!?
+        drawTimer = machine.Timer(timerId+1)
         draw_timer_callback(drawTimer)
         hasDrawTimer = True
     return [hasLoopTimer, hasDrawTimer]
@@ -168,7 +168,7 @@ def loop_timer_callback(tmr):
             newLoopCallbacks.pop(cb)
             continue
         if rqi>0 and rqi<requestedInterval:
-            # Service wants to loop again in rqi seconds
+            # Service wants to loop again in rqi ms
             requestedInterval = rqi
         elif rqi<=0:
             # Service doesn't want to loop again until next wakeup
@@ -180,15 +180,19 @@ def loop_timer_callback(tmr):
         print("[SERVICES] No loop interval returned.")
         requestedInterval = -1
         
+    if requestedInterval<100:
+        print("[SERVICES] A service requested a loop interval < 100 ms. Forcing 100 ms.")
+        requestedInterval = 100
+        
     easywifi.disable() # Always disable wifi
     
-    try:
-        global pmCallback
-        if pmCallback(requestedInterval):
-            print("[SERVICES] Loop timer (re-)started")
-            tmr.init(period=requestedInterval*1000, mode=machine.Timer.ONE_SHOT, callback=loop_timer_callback)
-    except:
-        print("[SERVICES] Error in power management callback!")
+    #try:
+    global pmCallback
+    if pmCallback(requestedInterval):
+        print("[SERVICES] Loop timer (re-)started "+str(requestedInterval))
+        tmr.init(period=requestedInterval, mode=machine.Timer.ONE_SHOT, callback=loop_timer_callback)
+    #except:
+    #    print("[SERVICES] Error in power management callback!")
 
 def draw_timer_callback(tmr):
     global drawCallback #The function that allows us to hook into our host
@@ -210,7 +214,7 @@ def draw_timer_callback(tmr):
             newDrawCallbacks.pop(i)
             continue
         if rqi>0 and rqi<requestedInterval:
-            # Service wants to loop again in rqi seconds
+            # Service wants to loop again in rqi ms
             requestedInterval = rqi
         elif rqi<=0:
             # Service doesn't want to draw again until next wakeup
@@ -223,10 +227,14 @@ def draw_timer_callback(tmr):
     if requestedInterval>=99999999:
         print("[SERVICES] No draw interval returned.")
         requestedInterval = -1
+        
+    if requestedInterval<100:
+        print("[SERVICES] A service requested a draw interval < 100 ms. Forcing 100 ms.")
+        requestedInterval = 100
     
     if len(drawCallbacks)>0 and requestedInterval>=0:
         print("[SERVICES] New draw requested in "+str(requestedInterval)+".")
-        tmr.init(period=requestedInterval*1000, mode=machine.Timer.ONE_SHOT, callback=draw_timer_callback) 
+        tmr.init(period=requestedInterval, mode=machine.Timer.ONE_SHOT, callback=draw_timer_callback) 
        
     drawCallback(True) # Complete draw
 
