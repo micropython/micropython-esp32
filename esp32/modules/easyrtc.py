@@ -9,7 +9,7 @@ import machine, time
 # Functions
 def string(print_date=False, print_time=True, timestamp = -1):
     if timestamp<0:
-        [year, month, mday, wday, hour, minute, sec, usec] = machine.RTC().datetime()
+        [year, month, mday, wday, hour, minute, second, usec] = machine.RTC().datetime()
     else:
         [year, month, mday, hour, minute, second, wday, yday] = time.localtime(timestamp)
     monthstr = str(month)
