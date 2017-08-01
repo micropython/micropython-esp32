@@ -18,17 +18,17 @@ requestedStandbyTime = 0
 def power_management(timeUntilNextTick):
     global requestedStandbyTime
     requestedStandbyTime = timeUntilNextTick
-    if timeUntilNextTick<0 or timeUntilNextTick>=60*5:
-        print("[PM] Next tick after more than 5 minutes (MAY BPP).")
+    if timeUntilNextTick<0 or timeUntilNextTick>=60*5000:
+        print("[PM] Next tick after more than 5 minutes (can do bpp).")
         global enableBpp
         enableBpp = True
         power_countdown_reset(0)
-    elif (timeUntilNextTick<=30):
-        print("[PM] Next loop in "+str(timeUntilNextTick)+" seconds (STAY AWAKE).")
+    elif (timeUntilNextTick<=30000):
+        print("[PM] Next loop in "+str(timeUntilNextTick)+" ms (stay awake).")
         power_countdown_reset(timeUntilNextTick)
         return True #Service loop timer can be restarted
     else:
-        print("[PM] Next loop in "+str(timeUntilNextTick)+" seconds (MAY SLEEP).")
+        print("[PM] Next loop in "+str(timeUntilNextTick)+" ms (can sleep).")
         global enableBpp
         enableBpp = False
         power_countdown_reset(0)
@@ -38,33 +38,29 @@ powerCountdownOffset = 0
 def power_countdown_reset(timeUntilNextTick=-1):
     global powerTimer
     global powerCountdownOffset
-    try:
-        powerTimer.deinit()
-    except:
-        print("POWER TIMER DEINIT FAILED?!?!?")
-    if timeUntilNextTick>=0:
-        powerCountdownOffset = timeUntilNextTick
-    newTarget = powerCountdownOffset+badge.nvs_get_u8('splash', 'urt', 5) #User React Time (in seconds)
-    print("[SPLASH] Power countdown reset to "+str(newTarget))
-    powerTimer.init(period=newTarget*1000, mode=machine.Timer.ONE_SHOT, callback=power_countdown_callback)
     
-def power_countdown_callback(tmr):
+    global scheduler
+    found = False
+    for i in range(0, len(scheduler)):
+        if (scheduler[i]["cb"]==power_countdown_callback):
+            scheduler[i]["pos"] = 0
+            scheduler[i]["target"] = powerCountdownOffset+badge.nvs_get_u16('splash', 'urt', 5000)
+            found = True
+            break
+    if not found:
+        scheduler_add(powerCountdownOffset+badge.nvs_get_u16('splash', 'urt', 5000), power_countdown_callback)
+    
+def power_countdown_callback():
     global enableBpp
     draw(False, True)
     services.force_draw(True)
     draw(True, True)
     global requestedStandbyTime
     if requestedStandbyTime>0:
-        if enableBpp:
-            print("[PM] BPP for "+str(requestedStandbyTime)+" seconds.")
-            #appglue.start_bpp(round(requestedStandbyTime/60)) #BPP needs time in minutes
-            deepsleep.start_sleeping(requestedStandbyTime*1000)
-        else:
-            print("[PM] Sleep for "+str(round())+" seconds.")
-            deepsleep.start_sleeping(requestedStandbyTime*1000)
+            print("[PM] Sleep for "+str(requestedStandbyTime)+" ms.")
+            deepsleep.start_sleeping(requestedStandbyTime)
     else:
             print("[PM] BPP forever.")
-            #appglue.start_bpp(-1)
             deepsleep.start_sleeping()
 
 # Graphics
@@ -266,10 +262,45 @@ def splash_input_init():
     ugfx.input_attach(ugfx.JOY_DOWN, splash_input_other)
     ugfx.input_attach(ugfx.JOY_LEFT, splash_input_other)
     ugfx.input_attach(ugfx.JOY_RIGHT, splash_input_other)
+    
 
+# TIMERS
+
+scheduler = []
+
+loopTimerPos = 0
+loopTimerTarget = 0
+drawTimerPos = 0
+drawTimerTarget = 0
+powerTimerPos = 0
+powerTimerTarget = 0
+
+def scheduler_add(target, callback):
+    global scheduler
+    item = {"pos":0, "target":target, "cb":callback}
+    scheduler.append(item)
+
+def timer_callback(tmr):
+    global scheduler
+    newScheduler = scheduler
+    for i in range(0, len(scheduler)):
+        scheduler[i]["pos"] += 25
+        if scheduler[i]["pos"] > scheduler[i]["target"]:
+            print("Target reached "+str(i))
+            newTarget = scheduler[i]["cb"]()
+            if newTarget > 0:
+                print("New target "+str(i))
+                newScheduler[i]["pos"] = 0
+                newScheduler[i]["target"] = newTarget
+            else:
+                print("Discard "+str(i))
+                newScheduler[i]["pos"] = -1
+                newScheduler[i]["target"] = -1
+        
 ### PROGRAM
 
-powerTimer = machine.Timer(2) #TODO: how to get this number?!?
+timer = machine.Timer(0)
+timer.init(period=25, mode=machine.Timer.PERIODIC, callback=timer_callback)
 
 # Load settings from NVS
 otaAvailable = badge.nvs_get_u8('badge','OTA.ready',0)
@@ -318,7 +349,21 @@ if badge.nvs_get_u8('sponsors', 'shown', 0)<1:
 
 # Initialize services
 print("Initialize services")
-[srvDoesSleep, srvDoesDraw] = services.setup(power_management, draw)
+[srvDoesLoop, srvDoesDraw] = services.setup(power_management, draw)
+
+if srvDoesLoop:
+    print("Service does loop.")
+    requestedInterval = services.loop_timer()
+    if requestedInterval>0:
+        scheduler_add(requestedInterval, services.loop_timer)
+        #loopTimer.init(period=requestedInterval, mode=machine.Timer.ONE_SHOT, callback=loop_timer_callback)
+    
+if srvDoesDraw:
+    print("Service does draw.")
+    requestedInterval = services.draw_timer()
+    if requestedInterval>0:
+        scheduler_add(requestedInterval, services.draw_timer)
+        #drawTimer.init(period=requestedInterval, mode=machine.Timer.ONE_SHOT, callback=draw_timer_callback) 
 
 # Disable WiFi if active
 print("Disable WiFi if active")
@@ -335,7 +380,7 @@ if not srvDoesDraw:
     draw(False)
     draw(True)
 
-if not srvDoesSleep:
+if not srvDoesLoop:
     print("[SPLASH] No service sleep!")
 
 power_countdown_reset(-1)
