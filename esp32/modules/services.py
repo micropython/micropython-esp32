@@ -6,7 +6,7 @@
 # Authors: Renze Nicolai <renze@rnplus.nl>
 #          Thomas Roos   <?>
 
-import uos, ujson, easywifi, easyrtc, time, appglue, deepsleep, ugfx, badge
+import uos, ujson, easywifi, easyrtc, time, appglue, deepsleep, ugfx, badge, machine
 
 services = [] #List containing all the service objects
 loopCallbacks = {} #Dict containing: {<FUNCTION>:<Wifi required on next run>}
