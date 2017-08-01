@@ -18,12 +18,12 @@ requestedStandbyTime = 0
 def power_management(timeUntilNextTick):
     global requestedStandbyTime
     requestedStandbyTime = timeUntilNextTick
-    if (timeUntilNextTick>60*5):
+    if (timeUntilNextTick>=60*5):
         print("[PM] Next tick after more than 5 minutes (MAY BPP).")
         global enableBpp
         enableBpp = True
         power_countdown_reset(0)
-    elif (timeUntilNextTick<30):
+    elif (timeUntilNextTick<=30):
         print("[PM] Next loop in "+str(timeUntilNextTick)+" seconds (STAY AWAKE).")
         power_countdown_reset(timeUntilNextTick)
         return True #Service loop timer can be restarted
