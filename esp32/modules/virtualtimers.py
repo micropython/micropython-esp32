@@ -4,6 +4,8 @@
 # License: MIT
 # Authors: Renze Nicolai <renze@rnplus.nl>
 
+import machine
+
 scheduler = []
 timer = machine.Timer(0)
 period = 0
