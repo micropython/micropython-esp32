@@ -115,7 +115,7 @@ def setup(pmCb=False, drawCb=False):
         
         if loopEnabled:
             try:
-                loopCallbacks[srv.loop] = wifiInLoop
+                loopCallbacks[srv.loop] = 0
             except:
                 print("[SERVICES] Loop requested but not defined in service "+app)
             
@@ -152,14 +152,6 @@ def loop_timer_callback(tmr):
     requestedInterval = 99999999
     newLoopCallbacks = loopCallbacks
     for cb in loopCallbacks:
-        if loopCallbacks[cb]:
-            print("[SERVICES] Loop needs wifi!")
-            if not easywifi.status():
-                if not easywifi.enable():
-                    print("[SERVICES] Wifi not available!")
-                    continue
-        else:
-            print("[SERVICES] Loop does not need wifi!")
         rqi = 0
         try:
             rqi = cb()
@@ -179,8 +171,6 @@ def loop_timer_callback(tmr):
     if requestedInterval>=99999999:
         print("[SERVICES] No loop interval returned.")
         requestedInterval = -1
-        
-    easywifi.disable() # Always disable wifi
     
     try:
         if pmCallback(requestedInterval):
