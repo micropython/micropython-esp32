@@ -268,13 +268,6 @@ def splash_input_init():
 
 scheduler = []
 
-loopTimerPos = 0
-loopTimerTarget = 0
-drawTimerPos = 0
-drawTimerTarget = 0
-powerTimerPos = 0
-powerTimerTarget = 0
-
 def scheduler_add(target, callback):
     global scheduler
     item = {"pos":0, "target":target, "cb":callback}
@@ -286,16 +279,13 @@ def timer_callback(tmr):
     for i in range(0, len(scheduler)):
         scheduler[i]["pos"] += 25
         if scheduler[i]["pos"] > scheduler[i]["target"]:
-            print("Target reached "+str(i))
             newTarget = scheduler[i]["cb"]()
             if newTarget > 0:
-                print("New target "+str(i))
                 newScheduler[i]["pos"] = 0
                 newScheduler[i]["target"] = newTarget
             else:
-                print("Discard "+str(i))
-                newScheduler[i]["pos"] = -1
-                newScheduler[i]["target"] = -1
+                newScheduler.pop(i)
+    scheduler = newScheduler
         
 ### PROGRAM
 
