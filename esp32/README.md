@@ -1,3 +1,12 @@
+SHA2017 Badge MicroPython
+=========================
+
+NOTE: This repository is part of the [SHA2017Badge Firmware](https://github.com/SHA2017-badge/Firmware) and will probably not work stand-alone as-is.
+
+For a clean repository please refer to [micropython/micropython-esp32](https://github.com/micropython/micropython-esp32)..
+
+---
+
 MicroPython port to the ESP32
 =============================
 

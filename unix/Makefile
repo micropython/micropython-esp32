@@ -16,12 +16,27 @@ UNAME_S := $(shell uname -s)
 # include py core make definitions
 include ../py/py.mk
 
+ESPIDF = $(IDF_PATH)
+ESPCOMP = $(ESPIDF)/components
+
 INC +=  -I.
 INC +=  -I..
 INC += -I$(BUILD)
+INC += -I../../components/ugfx-glue
+INC += -I../../components/badge
+INC += -I../../components/sha2017
+INC += -I../../esp-idf/components/esp32/include/
+INC += -I../../ugfx/src/gdisp/mcufont
+INC += -I../../ugfx
+INC += -I../esp32
+INC += -I../lib/netutils
+INC += -I$(ESPCOMP)/lwip/include/
+INC += -I$(ESPCOMP)/lwip/include/lwip/
+INC += -I../../ugfx/src
+INC += -I../../ugfx/drivers/multiple/SDL/
 
 # compiler settings
-CWARN = -Wall -Werror
+CWARN = -Wall
 CWARN += -Wpointer-arith -Wuninitialized
 CFLAGS = $(INC) $(CWARN) -std=gnu99 -DUNIX $(CFLAGS_MOD) $(COPT) $(CFLAGS_EXTRA)
 
@@ -142,14 +157,41 @@ SRC_C = \
 	input.c \
 	file.c \
 	modmachine.c \
+	ugfx_containers.c \
+	ugfx_widgets.c \
+	ugfx_styles.c \
+	rom/tjpgd.c \
+	modugfx.c \
+	modnetwork.c \
+	modbadge.c \
+	../../ugfx/drivers/multiple/SDL/gdisp_lld_SDL.c \
+	ginput_lld_toggle.c \
+	../../components/sha2017/wildcard_sha2017_org.c \
+	gfx_mk.c \
 	modos.c \
 	moduos_vfs.c \
 	modtime.c \
 	moduselect.c \
+	help.c \
 	alloc.c \
 	coverage.c \
 	fatfs_port.c \
+	esp_log.c \
 	$(SRC_MOD)
+
+OPT_GFXDRIVER           = SDL
+OPT_OS					= linux
+OPT_LINK_OPTIMIZE		= yes
+OPT_CPU					= x64
+GFXLIB                  = ../../ugfx/
+
+include $(GFXLIB)/boards/base/Linux-SDL/board.mk
+include $(GFXLIB)/tools/gmake_scripts/library_ugfx.mk
+include $(GFXLIB)/tools/gmake_scripts/os_$(OPT_OS).mk
+
+# expand all the uGFX definitions from DEFS into CPP defines
+SRCFLAGS += -I. $(patsubst %,-I%,$(INCPATH)) $(patsubst %,-D%,$(patsubst -D%,%,$(DEFS)))
+CFLAGS += $(SRCFLAGS)
 
 LIB_SRC_C = $(addprefix lib/,\
 	$(LIB_SRC_C_EXTRA) \
@@ -160,6 +202,11 @@ LIB_SRC_C = $(addprefix lib/,\
 LIB_SRC_C += $(addprefix lib/,\
 	oofatfs/ff.c \
 	oofatfs/option/unicode.c \
+	)
+
+LIB_SRC_C += $(addprefix lib/,\
+	mp-readline/readline.c \
+	netutils/netutils.c \
 	)
 
 OBJ = $(PY_O)

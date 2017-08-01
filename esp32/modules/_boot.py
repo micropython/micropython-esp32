@@ -1,10 +1,8 @@
-import gc
-import uos
-from flashbdev import bdev
+import gc, uos
 
 try:
-    if bdev:
-        uos.mount(bdev, '/')
+    uos.mount(uos.VfsNative(True), '/')
+    open("/boot.py", "r")
 except OSError:
     import inisetup
     vfs = inisetup.setup()
