@@ -18,7 +18,7 @@ requestedStandbyTime = 0
 def power_management(timeUntilNextTick):
     global requestedStandbyTime
     requestedStandbyTime = timeUntilNextTick
-    if (timeUntilNextTick>=60*5):
+    if timeUntilNextTick<0 or timeUntilNextTick>=60*5:
         print("[PM] Next tick after more than 5 minutes (MAY BPP).")
         global enableBpp
         enableBpp = True
