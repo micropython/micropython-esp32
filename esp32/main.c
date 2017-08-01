@@ -191,11 +191,11 @@ void app_main(void) {
 				badge_init();
 				if (badge_input_button_state == 0) {
 					printf("Starting bpp.\n");
-					powerDownMgrInit(do_deep_sleep, (void*)POWER_MODE_BPP, POWER_MODE_BPP);
+					powerDownMgrInit(do_deep_sleep, (void*)POWER_MODE_BPP, POWER_MODE_BPP, true);
 					do_bpp_bgnd();
 				} else {
 					printf("Touch wake after bpp.\n");
-					powerDownMgrInit(do_deep_sleep, (void*)POWER_MODE_UPY, POWER_MODE_UPY);
+					powerDownMgrInit(do_deep_sleep, (void*)POWER_MODE_UPY, POWER_MODE_UPY, false);
 					xTaskCreateStaticPinnedToCore(mp_task, "mp_task", MP_TASK_STACK_LEN, NULL, MP_TASK_PRIORITY,
 					&mp_task_stack[0], &mp_task_tcb, 0);
 				}
@@ -206,7 +206,7 @@ void app_main(void) {
 		}
 
 	} else {
-		powerDownMgrInit(do_deep_sleep, (void*)POWER_MODE_UPY, POWER_MODE_UPY);
+		powerDownMgrInit(do_deep_sleep, (void*)POWER_MODE_UPY, POWER_MODE_UPY, false);
 		xTaskCreateStaticPinnedToCore(mp_task, "mp_task", MP_TASK_STACK_LEN, NULL, MP_TASK_PRIORITY,
 				&mp_task_stack[0], &mp_task_tcb, 0);
 	}
