@@ -1,6 +1,6 @@
 # File: services.py
 # Version: 3
-# API version: 1
+# API version: 2
 # Description: Background services for SHA2017 badge
 # License: MIT
 # Authors: Renze Nicolai <renze@rnplus.nl>
@@ -68,7 +68,7 @@ def setup(pmCb=None, drawCb=None):
         wifiInLoop = False # True if wifi needed in loop
         
         try:
-            if description['apiVersion']!=1:
+            if description['apiVersion']!=2:
                 print("[SERVICES] Service for "+app+" is not compatible with current firmware")
                 continue #Skip the app
             wifiInSetup = description['wifi']['setup']
