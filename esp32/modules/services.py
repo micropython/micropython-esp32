@@ -168,6 +168,10 @@ def loop_timer_callback(tmr):
     loopCallbacks = newLoopCallbacks
     del(newLoopCallbacks)
     
+    if requestedInterval>=99999999:
+        print("[SERVICES] No loop interval returned.")
+        requestedInterval = -1
+    
     try:
         if pmCallback(requestedInterval):
             print("[SERVICES] Loop timer (re-)started")
@@ -204,7 +208,11 @@ def draw_timer_callback(tmr):
     
     badge.eink_busy_wait()
     
-    if len(drawCallbacks)>0:
+    if requestedInterval>=99999999:
+        print("[SERVICES] No draw interval returned.")
+        requestedInterval = -1
+    
+    if len(drawCallbacks)>0 and requestedInterval>=0:
         print("[SERVICES] New draw requested in "+str(requestedInterval)+".")
         tmr.init(period=requestedInterval*1000, mode=machine.Timer.ONE_SHOT, callback=draw_timer_callback) 
        
