@@ -263,7 +263,15 @@ def splash_input_init():
 
 ### PROGRAM
 
-powerTimer = machine.Timer(0) #TODO: how to get this number?!?
+# Init hardware timers
+powerTimer = machine.Timer(0)
+powerTimer.deinit()
+loopTimer  = machine.Timer(1)
+loopTimer.deinit()
+drawTimer  = machine.Timer(2)
+drawTimer.deinit()
+unusedTimer = machine.Timer(3)
+unusedTimer.deinit()
 
 # Load settings from NVS
 otaAvailable = badge.nvs_get_u8('badge','OTA.ready',0)
@@ -312,7 +320,7 @@ if badge.nvs_get_u8('sponsors', 'shown', 0)<1:
 
 # Initialize services
 print("Initialize services")
-[srvDoesSleep, srvDoesDraw] = services.setup(power_management, draw, 1)
+[srvDoesSleep, srvDoesDraw] = services.setup(loopTimer, drawTimer, power_management, draw)
 
 # Disable WiFi if active
 print("Disable WiFi if active")

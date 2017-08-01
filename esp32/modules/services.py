@@ -12,10 +12,15 @@ services = [] #List containing all the service objects
 loopCallbacks = {} #Dict containing: {<FUNCTION>:<Wifi required on next run>}
 drawCallbacks = [] #List containing draw functions
 
-def setup(pmCb=None, drawCb=None, timerId=0):
+def setup(loopTmr, drawTmr, pmCb=None, drawCb=None):
     global services
     global loopCallbacks
     global drawCallbacks
+    
+    global loopTimer
+    loopTimer = loopTmr
+    global drawTimer
+    drawTimer = drawTmr
     
     if pmCb:
         print("[SERVICES] Power management callback registered")
@@ -130,19 +135,15 @@ def setup(pmCb=None, drawCb=None, timerId=0):
         
     # Create loop timer
     hasLoopTimer = False
-    global loopTimer
     if len(loopCallbacks)>0:
         print("[SERVICES] There are loop callbacks, starting loop timer!")
-        loopTimer = machine.Timer(timerId)
         loop_timer_callback(loopTimer)
         hasLoopTimer = True
         
     # Create draw timer
     hasDrawTimer = False
-    global drawTimer
     if len(drawCallbacks)>0 and drawCb:
         print("[SERVICES] There are draw callbacks, starting draw timer!")
-        drawTimer = machine.Timer(timerId+1)
         draw_timer_callback(drawTimer)
         hasDrawTimer = True
     return [hasLoopTimer, hasDrawTimer]
@@ -180,19 +181,23 @@ def loop_timer_callback(tmr):
         print("[SERVICES] No loop interval returned.")
         requestedInterval = -1
         
-    if requestedInterval<100:
-        print("[SERVICES] A service requested a loop interval < 100 ms. Forcing 100 ms.")
-        requestedInterval = 100
+    if requestedInterval<1000:
+        requestedInterval = 1000
         
     easywifi.disable() # Always disable wifi
     
-    #try:
-    global pmCallback
-    if pmCallback(requestedInterval):
-        print("[SERVICES] Loop timer (re-)started "+str(requestedInterval))
-        tmr.init(period=requestedInterval, mode=machine.Timer.ONE_SHOT, callback=loop_timer_callback)
-    #except:
-    #    print("[SERVICES] Error in power management callback!")
+    try:
+        global pmCallback
+        if pmCallback(requestedInterval):
+            print("[SERVICES] Loop timer (re-)started "+str(requestedInterval))
+            tmr.deinit()
+            try:
+                tmrperiod = round(requestedInterval/1000)*1000
+                tmr.init(period=tmrperiod, mode=machine.Timer.ONE_SHOT, callback=loop_timer_callback)
+            except BaseException as msg:
+                print("TIMER INIT ERROR: LOOP TIMER - ", msg)
+    except:
+        print("[SERVICES] Error in power management callback!")
 
 def draw_timer_callback(tmr):
     global drawCallback #The function that allows us to hook into our host
@@ -228,14 +233,17 @@ def draw_timer_callback(tmr):
         print("[SERVICES] No draw interval returned.")
         requestedInterval = -1
         
-    if requestedInterval<100:
-        print("[SERVICES] A service requested a draw interval < 100 ms. Forcing 100 ms.")
-        requestedInterval = 100
+    if requestedInterval<1000:
+        requestedInterval = 1000
     
     if len(drawCallbacks)>0 and requestedInterval>=0:
-        print("[SERVICES] New draw requested in "+str(requestedInterval)+".")
-        tmr.init(period=requestedInterval, mode=machine.Timer.ONE_SHOT, callback=draw_timer_callback) 
-       
+        print("[SERVICES] New draw requested in "+str(requestedInterval))
+        tmr.deinit()
+        try:
+            tmrperiod = round(requestedInterval/1000)*1000
+            tmr.init(period=tmrperiod, mode=machine.Timer.ONE_SHOT, callback=draw_timer_callback) 
+        except BaseException as msg:
+            print("TIMER INIT ERROR: DRAW TIMER - ",msg)
     drawCallback(True) # Complete draw
 
 def force_draw(disableTimer):
