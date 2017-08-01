@@ -6,7 +6,7 @@
 # Authors: Renze Nicolai <renze@rnplus.nl>
 #          Thomas Roos   <?>
 
-import uos, ujson, easywifi, easyrtc, time, appglue, deepsleep, ugfx, badge, machine
+import uos, ujson, easywifi, easyrtc, time, appglue, deepsleep, ugfx, badge, machine, sys
 
 services = [] #List containing all the service objects
 loopCallbacks = {} #Dict containing: {<FUNCTION>:<Wifi required on next run>}
@@ -85,8 +85,9 @@ def setup(pmCb=None, drawCb=None):
         # Import the service.py script
         try:
             srv = __import__('lib/'+app+'/service')
-        except BaseException as msg:
-            print("[SERVICES] Could not import service of app "+app+": ", msg)
+        except BaseException as e:
+            print("[SERVICES] Could not import service of app "+app+": ")
+            sys.print_exception(e)
             continue #Skip the app
         
         if wifiInSetup:
@@ -109,8 +110,9 @@ def setup(pmCb=None, drawCb=None):
         
         try:
             srv.setup()
-        except BaseException as msg:
-            print("[SERVICES] Exception in service setup "+app+": ", msg)
+        except BaseException as e:
+            print("[SERVICES] Exception in service setup "+app+":")
+            sys.print_exception(e)
             continue
         
         if loopEnabled:
@@ -157,8 +159,9 @@ def loop_timer():
         rqi = 0
         try:
             rqi = cb()
-        except BaseException as msg:
-            print("[SERVICES] Exception in service loop: ", msg)
+        except BaseException as e:
+            print("[SERVICES] Exception in service loop:")
+            sys.print_exception(e)
             newLoopCallbacks.pop(cb)
             continue
         if rqi>0 and rqi<requestedInterval:
@@ -200,8 +203,9 @@ def draw_timer():
         try:
             [rqi, space_used] = cb(y)
             y = y - space_used
-        except BaseException as msg:
-            print("[SERVICES] Exception in service draw: ", msg)
+        except BaseException as e:
+            print("[SERVICES] Exception in service draw:")
+            sys.print_exception(e)
             newDrawCallbacks.pop(i)
             continue
         if rqi>0 and rqi<requestedInterval:
@@ -242,5 +246,6 @@ def force_draw(disableTimer):
             try:
                 [rqi, space_used] = cb(y)
                 y = y - space_used
-            except BaseException as msg:
-                print("[SERVICES] Exception in service draw: ", msg)
+            except BaseException as e:
+                print("[SERVICES] Exception in service draw: ")
+                sys.print_exception(e)
