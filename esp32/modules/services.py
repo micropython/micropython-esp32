@@ -121,7 +121,7 @@ def setup(pmCb=False, drawCb=False):
             
         if drawEnabled and drawCb:
             try:
-                drawCallbacks[srv.draw] = 0
+                drawCallbacks.append(srv.draw)
             except:
                 print("[SERVICES] Draw requested but not defined in service "+app)
         
@@ -188,7 +188,7 @@ def draw_timer_callback(tmr):
     drawCallback(False) # Prepare draw
     
     newDrawCallbacks = drawCallbacks
-    for cb in drawCallback:
+    for cb in drawCallbacks:
         rqi = 0
         try:
             [rqi, space_used] = cb(y)
@@ -231,7 +231,7 @@ def force_draw(disableTimer):
     global drawCallbacks
     if len(drawCallbacks)>0:
         y = ugfx.height()
-        for cb in drawCallback:
+        for cb in drawCallbacks:
             try:
                 [rqi, space_used] = cb(y)
                 y = y - space_used
