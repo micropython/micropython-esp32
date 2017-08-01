@@ -7,8 +7,11 @@
 import machine, time
 
 # Functions
-def string(date=False, time=True):
-    [year, month, mday, wday, hour, min, sec, usec] = machine.RTC().datetime()
+def string(print_date=False, print_time=True, timestamp = -1):
+    if timestamp<0:
+        [year, month, mday, wday, hour, minute, sec, usec] = machine.RTC().datetime()
+    else:
+        [year, month, mday, hour, minute, second, wday, yday] = time.localtime(timestamp)
     monthstr = str(month)
     if (month<10):
       monthstr = "0"+monthstr
@@ -18,15 +21,15 @@ def string(date=False, time=True):
     hourstr = str(hour)
     if (hour<10):
       hourstr = "0"+hourstr
-    minstr = str(min)
-    if (min<10):
+    minstr = str(minute)
+    if (minute<10):
       minstr = "0"+minstr 
     output = ""
-    if date:
+    if print_date:
         output += daystr+"-"+monthstr+"-"+str(year)
         if time:
             output += " "
-    if time:
+    if print_time:
         output += hourstr+":"+minstr
     return output
 
