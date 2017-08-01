@@ -60,7 +60,7 @@ def power_countdown_callback():
             print("[PM] Sleep for "+str(requestedStandbyTime)+" ms.")
             deepsleep.start_sleeping(requestedStandbyTime)
     else:
-            print("[PM] BPP forever.")
+            print("[PM] Sleep forever.")
             deepsleep.start_sleeping()
 
 # Graphics
