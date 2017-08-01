@@ -12,7 +12,7 @@ services = [] #List containing all the service objects
 loopCallbacks = {} #Dict containing: {<FUNCTION>:<Wifi required on next run>}
 drawCallbacks = [] #List containing draw functions
 
-def setup(pmCb=False, drawCb=False):
+def setup(pmCb=None, drawCb=None):
     global services
     global loopCallbacks
     global drawCallbacks
