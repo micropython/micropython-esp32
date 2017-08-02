@@ -1,7 +1,8 @@
-import gc, uos
+import badge, gc, uos
 
 try:
-    uos.mount(uos.VfsNative(True), '/')
+    badge.mount_root()
+    uos.mount(uos.VfsNative(None), '/')
     open("/boot.py", "r")
 except OSError:
     import inisetup

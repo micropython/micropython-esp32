@@ -266,7 +266,8 @@ ESPIDF_DRIVER_O = $(addprefix $(ESPCOMP)/driver/,\
 	spi_common.o \
 	rtc_module.o \
 	sdmmc_host.o \
-  sdmmc_transaction.o \
+	sdmmc_transaction.o \
+	sdspi_host.o \
 	)
 
 $(BUILD)/$(ESPCOMP)/esp32/dport_access.o: CFLAGS += -Wno-array-bounds
