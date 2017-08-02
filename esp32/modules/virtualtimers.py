@@ -89,18 +89,19 @@ def timer_callback(tmr):
     global scheduler
     global period
     newScheduler = scheduler
-    for i in range(0, len(scheduler)):
-        scheduler[i]["pos"] += period
-        if scheduler[i]["pos"] > scheduler[i]["target"]:
-            try:
-                newTarget = scheduler[i]["cb"]()
-            except BaseException as e:
-                print("[ERROR] An error occured in a task. Task disabled.")
-                sys.print_exception(e)
-                newTarget = -1
-            if newTarget > 0:
-                newScheduler[i]["pos"] = 0
-                newScheduler[i]["target"] = newTarget
-            else:
-                newScheduler.pop(i)
-    scheduler = newScheduler
+    if len(scheduler)>0:
+        for i in range(0, len(scheduler)):
+            scheduler[i]["pos"] += period
+            if scheduler[i]["pos"] > scheduler[i]["target"]:
+                try:
+                    newTarget = scheduler[i]["cb"]()
+                except BaseException as e:
+                    print("[ERROR] An error occured in a task. Task disabled.")
+                    sys.print_exception(e)
+                    newTarget = -1
+                if newTarget > 0:
+                    newScheduler[i]["pos"] = 0
+                    newScheduler[i]["target"] = newTarget
+                else:
+                    newScheduler.pop(i)
+        scheduler = newScheduler
