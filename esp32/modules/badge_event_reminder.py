@@ -29,8 +29,8 @@ ugfx.input_attach(ugfx.BTN_B, exit)
 def led(on):
     ledVal = 0
     if on:
-        ledVal = 255
-    badge.leds_send_data(bytes([ledVal,ledVal,ledVal,ledVal,ledVal,ledVal,ledVal,ledVal,ledVal,ledVal,ledVal,ledVal,ledVal,ledVal,ledVal,ledVal,ledVal,ledVal,ledVal,ledVal,ledVal,ledVal,ledVal,ledVal]),24)
+        ledVal = 64
+    badge.leds_send_data(bytes([0,0,0,ledVal,0,0,0,ledVal,0,0,0,ledVal,0,0,0,ledVal,0,0,0,ledVal,0,0,0,ledVal]),24)
 
 for i in range(0,30):
     led(True)
