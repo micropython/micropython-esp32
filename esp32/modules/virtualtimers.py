@@ -60,7 +60,7 @@ def delete(callback):
             found = True
             break
     
-    scheduler = tuple(task for task in scheduler if task['cb']!=callback)
+    scheduler = list(task for task in scheduler if task['cb']!=callback)
     
     return found
 
@@ -106,4 +106,4 @@ def timer_callback(tmr):
                 scheduler[i]["pos"] = -1
                 scheduler[i]["target"] = -1
                 
-    scheduler = tuple(task for task in scheduler if task["pos"]>=0)
+    scheduler = list(task for task in scheduler if task["pos"]>=0)

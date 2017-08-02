@@ -156,7 +156,7 @@ def draw_task():
     
     for i in range(0,len(deleted)):
         print("[DEBUG] Deleted draw callback: ",dcb)
-        drawCallbacks = tuple(dcb for dcb in drawCallbacks if dcb!=deleted[i])
+        drawCallbacks = list(dcb for dcb in drawCallbacks if dcb!=deleted[i])
     
     badge.eink_busy_wait()
     
