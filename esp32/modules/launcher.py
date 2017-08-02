@@ -129,8 +129,11 @@ ugfx.input_attach(ugfx.BTN_START, input_other)
 
 ugfx.flush(ugfx.LUT_FULL)
 
+def pm_cb(dummy):
+    appglue.home()
+
 # Power management
 virtualtimers.activate(1000) # Start scheduler with 1 second ticks
 pm.set_timeout(5*60*1000) # Set timeout to 5 minutes
-pm.callback(appglue.home) # Go to splash instead of sleep
+pm.callback(pm_cb) # Go to splash instead of sleep
 pm.feed() # Feed the power management task, starts the countdown...
