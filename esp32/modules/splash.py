@@ -153,6 +153,7 @@ if not services.setup(draw): # Start services
 easywifi.disable()
 gc.collect()
     
+virtualtimers.debug(True)
 virtualtimers.activate(25)
 pm.callback(onSleep)
 pm.feed()

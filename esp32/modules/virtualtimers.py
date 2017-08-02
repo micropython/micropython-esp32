@@ -9,6 +9,11 @@ import machine, sys
 scheduler = []
 timer = machine.Timer(0)
 period = 0
+debugEnabled = False
+
+def debug(s):
+    global debugEnabled
+    debugEnabled = s
 
 def new(target, callback, hfpm=False):
     ''' Creates new task. Arguments: time until callback is called, callback, hide from power management '''
@@ -21,7 +26,25 @@ def idle_time():
     global scheduler
     idleTime = 86400000 # One day (causes the badge to sleep forever)
     for i in range(0, len(scheduler)):
+        timeUntilTaskExecution = scheduler[i]['target']-scheduler[i]['pos']
+        
+        global debugEnabled
+        if debugEnabled:
+            print("idle time for task "+str(i)+" = "+str(timeUntilTaskExecution)+" - ",scheduler[i])
+            
         if not scheduler[i]["hfpm"]:
+            if timeUntilTaskExecution<0:
+                timeUntilTaskExecution = 0
+            if timeUntilTaskExecution<idleTime:
+                idleTime = timeUntilTaskExecution
+    return idleTime
+
+def pm_time():
+    ''' Returns time until next pm task in ms '''
+    global scheduler
+    idleTime = 86400000 # One day (causes the badge to sleep forever)
+    for i in range(0, len(scheduler)):
+        if scheduler[i]["hfpm"]:
             timeUntilTaskExecution = scheduler[i]['target']-scheduler[i]['pos']
             if timeUntilTaskExecution<idleTime:
                 idleTime = timeUntilTaskExecution
@@ -45,6 +68,7 @@ def update(target, callback):
     found = False
     for i in range(0, len(scheduler)):
         if (scheduler[i]["cb"]==callback):
+            scheduler[i]["pos"] = 0
             scheduler[i]["target"] = target
             found = True
     return found

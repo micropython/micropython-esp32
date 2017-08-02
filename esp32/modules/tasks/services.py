@@ -127,7 +127,7 @@ def setup(drawCb=None):
     if len(drawCallbacks)>0 and drawCb:
         print("[SERVICES] The service subsystem now handles screen redraws")
         handleDraw = True
-        virtualtimers.new(1, draw_task)
+        virtualtimers.new(1, draw_task, True)
     return handleDraw
 
 def draw_task():
