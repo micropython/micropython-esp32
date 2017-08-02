@@ -1,4 +1,4 @@
-import ugfx, badge, sys, uos as os, appglue, version, easydraw
+import ugfx, badge, sys, uos as os, appglue, version, easydraw, virtualtimers, tasks.powermanagement as pm
 
 def populate_it():
     global options
@@ -18,11 +18,10 @@ def populate_it():
             
     options.add_item('setup')
         
-def run_it(pushed):
-    if (pushed):
-        selected = options.selected_text()
-        options.destroy()
-        appglue.start_app(selected)
+def run_it():
+    selected = options.selected_text()
+    options.destroy()
+    appglue.start_app(selected)
 
 def expandhome(s):
     if "~/" in s:
@@ -42,27 +41,26 @@ def get_install_path():
     install_path = expandhome(install_path)
     return install_path
 
-def uninstall_it(pushed):
-    if (pushed):
-        selected = options.selected_text()
-        if selected == 'installer':
-            return
-        if selected == 'ota_update':
-            return
-        options.destroy()
+def uninstall_it():
+    selected = options.selected_text()
+    if selected == 'installer':
+        return
+    if selected == 'ota_update':
+        return
+    options.destroy()
 
-        def perform_uninstall(ok):
-            if ok:
-                easydraw.msg(selected,"Uninstalling...",True)
-                install_path = get_install_path()
-                for rm_file in os.listdir("%s/%s" % (install_path, selected)):
-                    os.remove("%s/%s/%s" % (install_path, selected, rm_file))
-                os.rmdir("%s/%s" % (install_path, selected))
-            badge.eink_busy_wait()
-            appglue.start_app('launcher')
+    def perform_uninstall(ok):
+        if ok:
+            easydraw.msg(selected,"Uninstalling...",True)
+            install_path = get_install_path()
+            for rm_file in os.listdir("%s/%s" % (install_path, selected)):
+                os.remove("%s/%s/%s" % (install_path, selected, rm_file))
+            os.rmdir("%s/%s" % (install_path, selected))
+        badge.eink_busy_wait()
+        appglue.start_app('launcher')
 
-        import dialogs
-        uninstall = dialogs.prompt_boolean('Are you sure you want to remove %s?' % selected, cb=perform_uninstall)
+    import dialogs
+    uninstall = dialogs.prompt_boolean('Are you sure you want to remove %s?' % selected, cb=perform_uninstall)
         
 
 ugfx.input_init()
@@ -100,13 +98,38 @@ install_path = None
 
 populate_it()
 
-ugfx.input_attach(ugfx.BTN_A, run_it)
-ugfx.input_attach(ugfx.BTN_SELECT, uninstall_it)
+def input_a(pressed):
+    pm.feed()
+    if pressed:
+        run_it()
+    
+def input_b(pressed):
+    pm.feed()
+    if pressed:
+        appglue.home()
 
-ugfx.input_attach(ugfx.JOY_UP, lambda pushed: ugfx.flush() if pushed else 0)
-ugfx.input_attach(ugfx.JOY_DOWN, lambda pushed: ugfx.flush() if pushed else 0)
+def input_select(pressed):
+    pm.feed()
+    if pressed:
+        uninstall_it()
+    
+def input_other(pressed):
+    pm.feed()
+    if pressed:
+        ugfx.flush()
 
-ugfx.input_attach(ugfx.BTN_B, lambda pushed: appglue.home() if pushed else 0)
-#ugfx.input_attach(ugfx.BTN_START, lambda pushed: appglue.home() if pushed else 0)
+ugfx.input_attach(ugfx.BTN_A, input_a)
+ugfx.input_attach(ugfx.BTN_B, input_b)
+ugfx.input_attach(ugfx.BTN_SELECT, input_select)
+ugfx.input_attach(ugfx.JOY_UP, input_other)
+ugfx.input_attach(ugfx.JOY_DOWN, input_other)
+ugfx.input_attach(ugfx.JOY_LEFT, input_other)
+ugfx.input_attach(ugfx.JOY_RIGHT, input_other)
+ugfx.input_attach(ugfx.BTN_START, input_other)
 
 ugfx.flush(ugfx.LUT_FULL)
+
+# Power management
+virtualtimers.activate(1000) # Start scheduler with 1 second ticks
+pm.set_timeout(5*60*1000) # Set timeout to 5 minutes
+pm.feed() # Feed the power management task, starts the countdown...
