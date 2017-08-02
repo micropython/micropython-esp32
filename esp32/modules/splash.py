@@ -143,7 +143,11 @@ else: # Normal boot
         if not easywifi.failure():
             otac.available(True)
 
-
+# RTC ===
+if time.time() < 1482192000:
+    easyrtc.configure()
+# =======
+        
 if not easywifi.failure():
     resc.check()        # Check resources
 if not easywifi.failure():
