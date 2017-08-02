@@ -14,6 +14,7 @@ import tasks.otacheck as otac
 import tasks.resourcescheck as resc
 import tasks.sponsorscheck as spoc
 import tasks.services as services
+import tasks.badgeeventreminder as ber
 
 # Graphics
 
@@ -153,6 +154,8 @@ virtualtimers.debug(True)
 virtualtimers.activate(25)
 pm.callback(onSleep)
 pm.feed()
+
+ber.enable()
 
 print("----")
 print("WARNING: POWER MANAGEMENT ACTIVE")

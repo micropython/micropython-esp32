@@ -108,5 +108,8 @@ def timer_callback(tmr):
                 newScheduler[i]["pos"] = 0
                 newScheduler[i]["target"] = newTarget
             else:
-                newScheduler.pop(i)
+                try:
+                    newScheduler.pop(i)
+                except:
+                    print("CAN NOT REMOVE TASK ?!?!")
     scheduler = newScheduler
