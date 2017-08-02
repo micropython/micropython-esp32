@@ -53,7 +53,9 @@ def pm_time():
     
 def delete(callback):
     global scheduler
-    newScheduler = scheduler
+    newScheduler = []
+    for task in scheduler:
+        newScheduler.append(task)
     found = False
     for i in range(0, len(scheduler)):
         if (scheduler[i]["cb"]==callback):
@@ -88,20 +90,30 @@ def stop():
 def timer_callback(tmr):
     global scheduler
     global period
-    newScheduler = scheduler
-    if len(scheduler)>0:
-        for i in range(0, len(scheduler)):
-            scheduler[i]["pos"] += period
-            if scheduler[i]["pos"] > scheduler[i]["target"]:
-                try:
-                    newTarget = scheduler[i]["cb"]()
-                except BaseException as e:
-                    print("[ERROR] An error occured in a task. Task disabled.")
-                    sys.print_exception(e)
-                    newTarget = -1
-                if newTarget > 0:
-                    newScheduler[i]["pos"] = 0
-                    newScheduler[i]["target"] = newTarget
-                else:
-                    newScheduler.pop(i)
-        scheduler = newScheduler
+    newScheduler = []
+    for task in scheduler:
+        newScheduler.append(task)
+    if len(scheduler)>3:
+        print("WHAT THE FUCK")
+        print(scheduler)
+    
+    s = len(scheduler)
+    for i in range(0, len(scheduler)):
+        if not s == len(scheduler):
+            print("LENGTH OF SCHEDULER CHANGED IN LOOP")
+        scheduler[i]["pos"] += period
+        if scheduler[i]["pos"] > scheduler[i]["target"]:
+            try:
+                newTarget = scheduler[i]["cb"]()
+            except BaseException as e:
+                print("[ERROR] An error occured in a task. Task disabled.")
+                sys.print_exception(e)
+                newTarget = -1
+            if newTarget > 0:
+                print("TASK RESCHEDULED")
+                newScheduler[i]["pos"] = 0
+                newScheduler[i]["target"] = newTarget
+            else:
+                print("TASK REMOVED")
+                newScheduler.pop(i)
+    scheduler = newScheduler

@@ -134,7 +134,9 @@ def draw_task():
     
     drawCallback(False) # Prepare draw
     
-    newDrawCallbacks = drawCallbacks
+    newDrawCallbacks = []
+    for cbs in drawCallbacks:
+        newDrawCallbacks.append(cbs)
     for i in range(0, len(drawCallbacks)):
         cb = drawCallbacks[i]
         rqi = 0
@@ -151,7 +153,7 @@ def draw_task():
             requestedInterval = rqi
         elif rqi<=0:
             # Service doesn't want to draw again until next wakeup
-            newDrawCallbacks.pop(cb)
+            newDrawCallbacks.pop(i)
     drawCallbacks = newDrawCallbacks
     del(newDrawCallbacks)
     
