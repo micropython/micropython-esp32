@@ -93,14 +93,9 @@ def timer_callback(tmr):
     newScheduler = []
     for task in scheduler:
         newScheduler.append(task)
-    if len(scheduler)>3:
-        print("WHAT THE FUCK")
-        print(scheduler)
     
     s = len(scheduler)
     for i in range(0, len(scheduler)):
-        if not s == len(scheduler):
-            print("LENGTH OF SCHEDULER CHANGED IN LOOP")
         scheduler[i]["pos"] += period
         if scheduler[i]["pos"] > scheduler[i]["target"]:
             try:
@@ -110,10 +105,8 @@ def timer_callback(tmr):
                 sys.print_exception(e)
                 newTarget = -1
             if newTarget > 0:
-                print("TASK RESCHEDULED")
                 newScheduler[i]["pos"] = 0
                 newScheduler[i]["target"] = newTarget
             else:
-                print("TASK REMOVED")
                 newScheduler.pop(i)
     scheduler = newScheduler
