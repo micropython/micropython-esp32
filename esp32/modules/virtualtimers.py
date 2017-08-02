@@ -19,14 +19,12 @@ def new(target, callback, hfpm=False):
 def idle_time():
     ''' Returns time until next task in ms, ignores tasks hidden from power management '''
     global scheduler
-    idleTime = 86400000 # One day
+    idleTime = 86400000 # One day (causes the badge to sleep forever)
     for i in range(0, len(scheduler)):
         if not scheduler[i]["hfpm"]:
             timeUntilTaskExecution = scheduler[i]['target']-scheduler[i]['pos']
             if timeUntilTaskExecution<idleTime:
                 idleTime = timeUntilTaskExecution
-    if idleTime == 86400000: # One day
-        idleTime = -1 # Sleep forever until wakeup
     return idleTime
     
     

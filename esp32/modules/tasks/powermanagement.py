@@ -20,7 +20,7 @@ def pm_task():
     idleTime = virtualtimers.idle_time()
     print("[Power management] Next task wants to run in "+str(idleTime)+" ms.")
         
-    if idleTime>30000 or idleTime<0:
+    if idleTime>30000:
         global onSleepCallback
         if not onSleepCallback==None:
             print("[Power management] Running onSleepCallback...")
@@ -30,7 +30,7 @@ def pm_task():
                 print("[ERROR] An error occured in the on sleep callback.")
                 sys.print_exception(e)
 
-        if idleTime<0:
+        if idleTime>=86400000: # One day
             print("[Power management] Sleeping forever...")
             deepsleep.start_sleeping()
         else:
