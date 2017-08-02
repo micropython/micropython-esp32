@@ -45,9 +45,6 @@ def feed():
     global userResponseTime
     if not virtualtimers.update(userResponseTime, pm_task):
         virtualtimers.new(userResponseTime, pm_task, True)
-        print("PM CREATE")
-    else:
-        print("PM FEED")
 
 def kill():
     ''' Kills the power management task '''

@@ -75,25 +75,21 @@ def splash_about_countdown_trigger():
 def splash_input_start(pressed):
     # Pressing start always starts the launcher
     if pressed:
-        print("[SPLASH] Start button pressed")
         appglue.start_app("launcher", False)
 
 def splash_input_a(pressed):
     if pressed:
-        print("[SPLASH] A button pressed")
         splash_about_countdown_trigger()
         pm.feed()
 
 def splash_input_select(pressed):
     if pressed:
-        print("[SPLASH] Select button pressed")
         if otac.available(False):
             appglue.start_ota()
         pm.feed()
 
 def splash_input_other(pressed):
     if pressed:
-        print("[SPLASH] Other button pressed")
         pm.feed()
 
 def splash_input_init():
