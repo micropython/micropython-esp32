@@ -44,7 +44,7 @@ def feed():
     ''' Start / resets the power management task '''
     global userResponseTime
     if not virtualtimers.update(userResponseTime, pm_task):
-        virtualtimers.new(userResponseTime, pm_task)
+        virtualtimers.new(userResponseTime, pm_task, True)
 
 def kill():
     ''' Kills the power management task '''
