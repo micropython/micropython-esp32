@@ -134,9 +134,8 @@ def draw_task():
     
     drawCallback(False) # Prepare draw
     
-    newDrawCallbacks = []
-    for cbs in drawCallbacks:
-        newDrawCallbacks.append(cbs)
+    deleted = []
+
     for i in range(0, len(drawCallbacks)):
         cb = drawCallbacks[i]
         rqi = 0
@@ -146,16 +145,18 @@ def draw_task():
         except BaseException as e:
             print("[SERVICES] Exception in service draw:")
             sys.print_exception(e)
-            newDrawCallbacks.pop(i)
+            deleted.append(cb)
             continue
         if rqi>0 and rqi<requestedInterval:
             # Service wants to loop again in rqi ms
             requestedInterval = rqi
         elif rqi<=0:
             # Service doesn't want to draw again until next wakeup
-            newDrawCallbacks.pop(i)
-    drawCallbacks = newDrawCallbacks
-    del(newDrawCallbacks)
+            deleted.append(cb)
+    
+    for i in range(0,len(deleted)):
+        print("[DEBUG] Deleted draw callback: ",dcb)
+        drawCallbacks = tuple(dcb for dcb in drawCallbacks if dcb!=deleted[i])
     
     badge.eink_busy_wait()
     

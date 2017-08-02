@@ -5,10 +5,13 @@ def exit(p):
         appglue.home()
 
 ugfx.clear(ugfx.WHITE)
-ugfx.string(0, 0, "Message here!", "PermanentMarker22", ugfx.BLACK)
-ugfx.string(0, 25, "Hello wolrd", "Roboto_Regular12", ugfx.BLACK)
-ugfx.string(0, 25+13, "Nothing here yet!", "Roboto_Regular12", ugfx.BLACK)
+ugfx.string(0, 0, "SHA2017 Badge", "PermanentMarker22", ugfx.BLACK)
+ugfx.string(0, 25, "Please join us for a short talk on how the", "Roboto_Regular12", ugfx.BLACK)
+ugfx.string(0, 25+13, "official SHA2017 badge was designed,", "Roboto_Regular12", ugfx.BLACK)
+ugfx.string(0, 25+13*2, "some nice numbers and an overview of what all", "Roboto_Regular12", ugfx.BLACK)
+ugfx.string(0, 25+13*3, "of you are doing with it.", "Roboto_Regular12", ugfx.BLACK)
 
+ugfx.string(0, 25+13*5, "The events starts now, in room 'No'!", "Roboto_Regular12", ugfx.BLACK)
 ugfx.string(0, ugfx.height()-13, "Press any key to close reminder.", "Roboto_Regular12", ugfx.BLACK)
 ugfx.set_lut(ugfx.LUT_FULL)
 ugfx.flush()

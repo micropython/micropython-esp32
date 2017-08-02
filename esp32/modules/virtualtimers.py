@@ -53,16 +53,15 @@ def pm_time():
     
 def delete(callback):
     global scheduler
-    newScheduler = []
-    for task in scheduler:
-        newScheduler.append(task)
+    
     found = False
     for i in range(0, len(scheduler)):
         if (scheduler[i]["cb"]==callback):
-            newScheduler.pop(i)
             found = True
             break
-    scheduler = newScheduler
+    
+    scheduler = tuple(task for task in scheduler if task['cb']!=callback)
+    
     return found
 
 def update(target, callback):
@@ -86,14 +85,10 @@ def activate(p):
 def stop():
     global timer
     timer.deinit()
-    
+        
 def timer_callback(tmr):
     global scheduler
-    global period
-    newScheduler = []
-    for task in scheduler:
-        newScheduler.append(task)
-    
+    global period    
     s = len(scheduler)
     for i in range(0, len(scheduler)):
         scheduler[i]["pos"] += period
@@ -105,11 +100,10 @@ def timer_callback(tmr):
                 sys.print_exception(e)
                 newTarget = -1
             if newTarget > 0:
-                newScheduler[i]["pos"] = 0
-                newScheduler[i]["target"] = newTarget
+                scheduler[i]["pos"] = 0
+                scheduler[i]["target"] = newTarget
             else:
-                try:
-                    newScheduler.pop(i)
-                except:
-                    print("CAN NOT REMOVE TASK ?!?!")
-    scheduler = newScheduler
+                scheduler[i]["pos"] = -1
+                scheduler[i]["target"] = -1
+                
+    scheduler = tuple(task for task in scheduler if task["pos"]>=0)
