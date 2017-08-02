@@ -7,17 +7,25 @@
 import time, network, badge, easydraw
 
 state = False
+failed = False
 
 def status():
     global state
     return state
 
+def failure():
+    global failed
+    return failed
+
 def force_enable():
     global state
     state = False
+    global failed
+    failed = False
     enable()
 
 def enable(showStatus=True):
+    global failed
     global state
     if not state:
         nw = network.WLAN(network.STA_IF)
@@ -36,8 +44,10 @@ def enable(showStatus=True):
                     if showStatus:
                         easydraw.msg("Error: could not connect!")
                     disable()
+                    failed = True
                     return False
             state = True
+            failed = False
             if showStatus:
                 easydraw.msg("Connected!")
     return True
@@ -45,5 +55,7 @@ def enable(showStatus=True):
 def disable():
     global state
     state = False
+    global failed
+    failed = False
     nw = network.WLAN(network.STA_IF)
     nw.active(False)

@@ -134,18 +134,26 @@ elif setupState == 1: # Second boot: Show sponsors
 elif setupState == 2: # Third boot: force OTA check
     print("[SPLASH] Third boot (force ota check)...")
     badge.nvs_set_u8('badge', 'setup.state', 3)
-    otac.available(True)
+    if not easywifi.failure():
+        otac.available(True)
 else: # Normal boot
     print("[SPLASH] Normal boot... ("+str(machine.reset_cause())+")")
     if (machine.reset_cause() != machine.DEEPSLEEP_RESET):
         print("... from reset: checking for ota update")
-        otac.available(True)
+        if not easywifi.failure():
+            otac.available(True)
 
-resc.check()        # Check resources
-spoc.show(False)    # Check sponsors
-if not services.setup(draw): # Start services
-    draw(False)
-    draw(True)
+
+if not easywifi.failure():
+    resc.check()        # Check resources
+if not easywifi.failure():
+    spoc.show(False)    # Check sponsors
+
+services.setup(draw) # Start services
+
+draw(False)
+services.force_draw()
+draw(True)
 
 easywifi.disable()
 gc.collect()
