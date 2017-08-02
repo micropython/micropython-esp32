@@ -4,7 +4,7 @@
 # License: MIT
 # Authors: Renze Nicolai <renze@rnplus.nl>
 
-import easywifi, easydraw
+import easywifi, easydraw, appglue
 
 def install():
     easydraw.msg("Installing resources...")
