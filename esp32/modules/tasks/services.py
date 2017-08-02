@@ -40,9 +40,7 @@ def setup(drawCb=None):
         except:
             print("[SERVICES] No description found for "+app)
             continue #Or skip the app
-        
-        print("DESC FOUND FOR: "+app)
-        
+                
         try:
             #Try to open the service itself
             fd = open('/lib/'+app+'/service.py')
@@ -50,9 +48,7 @@ def setup(drawCb=None):
         except:
             print("[SERVICES] No script found for "+app)
             continue #Or skip the app
-        
-        print("SCRIPT FOUND FOR: "+app)
-        
+                
         rtcRequired = False # True if RTC should be set before starting service
         loopEnabled = False # True if loop callback is requested
         drawEnabled = False # True if draw callback is requested
