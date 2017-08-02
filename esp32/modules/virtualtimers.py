@@ -4,16 +4,31 @@
 # License: MIT
 # Authors: Renze Nicolai <renze@rnplus.nl>
 
-import machine
+import machine, sys
 
 scheduler = []
 timer = machine.Timer(0)
 period = 0
 
-def new(target, callback):
+def new(target, callback, hfpm=False):
+    ''' Creates new task. Arguments: time until callback is called, callback, hide from power management '''
     global scheduler
-    item = {"pos":0, "target":target, "cb":callback}
+    item = {"pos":0, "target":target, "cb":callback, "hfpm":hfpm}
     scheduler.append(item)
+    
+def idle_time():
+    ''' Returns time until next task in ms, ignores tasks hidden from power management '''
+    global scheduler
+    idleTime = 86400000 # One day
+    for i in range(0, len(scheduler)):
+        if not scheduler[i]["hfpm"]:
+            timeUntilTaskExecution = scheduler[i]['target']-scheduler[i]['pos']
+            if timeUntilTaskExecution<idleTime:
+                idleTime = timeUntilTaskExecution
+    if idleTime == 86400000: # One day
+        idleTime = -1 # Sleep forever until wakeup
+    return idleTime
+    
     
 def delete(callback):
     global scheduler
@@ -55,7 +70,12 @@ def timer_callback(tmr):
     for i in range(0, len(scheduler)):
         scheduler[i]["pos"] += period
         if scheduler[i]["pos"] > scheduler[i]["target"]:
-            newTarget = scheduler[i]["cb"]()
+            try:
+                newTarget = scheduler[i]["cb"]()
+            except BaseException as e:
+                print("[ERROR] An error occured in a task. Task disabled.")
+                sys.print_exception(e)
+                newTarget = -1
             if newTarget > 0:
                 newScheduler[i]["pos"] = 0
                 newScheduler[i]["target"] = newTarget
