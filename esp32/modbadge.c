@@ -497,6 +497,7 @@ STATIC mp_obj_t badge_unmount_sdcard() {
 		return mp_const_none;
 	}
 
+/*
 	sdcard_mounted = false;
 
     // All done, unmount partition and disable SDMMC host peripheral
@@ -504,6 +505,8 @@ STATIC mp_obj_t badge_unmount_sdcard() {
     ESP_LOGI(TAG, "Card unmounted");
 
 	badge_power_sdcard_disable();
+*/
+	printf("Unmounting the sdcard is not yet supported.\n");
 
 	return mp_const_none;
 }
