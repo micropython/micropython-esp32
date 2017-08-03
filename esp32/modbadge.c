@@ -38,6 +38,8 @@
 
 #include "bpp_init.h"
 
+#include "badge_mpr121.h"
+
 #include "py/mperrno.h"
 #include "py/mphal.h"
 #include "py/runtime.h"
@@ -209,6 +211,35 @@ STATIC mp_obj_t badge_nvs_set_u16_(mp_obj_t _namespace, mp_obj_t _key, mp_obj_t 
   return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_3(badge_nvs_set_u16_obj, badge_nvs_set_u16_);
+
+
+// Mpr121 (badge_mpr121.h)
+#ifdef I2C_MPR121_ADDR
+#define store_dict_int(dict, field, contents) mp_obj_dict_store(dict, mp_obj_new_str(field, strlen(field), false), mp_obj_new_int(contents));
+STATIC mp_obj_t badge_mpr121_get_touch_info_(void) {
+	struct badge_mpr121_touch_info info;
+	esp_err_t err = badge_mpr121_get_touch_info(&info);
+	if (err != ESP_OK) {
+		mp_raise_OSError(MP_EIO);
+	}
+
+	mp_obj_t list_items[8];
+	int i;
+	for (i=0; i<8; i++) {
+		list_items[i] = mp_obj_new_dict(0);
+
+		mp_obj_dict_t *dict = MP_OBJ_TO_PTR(list_items[i]);
+
+		store_dict_int(dict, "data",     info.data[i]);
+		store_dict_int(dict, "baseline", info.baseline[i]);
+		store_dict_int(dict, "touch",    info.touch[i]);
+		store_dict_int(dict, "release",  info.release[i]);
+	}
+	mp_obj_t list = mp_obj_new_list(8, list_items);
+	return list;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_mpr121_get_touch_info_obj, badge_mpr121_get_touch_info_);
+#endif // I2C_MPR121_ADDR
 
 
 // E-Ink (badge_eink.h)
@@ -535,6 +566,11 @@ STATIC const mp_rom_map_elem_t badge_module_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_badge)},
 
     {MP_ROM_QSTR(MP_QSTR_init), MP_ROM_PTR(&badge_init_obj)},
+
+    // Mpr121
+#ifdef I2C_MPR121_ADDR
+    {MP_ROM_QSTR(MP_QSTR_mpr121_get_touch_info), MP_ROM_PTR(&badge_mpr121_get_touch_info_obj)},
+#endif // I2C_MPR121_ADDR
 
     // E-Ink
     {MP_ROM_QSTR(MP_QSTR_eink_init), MP_ROM_PTR(&badge_eink_init_obj)},
