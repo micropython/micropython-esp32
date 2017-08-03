@@ -1,4 +1,4 @@
-import ugfx, badge, sys, uos as os, appglue, version, easydraw, virtualtimers, tasks.powermanagement as pm, dialogs
+import ugfx, badge, sys, uos as os, appglue, version, easydraw, virtualtimers, tasks.powermanagement as pm, dialogs, time, ujson, sys
 
 # Application list
 
@@ -17,10 +17,11 @@ def populate_apps():
     except OSError:
         userApps = []
     for app in userApps:
-        title = app
-        category = ""
+        [title,category] = read_info(app)
+            
         if app=="resources":
             category = "hidden"
+
         add_app(app,title,category)
     add_app("installer","Installer","system")
     add_app("setup","Set nickname","system")
@@ -38,7 +39,7 @@ def populate_category(category="",system=True):
     currentListTitles = []
     currentListTargets = []
     for app in apps:
-        if category=="" or category==app["category"] or (system and app["category"]=="system"):
+        if (category=="" or category==app["category"] or (system and app["category"]=="system")) and (not app["category"]=="hidden"):
             currentListTitles.append(app["title"])
             currentListTargets.append(app)
             
@@ -48,7 +49,23 @@ def populate_options():
     global currentListTitles
     for title in currentListTitles:
         options.add_item(title)
-            
+
+# Read app info
+def read_info(app):
+    try:
+        install_path = get_install_path()
+        info_file = "%s/%s/app.json" % (install_path, app)
+        print("Reading "+info_file+"...")
+        fd = open(info_file)
+        information = ujson.loads(fd.read())
+        title = information["title"]
+        category = information["category"]
+        return [title,category]
+    except BaseException as e:
+        print("[ERROR] Can not read info for app "+app)
+        sys.print_exception(e)
+        return [app,""]
+     
 # Uninstaller
 
 def uninstall():
@@ -58,27 +75,28 @@ def uninstall():
     
     global currentListTitles
     global currentListTargets
-    
-    easydraw.msg("Removing "+currentListTitles[selected]+"...", "Uninstalling...",True)
-    
+        
     if currentListTargets[selected]["category"] == "system":
-        dialogs.notice("You can not uninstall system apps, sorry!","Can not uninstall '"+currentListTitles[selected]+"'")
+        #dialogs.notice("System apps can not be removed!","Can not uninstall '"+currentListTitles[selected]+"'")
+        easydraw.msg("System apps can not be removed!","Error",True)
+        time.sleep(2)
         start()
         return
     
     def perform_uninstall(ok):
+        global install_path
         if ok:
-            print("UNINSTALLING")
+            easydraw.msg("Removing "+currentListTitles[selected]+"...", "Still Uninstalling Anyway...",True)
             install_path = get_install_path()
-            for rm_file in os.listdir("%s/%s" % (install_path, selected)):
+            for rm_file in os.listdir("%s/%s" % (install_path, currentListTargets[selected]["file"])):
                 easydraw.msg("Deleting '"+rm_file+"'...")
-                os.remove("%s/%s/%s" % (install_path, selected, rm_file))
-                os.rmdir("%s/%s" % (install_path, selected))
-        else:
-            print("CANCELED")
+                os.remove("%s/%s/%s" % (install_path, currentListTargets[selected]["file"], rm_file))
+            easydraw.msg("Deleting folder...")
+            os.rmdir("%s/%s" % (install_path, currentListTargets[selected]["file"]))
+            easydraw.msg("Uninstall completed!")
         start()
 
-    uninstall = dialogs.prompt_boolean('Are you sure you want to remove %s?' % selected, cb=perform_uninstall)
+    uninstall = dialogs.prompt_boolean('Are you sure you want to remove %s?' % currentListTitles[selected], cb=perform_uninstall)
 
 # Run app
         
