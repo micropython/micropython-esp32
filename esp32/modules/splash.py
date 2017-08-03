@@ -1,5 +1,5 @@
 # File: splash.py
-# Version: 5
+# Version: 6
 # Description: Homescreen for SHA2017 badge
 # License: MIT
 # Authors: Renze Nicolai <renze@rnplus.nl>
@@ -109,7 +109,7 @@ def splash_input_init():
  
 def onSleep(idleTime):
     draw(False, True)
-    services.force_draw()
+    services.force_draw(True)
     draw(True, True)
 
 ### PROGRAM
