@@ -123,6 +123,9 @@ vDrop = badge.nvs_get_u16('splash', 'bat.volt.drop', 1000) - 1000 # mV
 splash_input_init()
 splash_about_countdown_reset()
 
+# post ota script
+import post_ota
+
 setupState = badge.nvs_get_u8('badge', 'setup.state', 0)
 if setupState == 0: #First boot
     print("[SPLASH] First boot (start setup)...")
@@ -171,5 +174,5 @@ ber.enable()
 
 print("----")
 print("WARNING: POWER MANAGEMENT ACTIVE")
-print("TO USE REPL START LAUNCHER")
+print("To use shell type 'import shell' within 5 seconds.")
 print("----")
