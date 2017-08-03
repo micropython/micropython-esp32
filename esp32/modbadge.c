@@ -32,9 +32,17 @@
 
 #include "modbadge.h"
 
+#include "esp_log.h"
+#include "esp_vfs.h"
+#include "esp_vfs_fat.h"
+
+#include "bpp_init.h"
+
 #include "py/mperrno.h"
 #include "py/mphal.h"
 #include "py/runtime.h"
+
+#define TAG "esp32/modbadge"
 
 // INIT
 
@@ -290,7 +298,7 @@ STATIC mp_obj_t badge_eink_png(mp_obj_t obj_x, mp_obj_t obj_y, mp_obj_t obj_file
 
 	if (res < 0)
 	{
-		nlr_raise(mp_obj_new_exception_msg_varg(&mp_type_ValueError, "failed to load image: res = %i", res));
+		nlr_raise(mp_obj_new_exception_msg_varg(&mp_type_ValueError, "failed to load image: res = %d", res));
 	}
 
 	return mp_const_none;
@@ -402,6 +410,125 @@ STATIC mp_obj_t badge_vibrator_activate_(mp_uint_t n_args, const mp_obj_t *args)
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(badge_vibrator_activate_obj, 1,1 ,badge_vibrator_activate_);
 #endif
 
+
+// Mounts
+static bool root_mounted = false;
+static wl_handle_t s_wl_handle = WL_INVALID_HANDLE;
+STATIC mp_obj_t badge_mount_root() {
+	// already mounted?
+	if (root_mounted)
+	{
+		return mp_const_none;
+	}
+
+	// mount the block device
+	const esp_vfs_fat_mount_config_t mount_config = {
+		.max_files              = 3,
+		.format_if_mount_failed = true,
+	};
+
+	ESP_LOGI(TAG, "mounting locfd on /");
+	esp_err_t err = esp_vfs_fat_spiflash_mount("", "locfd", &mount_config, &s_wl_handle);
+
+	if (err != ESP_OK) {
+		ESP_LOGE(TAG, "Failed to mount FATFS (0x%x)", err);
+		mp_raise_OSError(MP_EIO);
+	}
+
+	root_mounted = true;
+
+	return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_mount_root_obj, badge_mount_root);
+
+static bool sdcard_mounted = false;
+STATIC mp_obj_t badge_mount_sdcard() {
+	// already mounted?
+	if (sdcard_mounted)
+	{
+		return mp_const_none;
+	}
+
+	badge_power_sdcard_enable();
+
+	sdmmc_host_t host = SDMMC_HOST_DEFAULT();
+
+	// To use 1-line SD mode, uncomment the following line:
+	host.flags = SDMMC_HOST_FLAG_1BIT;
+
+	// This initializes the slot without card detect (CD) and write protect (WP) signals.
+	// Modify slot_config.gpio_cd and slot_config.gpio_wp if your board has these signals.
+	sdmmc_slot_config_t slot_config = SDMMC_SLOT_CONFIG_DEFAULT();
+
+	// Options for mounting the filesystem.
+	// If format_if_mount_failed is set to true, SD card will be partitioned and formatted
+	// in case when mounting fails.
+	esp_vfs_fat_sdmmc_mount_config_t mount_config = {
+		.max_files              = 3,
+		.format_if_mount_failed = false,
+	};
+
+	// Use settings defined above to initialize SD card and mount FAT filesystem.
+	// Note: esp_vfs_fat_sdmmc_mount is an all-in-one convenience function.
+	// Please check its source code and implement error recovery when developing
+	// production applications.
+	sdmmc_card_t* card;
+	esp_err_t ret = esp_vfs_fat_sdmmc_mount("/sdcard", &host, &slot_config, &mount_config, &card);
+	if (ret != ESP_OK) {
+		if (ret == ESP_FAIL) {
+			ESP_LOGE(TAG, "Failed to mount filesystem. If you want the card to be formatted, set format_if_mount_failed = true.");
+		} else {
+			ESP_LOGE(TAG, "Failed to initialize the card (%d). Make sure SD card lines have pull-up resistors in place.", ret);
+		}
+		mp_raise_OSError(MP_EIO);
+		return mp_const_none;
+	}
+
+	sdcard_mounted = true;
+
+	return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_mount_sdcard_obj, badge_mount_sdcard);
+
+STATIC mp_obj_t badge_unmount_sdcard() {
+	// not mounted?
+	if (!sdcard_mounted)
+	{
+		return mp_const_none;
+	}
+
+/*
+	sdcard_mounted = false;
+
+    // All done, unmount partition and disable SDMMC host peripheral
+    esp_vfs_fat_sdmmc_unmount();
+    ESP_LOGI(TAG, "Card unmounted");
+
+	badge_power_sdcard_disable();
+*/
+	printf("Unmounting the sdcard is not yet supported.\n");
+
+	return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_unmount_sdcard_obj, badge_unmount_sdcard);
+
+static bool bpp_mounted = false;
+STATIC mp_obj_t badge_mount_bpp() {
+	// already mounted?
+	if (bpp_mounted)
+	{
+		return mp_const_none;
+	}
+
+	bpp_mount_ropart();
+
+	bpp_mounted = true;
+
+	return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(badge_mount_bpp_obj, badge_mount_bpp);
+
+
 // Module globals
 
 STATIC const mp_rom_map_elem_t badge_module_globals_table[] = {
@@ -455,6 +582,12 @@ STATIC const mp_rom_map_elem_t badge_module_globals_table[] = {
 /*
     {MP_ROM_QSTR(MP_QSTR_display_picture), MP_ROM_PTR(&badge_display_picture_obj)},
 */
+
+	// Mounts
+    {MP_OBJ_NEW_QSTR(MP_QSTR_mount_root), (mp_obj_t)&badge_mount_root_obj},
+    {MP_OBJ_NEW_QSTR(MP_QSTR_mount_sdcard), (mp_obj_t)&badge_mount_sdcard_obj},
+    {MP_OBJ_NEW_QSTR(MP_QSTR_unmount_sdcard), (mp_obj_t)&badge_unmount_sdcard_obj},
+    {MP_OBJ_NEW_QSTR(MP_QSTR_mount_bpp), (mp_obj_t)&badge_mount_bpp_obj},
 
 };
 

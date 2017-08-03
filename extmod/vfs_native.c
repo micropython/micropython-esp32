@@ -26,9 +26,6 @@
 
 static const char *TAG = "vfs_native.c";
 
-static wl_handle_t s_wl_handle = WL_INVALID_HANDLE;
-static bool native_vfs_mounted = false;
-
 /* esp-idf doesn't seem to have a cwd; create one. */
 char cwd[MICROPY_ALLOC_PATH_MAX + 1] = { 0 };
 
@@ -391,32 +388,6 @@ STATIC mp_obj_t native_vfs_mount(mp_obj_t self_in, mp_obj_t readonly, mp_obj_t m
 	ESP_LOGD(TAG, "mount(%s, %s)",
 			flag_ro   ? "true" : "false",
 			flag_mkfs ? "true" : "false");
-
-	/* we do not support mount, but will do an initial mount on first call */
-
-	// already mounted?
-	if (native_vfs_mounted)
-	{
-		return mp_const_none;
-	}
-
-	// mount the block device
-	const esp_vfs_fat_mount_config_t mount_config = {
-		.max_files              = 3, // every open file costs 4236 bytes of heap.
-		.format_if_mount_failed = true,
-	};
-
-	ESP_LOGI(TAG, "mounting locfd on /");
-	esp_err_t err = esp_vfs_fat_spiflash_mount("", "locfd", &mount_config, &s_wl_handle);
-
-	if (err != ESP_OK) {
-		ESP_LOGE(TAG, "Failed to mount FATFS (0x%x)", err);
-		mp_raise_OSError(MP_EIO);
-	}
-
-	native_vfs_mounted = true;
-    
-    bpp_mount_ropart();
 
 	return mp_const_none;
 }
