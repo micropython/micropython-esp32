@@ -92,7 +92,7 @@ STATIC const machine_pin_obj_t machine_pin_obj[] = {
 STATIC const machine_pin_irq_obj_t machine_pin_irq_object[];
 
 void machine_pins_init(void) {
-    static bool did_install = false;
+    static bool did_install = true; // already done in badge_base.c
     if (!did_install) {
         gpio_install_isr_service(0);
         did_install = true;
