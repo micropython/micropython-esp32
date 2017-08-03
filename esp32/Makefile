@@ -162,6 +162,7 @@ SRC_C = \
 	modnetwork.c \
 	modsocket.c \
 	modesp.c \
+	modbpp.c \
 	modbadge.c \
 	modugfx.c \
 	moduhashlib.c \
