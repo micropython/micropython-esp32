@@ -215,6 +215,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_3(badge_nvs_set_u16_obj, badge_nvs_set_u16_);
 
 // Mpr121 (badge_mpr121.h)
 #ifdef I2C_MPR121_ADDR
+#define store_dict_int(dict, field, contents) mp_obj_dict_store(dict, mp_obj_new_str(field, strlen(field), false), mp_obj_new_int(contents));
 STATIC mp_obj_t badge_mpr121_get_touch_info_(void) {
 	struct badge_mpr121_touch_info info;
 	esp_err_t err = badge_mpr121_get_touch_info(&info);
@@ -225,11 +226,14 @@ STATIC mp_obj_t badge_mpr121_get_touch_info_(void) {
 	mp_obj_t list_items[8];
 	int i;
 	for (i=0; i<8; i++) {
-		list_items[i] = mp_obj_new_dict(4);
-		mp_obj_dict_store(list_items[i], MP_OBJ_NEW_QSTR(MP_QSTR_data), mp_obj_new_int(info.data[i]));
-		mp_obj_dict_store(list_items[i], MP_OBJ_NEW_QSTR(MP_QSTR_baseline), mp_obj_new_int(info.baseline[i]));
-		mp_obj_dict_store(list_items[i], MP_OBJ_NEW_QSTR(MP_QSTR_touch), mp_obj_new_int(info.touch[i]));
-		mp_obj_dict_store(list_items[i], MP_OBJ_NEW_QSTR(MP_QSTR_release), mp_obj_new_int(info.release[i]));
+		list_items[i] = mp_obj_new_dict(0);
+
+		mp_obj_dict_t *dict = MP_OBJ_TO_PTR(list_items[i]);
+
+		store_dict_int(dict, "data",     info.data[i]);
+		store_dict_int(dict, "baseline", info.baseline[i]);
+		store_dict_int(dict, "touch",    info.touch[i]);
+		store_dict_int(dict, "release",  info.release[i]);
 	}
 	mp_obj_t list = mp_obj_new_list(8, list_items);
 	return list;
