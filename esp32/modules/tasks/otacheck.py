@@ -4,7 +4,7 @@
 # License: MIT
 # Authors: Renze Nicolai <renze@rnplus.nl>
 
-import easywifi, easydraw, badge
+import easywifi, easydraw, badge, time
 
 def download_info():
     import urequests as requests
