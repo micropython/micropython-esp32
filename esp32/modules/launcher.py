@@ -4,8 +4,16 @@ import ugfx, badge, sys, uos as os, appglue, version, easydraw, virtualtimers, t
 
 apps = []
 
-def add_app(app,title,category):
+def add_app(app,information):
     global apps
+    try:
+        title = information["name"]
+    except:
+        title = app
+    try:
+        category = information["category"]
+    except:
+        category = ""
     info = {"file":app,"title":title,"category":category}
     apps.append(info)
 
@@ -17,16 +25,11 @@ def populate_apps():
     except OSError:
         userApps = []
     for app in userApps:
-        [title,category] = read_info(app)
-            
-        if app=="resources":
-            category = "hidden"
-
-        add_app(app,title,category)
-    add_app("installer","Installer","system")
-    add_app("setup","Set nickname","system")
-    add_app("update","Update apps","system")
-    add_app("ota_update","Update firmware","system")
+        add_app(app,read_metadata(app))
+    add_app("installer",{"name":"Installer", "category":"system"})
+    add_app("setup",{"name":"Set nickname", "category":"system"})
+    add_app("update",{"name":"Update apps", "category":"system"})
+    add_app("ota_update",{"name":"Update firmware", "category":"system"})
   
 # List as shown on screen
 currentListTitles = []
@@ -50,20 +53,19 @@ def populate_options():
     for title in currentListTitles:
         options.add_item(title)
 
-# Read app info
-def read_info(app):
+# Read app metadata
+def read_metadata(app):
     try:
         install_path = get_install_path()
-        info_file = "%s/%s/app.json" % (install_path, app)
+        info_file = "%s/%s/metadata.json" % (install_path, app)
         print("Reading "+info_file+"...")
         fd = open(info_file)
         information = ujson.loads(fd.read())
-        title = information["title"]
-        category = information["category"]
-        return [title,category]
+        return information
     except BaseException as e:
-        print("[ERROR] Can not read info for app "+app)
+        print("[ERROR] Can not read metadata for app "+app)
         sys.print_exception(e)
+        information = {"name":app,"description":"","category":"", "author":"","revision":0}
         return [app,""]
      
 # Uninstaller
