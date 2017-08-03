@@ -1,5 +1,5 @@
 # File: services.py
-# Version: 4
+# Version: 5
 # API version: 2
 # Description: Background services for SHA2017 badge
 # License: MIT
@@ -111,10 +111,7 @@ def setup(drawCb=None):
                 print("[SERVICES] Loop requested but not defined in service "+app)
             
         if drawEnabled and drawCb:
-            try:
-                drawCallbacks.append(srv.draw)
-            except:
-                print("[SERVICES] Draw requested but not defined in service "+app)
+            drawCallbacks.append(srv)
         
         # Add the script to the global service list
         services.append(srv)
@@ -137,9 +134,9 @@ def draw_task():
     deleted = []
 
     for i in range(0, len(drawCallbacks)):
-        cb = drawCallbacks[i]
         rqi = 0
         try:
+            cb = drawCallbacks[i].draw
             [rqi, space_used] = cb(y)
             y = y - space_used
         except BaseException as e:
@@ -155,6 +152,7 @@ def draw_task():
             deleted.append(cb)
     
     for i in range(0,len(deleted)):
+        dcb = deleted[i]
         print("[DEBUG] Deleted draw callback: ",dcb)
         drawCallbacks = list(dcb for dcb in drawCallbacks if dcb!=deleted[i])
     
@@ -177,12 +175,19 @@ def draw_task():
     drawCallback(True) # Complete draw
     return retVal
 
-def force_draw():
+def force_draw(goingToSleep=False):
     global drawCallbacks
     if len(drawCallbacks)>0:
         y = ugfx.height()
-        for cb in drawCallbacks:
+        for srv in drawCallbacks:
             try:
+                if not goingToSleep:
+                    cb = srv.draw
+                else:
+                    try:
+                        cb = srv.draw_going_to_sleep
+                    except:
+                        cb = srv.draw
                 [rqi, space_used] = cb(y)
                 y = y - space_used
             except BaseException as e:
