@@ -1,12 +1,10 @@
 # File: powermanagement.py
-# Version: 1
+# Version: 2
 # Description: Power management task, puts the badge to sleep when idle
 # License: MIT
 # Authors: Renze Nicolai <renze@rnplus.nl>
 
 import virtualtimers, deepsleep, badge, sys
-
-
 
 requestedStandbyTime = 0
 onSleepCallback = None
@@ -54,3 +52,8 @@ def callback(cb):
     ''' Set a callback which is run before sleeping '''
     global onSleepCallback
     onSleepCallback = cb
+    
+def set_timeout(t):
+    ''' Set timeout '''
+    global userResponseTime
+    userResponseTime = t
