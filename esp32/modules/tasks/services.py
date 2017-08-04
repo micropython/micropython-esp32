@@ -158,15 +158,15 @@ def draw_task():
     
     badge.eink_busy_wait()
     
-    if requestedInterval>=99999999:
-        print("[SERVICES] No draw interval returned.")
-        requestedInterval = -1
-        
     if requestedInterval<1000:
         #Draw at most once a second
         print("[SERVICES] Can't draw more than once a second!")
         requestedInterval = 1000
     
+    if requestedInterval>=99999999:
+        print("[SERVICES] No draw interval returned.")
+        requestedInterval = -1
+
     retVal = 0
     
     if len(drawCallbacks)>0 and requestedInterval>=0:
