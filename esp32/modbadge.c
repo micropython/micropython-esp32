@@ -339,6 +339,33 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_3(badge_eink_png_obj, badge_eink_png);
 /* END OF PNG READER TEST */
 
 
+/* Raw frame display */
+STATIC mp_obj_t badge_eink_display_raw(mp_obj_t obj_img, mp_obj_t obj_flags)
+{
+	bool is_bytes = MP_OBJ_IS_TYPE(obj_img, &mp_type_bytes);
+
+	if (!is_bytes) {
+		mp_raise_msg(&mp_type_AttributeError, "First argument should be a bytestring");
+	}
+
+	// convert the input buffer into a byte array
+	mp_uint_t len;
+	uint8_t *buffer = (uint8_t *)mp_obj_str_get_data(obj_img, &len);
+
+	int flags = mp_obj_get_int(obj_flags);
+	int expect_len = (flags & DISPLAY_FLAG_8BITPIXEL) ? BADGE_EINK_WIDTH*BADGE_EINK_HEIGHT : BADGE_EINK_WIDTH*BADGE_EINK_HEIGHT/8;
+	if (len != expect_len) {
+		mp_raise_msg(&mp_type_AttributeError, "First argument has wrong length");
+	}
+
+	// display the image directly
+	badge_eink_display(buffer, flags);
+
+	return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_2(badge_eink_display_raw_obj, badge_eink_display_raw);
+
+
 // Power (badge_power.h)
 
 STATIC mp_obj_t badge_power_init_() {
@@ -614,6 +641,7 @@ STATIC const mp_rom_map_elem_t badge_module_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR_eink_busy_wait), MP_ROM_PTR(&badge_eink_busy_wait_obj)},
 
     {MP_ROM_QSTR(MP_QSTR_eink_png), MP_ROM_PTR(&badge_eink_png_obj)},
+    {MP_ROM_QSTR(MP_QSTR_eink_display_raw), MP_ROM_PTR(&badge_eink_display_raw_obj)},
 
 /*
     {MP_ROM_QSTR(MP_QSTR_display_picture), MP_ROM_PTR(&badge_display_picture_obj)},
