@@ -137,7 +137,10 @@ def draw_task():
         rqi = 0
         try:
             cb = drawCallbacks[i].draw
-            [rqi, space_used] = cb(y)
+	    try:
+		[rqi, space_used] = cb(y, False)
+	    except:
+		[rqi, space_used] = cb(y)
             y = y - space_used
         except BaseException as e:
             print("[SERVICES] Exception in service draw:")
@@ -188,7 +191,10 @@ def force_draw(goingToSleep=False):
                         cb = srv.draw_going_to_sleep
                     except:
                         cb = srv.draw
-                [rqi, space_used] = cb(y)
+		try:
+		    [rqi, space_used] = cb(y, True)
+		except:
+		    [rqi, space_used] = cb(y)
                 y = y - space_used
             except BaseException as e:
                 print("[SERVICES] Exception in service draw: ")
