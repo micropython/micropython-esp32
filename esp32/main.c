@@ -57,7 +57,6 @@
 #include "badge_first_run.h"
 #include <badge_input.h>
 #include <badge.h>
-#include "powerdown.h"
 
 // MicroPython runs as a task under FreeRTOS
 #define MP_TASK_PRIORITY        (ESP_TASK_PRIO_MIN + 1)
@@ -141,36 +140,6 @@ void do_bpp_bgnd() {
     esp_restart();
 }
 
-//PowerDownManager callback. If all objects that call into the powerdown manager are OK to sleep,
-//it will calculate the time it can sleep and the mode to wake up in. 
-void do_deep_sleep(int delayMs, void *arg, PowerMode mode) {
-	PowerMode currMode=(PowerMode)arg;
-	delayMs-=8000; //to compensate for startup delay
-	if (delayMs<0) delayMs=0;
-	if (currMode==mode && delayMs<5000) return; //not worth sleeping
-
-	printf("Sleeping for %d ms...\n", delayMs);
-
-	//Shutdown anything running
-	if (currMode==POWER_MODE_BPP) {
-		bpp_shutdown();
-	}
-
-	//Select wake mode
-	uint8_t rtcmodebit=0;
-	if (mode==POWER_MODE_BPP) rtcmodebit=2;
-	if (mode==POWER_MODE_UPY) rtcmodebit=0;
-	esp_rtcmem_write(0, rtcmodebit);
-	esp_rtcmem_write(1, ~rtcmodebit);
-
-	// TODO the wake on touch should be in badge_input_init
-	esp_deep_sleep_enable_ext0_wakeup(GPIO_NUM_25 , 0);
-	// FIXME don't use hardcoded GPIO_NUM_25
-	esp_deep_sleep_enable_timer_wakeup(delayMs*1000);
-	esp_deep_sleep_start();
-}
-
-
 void app_main(void) {
 	badge_check_first_run();
 	badge_base_init();
@@ -191,22 +160,20 @@ void app_main(void) {
 				badge_init();
 				if (badge_input_button_state == 0) {
 					printf("Starting bpp.\n");
-					powerDownMgrInit(do_deep_sleep, (void*)POWER_MODE_BPP, POWER_MODE_BPP, true);
 					do_bpp_bgnd();
 				} else {
-					printf("Touch wake after bpp.\n");
-					powerDownMgrInit(do_deep_sleep, (void*)POWER_MODE_UPY, POWER_MODE_UPY, false);
-					xTaskCreateStaticPinnedToCore(mp_task, "mp_task", MP_TASK_STACK_LEN, NULL, MP_TASK_PRIORITY,
-					&mp_task_stack[0], &mp_task_tcb, 0);
-				}
+          printf("Touch wake after bpp.\n");
+      		xTaskCreateStaticPinnedToCore(mp_task, "mp_task", MP_TASK_STACK_LEN, NULL, MP_TASK_PRIORITY,
+      				&mp_task_stack[0], &mp_task_tcb, 0);
+      	}
 				break;
 #endif
+
 			case 3:
 				badge_first_run();
 		}
 
 	} else {
-		powerDownMgrInit(do_deep_sleep, (void*)POWER_MODE_UPY, POWER_MODE_UPY, false);
 		xTaskCreateStaticPinnedToCore(mp_task, "mp_task", MP_TASK_STACK_LEN, NULL, MP_TASK_PRIORITY,
 				&mp_task_stack[0], &mp_task_tcb, 0);
 	}

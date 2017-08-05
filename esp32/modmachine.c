@@ -45,7 +45,6 @@
 #include "extmod/machine_spi.h"
 #include "modmachine.h"
 #include "machine_rtc.h"
-#include "powerdown.h"
 
 #if MICROPY_PY_MACHINE
 
@@ -90,9 +89,25 @@ STATIC mp_obj_t machine_deepsleep(size_t n_args, const mp_obj_t *pos_args, mp_ma
 
     mp_int_t expiry = args[ARG_sleep_ms].u_int;
 
-    //Let powerdown manager handle the actual power down stuff
-    powerCanSleepFor((int)machine_init, expiry);
+    if (expiry != 0) {
+        esp_deep_sleep_enable_timer_wakeup(expiry * 1000);
+    }
 
+    if (machine_rtc_config.ext0_pin != -1) {
+        esp_deep_sleep_enable_ext0_wakeup(machine_rtc_config.ext0_pin, machine_rtc_config.ext0_level ? 1 : 0);
+    }
+
+    if (machine_rtc_config.ext1_pins != 0) {
+        esp_deep_sleep_enable_ext1_wakeup(
+            machine_rtc_config.ext1_pins,
+            machine_rtc_config.ext1_level ? ESP_EXT1_WAKEUP_ANY_HIGH : ESP_EXT1_WAKEUP_ALL_LOW);
+    }
+
+    if (machine_rtc_config.wake_on_touch) {
+        esp_deep_sleep_enable_touchpad_wakeup();
+    }
+
+    esp_deep_sleep_start();
     return mp_const_none;
 }
 
