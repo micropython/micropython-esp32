@@ -40,8 +40,8 @@ def nickname(y = 25, font = "PermanentMarker36", color = ugfx.BLACK):
     ugfx.string_box(0,y,296,38, nick, font, color, ugfx.justifyCenter)
 
 def battery(vUsb, vBatt, charging):
-    vMin = badge.nvs_get_u16('batt', 'vmin', 3700) # mV
-    vMax = badge.nvs_get_u16('batt', 'vmax', 4200) # mV
+    vMin = badge.nvs_get_u16('batt', 'vmin', 3500) # mV
+    vMax = badge.nvs_get_u16('batt', 'vmax', 4100) # mV
     if charging and vUsb>4000:
         try:
             badge.eink_png(0,0,'/lib/resources/chrg.png')
