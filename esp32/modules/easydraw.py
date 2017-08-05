@@ -36,7 +36,7 @@ def msg(message, title = 'Still Loading Anyway...', reset = False):
     ugfx.flush(ugfx.LUT_FASTER)
 
 def nickname(y = 25, font = "PermanentMarker36", color = ugfx.BLACK):
-    nick = badge.nvs_get_str("owner", "name", 'Jan de Boer')
+    nick = badge.nvs_get_str("owner", "name", 'Henk de Vries')
     ugfx.string_box(0,y,296,38, nick, font, color, ugfx.justifyCenter)
 
 def battery(vUsb, vBatt, charging):
