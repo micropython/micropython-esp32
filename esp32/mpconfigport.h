@@ -177,6 +177,7 @@ extern const struct _mp_obj_module_t mp_module_usocket;
 extern const struct _mp_obj_module_t mp_module_machine;
 extern const struct _mp_obj_module_t mp_module_network;
 extern const struct _mp_obj_module_t badge_module;
+extern const struct _mp_obj_module_t bpp_module;
 extern const struct _mp_obj_module_t ugfx_module;
 extern const struct _mp_obj_module_t mp_module_onewire;
 
@@ -188,6 +189,7 @@ extern const struct _mp_obj_module_t mp_module_onewire;
     { MP_OBJ_NEW_QSTR(MP_QSTR_machine), (mp_obj_t)&mp_module_machine }, \
     { MP_OBJ_NEW_QSTR(MP_QSTR_network), (mp_obj_t)&mp_module_network }, \
     { MP_OBJ_NEW_QSTR(MP_QSTR_badge), (mp_obj_t)&badge_module }, \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_bpp), (mp_obj_t)&bpp_module }, \
     { MP_OBJ_NEW_QSTR(MP_QSTR_ugfx), (mp_obj_t)&ugfx_module }, \
     { MP_OBJ_NEW_QSTR(MP_QSTR__onewire), (mp_obj_t)&mp_module_onewire }, \
 
