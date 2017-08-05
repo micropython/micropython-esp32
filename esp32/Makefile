@@ -735,6 +735,7 @@ deploy: $(BUILD)/firmware.bin
 
 flash: $(BUILD)/firmware.bin
 	$(ECHO) "Writing $^ to the board"
+	$(Q)$(ESPTOOL) --port $(PORT) --baud $(BAUD) erase_region 0xd000 0x2000
 	$(Q)$(ESPTOOL) --port $(PORT) --baud $(BAUD) write_flash 0x10000 build/application.bin
 
 erase:
