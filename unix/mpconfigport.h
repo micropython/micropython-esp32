@@ -26,6 +26,7 @@
 
 // options to control how Micro Python is built
 
+#define MICROPY_ENABLE_SCHEDULER            (1)
 #define MICROPY_ALLOC_PATH_MAX      (PATH_MAX)
 #define MICROPY_PERSISTENT_CODE_LOAD (1)
 #if !defined(MICROPY_EMIT_X64) && defined(__x86_64__)
@@ -83,6 +84,9 @@
 #define MICROPY_PY_BUILTINS_NOTIMPLEMENTED (1)
 #define MICROPY_PY_BUILTINS_INPUT   (1)
 #define MICROPY_PY_BUILTINS_POW3    (1)
+#define MICROPY_PY_BUILTINS_HELP    (1)
+#define MICROPY_PY_BUILTINS_HELP_TEXT      esp32_help_text
+#define MICROPY_PY_BUILTINS_HELP_MODULES   (1)
 #define MICROPY_PY_MICROPYTHON_MEM_INFO (1)
 #define MICROPY_PY_ALL_SPECIAL_METHODS (1)
 #define MICROPY_PY_ARRAY_SLICE_ASSIGN (1)
@@ -126,6 +130,7 @@
 #define MICROPY_PY_UBINASCII        (1)
 #define MICROPY_PY_UBINASCII_CRC32  (1)
 #define MICROPY_PY_URANDOM          (1)
+#define MICROPY_PY_URANDOM_EXTRA_FUNCS (1)
 #ifndef MICROPY_PY_USELECT_POSIX
 #define MICROPY_PY_USELECT_POSIX    (1)
 #endif
@@ -171,6 +176,9 @@ extern const struct _mp_obj_module_t mp_module_termios;
 extern const struct _mp_obj_module_t mp_module_socket;
 extern const struct _mp_obj_module_t mp_module_ffi;
 extern const struct _mp_obj_module_t mp_module_jni;
+extern const struct _mp_obj_module_t mock_esp_network_module;
+extern const struct _mp_obj_module_t mock_badge_module;
+extern const struct _mp_obj_module_t ugfx_module;
 
 #if MICROPY_PY_UOS_VFS
 #define MICROPY_PY_UOS_VFS_DEF { MP_ROM_QSTR(MP_QSTR_uos_vfs), MP_ROM_PTR(&mp_module_uos_vfs) },
@@ -218,6 +226,28 @@ extern const struct _mp_obj_module_t mp_module_jni;
     MICROPY_PY_UOS_VFS_DEF \
     MICROPY_PY_USELECT_DEF \
     MICROPY_PY_TERMIOS_DEF \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_ugfx), (mp_obj_t)&ugfx_module }, \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_network), (mp_obj_t)&mock_esp_network_module }, \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_badge), (mp_obj_t)&mock_badge_module }, \
+
+#define MICROPY_MODULE_WEAK_LINKS (1)
+#define MICROPY_PORT_BUILTIN_MODULE_WEAK_LINKS \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_binascii), (mp_obj_t)&mp_module_ubinascii }, \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_collections), (mp_obj_t)&mp_module_collections }, \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_errno), (mp_obj_t)&mp_module_uerrno }, \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_hashlib), (mp_obj_t)&mp_module_uhashlib }, \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_heapq), (mp_obj_t)&mp_module_uheapq }, \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_io), (mp_obj_t)&mp_module_io }, \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_json), (mp_obj_t)&mp_module_ujson }, \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_os), (mp_obj_t)&mp_module_os }, \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_random), (mp_obj_t)&mp_module_urandom }, \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_re), (mp_obj_t)&mp_module_ure }, \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_select), (mp_obj_t)&mp_module_uselect }, \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_socket), (mp_obj_t)&mp_module_socket }, \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_ssl), (mp_obj_t)&mp_module_ussl }, \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_struct), (mp_obj_t)&mp_module_ustruct }, \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_time), (mp_obj_t)&mp_module_time }, \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_zlib), (mp_obj_t)&mp_module_uzlib }, \
 
 // type definitions for the specific machine
 

@@ -53,9 +53,11 @@
 #define MICROPY_ENABLE_SCHEDULER            (1)
 #define MICROPY_SCHEDULER_DEPTH             (8)
 #define MICROPY_VFS                         (1)
-#define MICROPY_VFS_FAT                     (1)
+//#define MICROPY_VFS_FAT                     (1)
+#define MICROPY_VFS_NATIVE                  (1)
 
 // control over Python builtins
+#define MICROPY_PY_BUILTINS_INPUT           (1)
 #define MICROPY_PY_FUNCTION_ATTRS           (1)
 #define MICROPY_PY_STR_BYTES_CMP_WARN       (1)
 #define MICROPY_PY_BUILTINS_STR_UNICODE     (1)
@@ -105,7 +107,7 @@
 #define MICROPY_PY_SYS_MODULES              (1)
 #define MICROPY_PY_SYS_EXIT                 (1)
 #define MICROPY_PY_SYS_STDFILES             (1)
-#define MICROPY_PY_SYS_STDIO_BUFFER         (1)
+#define MICROPY_PY_SYS_STDIO_BUFFER         (0)
 #define MICROPY_PY_UERRNO                   (1)
 #define MICROPY_PY_USELECT                  (1)
 #define MICROPY_PY_UTIME_MP_HAL             (1)
@@ -146,8 +148,17 @@
 #define MICROPY_FATFS_RPATH                 (2)
 #define MICROPY_FATFS_MAX_SS                (4096)
 #define MICROPY_FATFS_LFN_CODE_PAGE         (437) /* 1=SFN/ANSI 437=LFN/U.S.(OEM) */
-#define mp_type_fileio                      fatfs_type_fileio
-#define mp_type_textio                      fatfs_type_textio
+#if defined(MICROPY_VFS_FAT)
+ #define mp_type_fileio                      fatfs_type_fileio
+ #define mp_type_textio                      fatfs_type_textio
+#elif defined(MICROPY_VFS_NATIVE)
+ #define mp_type_fileio                      nativefs_type_fileio
+ #define mp_type_textio                      nativefs_type_textio
+#endif
+
+// sdcard using ESP32 sdmmc driver configuration
+#define MICROPY_SDMMC_USE_DRIVER            (1)
+#define MICROPY_SDMMC_SHOW_INFO             (1)
 
 // use vfs's functions for import stat and builtin open
 #define mp_import_stat mp_vfs_import_stat
@@ -166,6 +177,9 @@ extern const struct _mp_obj_module_t uos_module;
 extern const struct _mp_obj_module_t mp_module_usocket;
 extern const struct _mp_obj_module_t mp_module_machine;
 extern const struct _mp_obj_module_t mp_module_network;
+extern const struct _mp_obj_module_t badge_module;
+extern const struct _mp_obj_module_t bpp_module;
+extern const struct _mp_obj_module_t ugfx_module;
 extern const struct _mp_obj_module_t mp_module_onewire;
 
 #define MICROPY_PORT_BUILTIN_MODULES \
@@ -175,6 +189,9 @@ extern const struct _mp_obj_module_t mp_module_onewire;
     { MP_OBJ_NEW_QSTR(MP_QSTR_usocket), (mp_obj_t)&mp_module_usocket }, \
     { MP_OBJ_NEW_QSTR(MP_QSTR_machine), (mp_obj_t)&mp_module_machine }, \
     { MP_OBJ_NEW_QSTR(MP_QSTR_network), (mp_obj_t)&mp_module_network }, \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_badge), (mp_obj_t)&badge_module }, \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_bpp), (mp_obj_t)&bpp_module }, \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_ugfx), (mp_obj_t)&ugfx_module }, \
     { MP_OBJ_NEW_QSTR(MP_QSTR__onewire), (mp_obj_t)&mp_module_onewire }, \
 
 #define MICROPY_PORT_BUILTIN_MODULE_WEAK_LINKS \
@@ -243,6 +260,6 @@ typedef long mp_off_t;
 
 // board specifics
 
-#define MICROPY_HW_BOARD_NAME "ESP32 module"
+#define MICROPY_HW_BOARD_NAME "SHA2017-Badge"
 #define MICROPY_HW_MCU_NAME "ESP32"
 #define MICROPY_PY_SYS_PLATFORM "esp32"

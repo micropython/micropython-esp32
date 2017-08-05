@@ -23,13 +23,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+#define _GNU_SOURCE
 
 #include "py/mpconfig.h"
 #if MICROPY_PY_USSL && MICROPY_SSL_MBEDTLS
 
 #include <stdio.h>
 #include <string.h>
-#include <errno.h> // needed because mp_is_nonblocking_error uses system error codes
+#include <errno.h>
+
+#include <esp_log.h>
+
 
 #include "py/nlr.h"
 #include "py/runtime.h"
@@ -44,6 +48,11 @@
 #include "mbedtls/entropy.h"
 #include "mbedtls/ctr_drbg.h"
 #include "mbedtls/debug.h"
+#include "mbedtls/error.h"
+
+#include "wildcard_sha2017_org.h"
+
+#define TAG "modussl_mbedtls.c"
 
 typedef struct _mp_obj_ssl_socket_t {
     mp_obj_base_t base;
@@ -70,14 +79,9 @@ static void mbedtls_debug(void *ctx, int level, const char *file, int line, cons
     printf("DBG:%s:%04d: %s\n", file, line, str);
 }
 
-// TODO: FIXME!
-int null_entropy_func(void *data, unsigned char *output, size_t len) {
-    // enjoy random bytes
-    return 0;
-}
-
 int _mbedtls_ssl_send(void *ctx, const byte *buf, size_t len) {
-    mp_obj_t sock = *(mp_obj_t*)ctx;
+    mp_obj_ssl_socket_t *o = (mp_obj_ssl_socket_t*)ctx;
+    mp_obj_t sock = o->sock;
 
     const mp_stream_p_t *sock_stream = mp_get_stream_raise(sock, MP_STREAM_OP_WRITE);
     int err;
@@ -87,29 +91,36 @@ int _mbedtls_ssl_send(void *ctx, const byte *buf, size_t len) {
         if (mp_is_nonblocking_error(err)) {
             return MBEDTLS_ERR_SSL_WANT_WRITE;
         }
+
+        char errstr[256];
+        mbedtls_strerror(err, errstr, sizeof(errstr));
+        ESP_LOGW(TAG, "sock_stream->write(): error %d: %s", -err, errstr);
+
         return -err;
-    } else {
-        return out_sz;
     }
+    return out_sz;
 }
 
 int _mbedtls_ssl_recv(void *ctx, byte *buf, size_t len) {
-    mp_obj_t sock = *(mp_obj_t*)ctx;
+    mp_obj_ssl_socket_t *o = (mp_obj_ssl_socket_t*)ctx;
+    mp_obj_t sock = o->sock;
 
     const mp_stream_p_t *sock_stream = mp_get_stream_raise(sock, MP_STREAM_OP_READ);
     int err;
-
     int out_sz = sock_stream->read(sock, buf, len, &err);
     if (out_sz == MP_STREAM_ERROR) {
         if (mp_is_nonblocking_error(err)) {
             return MBEDTLS_ERR_SSL_WANT_READ;
         }
-        return -err;
-    } else {
-        return out_sz;
-    }
-}
 
+        char errstr[256];
+        mbedtls_strerror(err, errstr, sizeof(errstr));
+        ESP_LOGW(TAG, "sock_stream->read(): error %d: %s", -err, errstr);
+
+        return -err;
+    }
+    return out_sz;
+}
 
 STATIC mp_obj_ssl_socket_t *socket_new(mp_obj_t sock, struct ssl_args *args) {
     mp_obj_ssl_socket_t *o = m_new_obj(mp_obj_ssl_socket_t);
@@ -126,11 +137,36 @@ STATIC mp_obj_ssl_socket_t *socket_new(mp_obj_t sock, struct ssl_args *args) {
     mbedtls_debug_set_threshold(0);
 
     mbedtls_entropy_init(&o->entropy);
-    const byte seed[] = "upy";
-    ret = mbedtls_ctr_drbg_seed(&o->ctr_drbg, null_entropy_func/*mbedtls_entropy_func*/, &o->entropy, seed, sizeof(seed));
+    ret = mbedtls_ctr_drbg_seed(&o->ctr_drbg, mbedtls_entropy_func, &o->entropy, NULL, 0);
     if (ret != 0) {
-        printf("ret=%d\n", ret);
-        assert(0);
+      char errstr[256];
+      mbedtls_strerror(ret, errstr, sizeof(errstr));
+      ESP_LOGW(TAG, "mbedtls_ctr_drbg_seed(): error %d: %s", -ret, errstr);
+
+      mp_raise_OSError(MP_EIO);
+    }
+
+    bool sha2017_subdomain = false;
+    if (args->server_hostname.u_obj != mp_const_none) {
+      const char *sni = mp_obj_str_get_str(args->server_hostname.u_obj);
+      char *ptr;
+      sha2017_subdomain = ((ptr = strcasestr(sni, ".sha2017.org")) != NULL && ptr[12] == 0);
+      if (sha2017_subdomain) {
+        printf("Validating certificate for: %s\n", sni);
+      } else {
+        printf("Warning: %s SSL certificate is not validated\n", sni);
+      }
+    }
+
+    if (sha2017_subdomain) {
+        ret = mbedtls_x509_crt_parse_der(&o->cacert, wildcard_sha2017_org, 856);
+        if(ret < 0) {
+            char errstr[256];
+            mbedtls_strerror(ret, errstr, sizeof(errstr));
+            ESP_LOGW(TAG, "mbedtls_x509_crt_parse_der(): error %d: %s", -ret, errstr);
+
+            mp_raise_OSError(MP_EIO);
+        }
     }
 
     ret = mbedtls_ssl_config_defaults(&o->conf,
@@ -138,51 +174,94 @@ STATIC mp_obj_ssl_socket_t *socket_new(mp_obj_t sock, struct ssl_args *args) {
                     MBEDTLS_SSL_TRANSPORT_STREAM,
                     MBEDTLS_SSL_PRESET_DEFAULT);
     if (ret != 0) {
-        assert(0);
+      char errstr[256];
+      mbedtls_strerror(ret, errstr, sizeof(errstr));
+      ESP_LOGW(TAG, "mbedtls_ssl_config_defaults(): error %d: %s", -ret, errstr);
+
+      mp_raise_OSError(MP_EIO);
     }
 
-    mbedtls_ssl_conf_authmode(&o->conf, MBEDTLS_SSL_VERIFY_NONE);
+    if (sha2017_subdomain) {
+      mbedtls_ssl_conf_authmode(&o->conf, MBEDTLS_SSL_VERIFY_REQUIRED);
+      mbedtls_ssl_conf_ca_chain(&o->conf, &o->cacert, NULL);
+    } else {
+      mbedtls_ssl_conf_authmode(&o->conf, MBEDTLS_SSL_VERIFY_NONE);
+    }
     mbedtls_ssl_conf_rng(&o->conf, mbedtls_ctr_drbg_random, &o->ctr_drbg);
     mbedtls_ssl_conf_dbg(&o->conf, mbedtls_debug, NULL);
 
     ret = mbedtls_ssl_setup(&o->ssl, &o->conf);
     if (ret != 0) {
-        assert(0);
+      char errstr[256];
+      mbedtls_strerror(ret, errstr, sizeof(errstr));
+      ESP_LOGW(TAG, "mbedtls_ssl_setup(): error %d: %s", -ret, errstr);
+
+      mp_raise_OSError(MP_EIO);
     }
 
     if (args->server_hostname.u_obj != mp_const_none) {
         const char *sni = mp_obj_str_get_str(args->server_hostname.u_obj);
         ret = mbedtls_ssl_set_hostname(&o->ssl, sni);
         if (ret != 0) {
-            assert(0);
+            char errstr[256];
+            mbedtls_strerror(ret, errstr, sizeof(errstr));
+            ESP_LOGW(TAG, "mbedtls_ssl_set_hostname(): error %d: %s", -ret, errstr);
+
+            mp_raise_OSError(MP_EIO);
         }
     }
 
     o->sock = sock;
-    mbedtls_ssl_set_bio(&o->ssl, &o->sock, _mbedtls_ssl_send, _mbedtls_ssl_recv, NULL);
+
+    mbedtls_ssl_set_bio(&o->ssl, o, _mbedtls_ssl_send, _mbedtls_ssl_recv, NULL);
 
     if (args->key.u_obj != MP_OBJ_NULL) {
         size_t key_len;
         const byte *key = (const byte*)mp_obj_str_get_data(args->key.u_obj, &key_len);
         // len should include terminating null
         ret = mbedtls_pk_parse_key(&o->pkey, key, key_len + 1, NULL, 0);
-        assert(ret == 0);
+        if (ret != 0) {
+            char errstr[256];
+            mbedtls_strerror(ret, errstr, sizeof(errstr));
+            ESP_LOGW(TAG, "mbedtls_pk_parse_key(): error %d: %s", -ret, errstr);
+
+            mp_raise_OSError(MP_EIO);
+        }
 
         size_t cert_len;
         const byte *cert = (const byte*)mp_obj_str_get_data(args->cert.u_obj, &cert_len);
         // len should include terminating null
         ret = mbedtls_x509_crt_parse(&o->cert, cert, cert_len + 1);
-        assert(ret == 0);
+        if (ret != 0) {
+            char errstr[256];
+            mbedtls_strerror(ret, errstr, sizeof(errstr));
+            ESP_LOGW(TAG, "mbedtls_x509_crt_parse(): error %d: %s", -ret, errstr);
+
+            mp_raise_OSError(MP_EIO);
+        }
 
         ret = mbedtls_ssl_conf_own_cert(&o->conf, &o->cert, &o->pkey);
-        assert(ret == 0);
+        if (ret != 0) {
+            char errstr[256];
+            mbedtls_strerror(ret, errstr, sizeof(errstr));
+            ESP_LOGW(TAG, "mbedtls_ssl_conf_own_cert(): error %d: %s", -ret, errstr);
+
+            mp_raise_OSError(MP_EIO);
+        }
     }
 
-    while ((ret = mbedtls_ssl_handshake(&o->ssl)) != 0) {
-        if (ret != MBEDTLS_ERR_SSL_WANT_READ && ret != MBEDTLS_ERR_SSL_WANT_WRITE) {
-            //assert(0);
-            printf("mbedtls_ssl_handshake error: -%x\n", -ret);
-            mp_raise_OSError(MP_EIO);
+    if (args->server_side.u_bool) {
+        ESP_LOGW(TAG, "args->server_side.u_bool set");
+        mp_raise_OSError(MP_EIO);
+    } else {
+        while ((ret = mbedtls_ssl_handshake(&o->ssl)) != 0) {
+            if (ret != MBEDTLS_ERR_SSL_WANT_READ && ret != MBEDTLS_ERR_SSL_WANT_WRITE) {
+                char errstr[256];
+                mbedtls_strerror(ret, errstr, sizeof(errstr));
+                ESP_LOGW(TAG, "mbedtls_ssl_handshake(): error %d: %s", -ret, errstr);
+
+                mp_raise_OSError(MP_EIO);
+            }
         }
     }
 
@@ -203,6 +282,12 @@ STATIC mp_uint_t socket_read(mp_obj_t o_in, void *buf, mp_uint_t size, int *errc
         // end of stream
         return 0;
     }
+
+    if (ret == MBEDTLS_ERR_SSL_WANT_READ) {
+        *errcode = EWOULDBLOCK;
+        return 0;
+    }
+
     if (ret >= 0) {
         return ret;
     }
@@ -220,6 +305,7 @@ STATIC mp_uint_t socket_write(mp_obj_t o_in, const void *buf, mp_uint_t size, in
     if (ret >= 0) {
         return ret;
     }
+
     if (ret == MBEDTLS_ERR_SSL_WANT_WRITE) {
         ret = MP_EWOULDBLOCK;
     }
@@ -293,7 +379,7 @@ STATIC mp_obj_t mod_ssl_wrap_socket(size_t n_args, const mp_obj_t *pos_args, mp_
 
     struct ssl_args args;
     mp_arg_parse_all(n_args - 1, pos_args + 1, kw_args,
-        MP_ARRAY_SIZE(allowed_args), allowed_args, (mp_arg_val_t*)&args);
+                     MP_ARRAY_SIZE(allowed_args), allowed_args, (mp_arg_val_t*)&args);
 
     return MP_OBJ_FROM_PTR(socket_new(sock, &args));
 }

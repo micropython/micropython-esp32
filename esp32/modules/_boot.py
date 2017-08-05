@@ -1,10 +1,9 @@
-import gc
-import uos
-from flashbdev import bdev
+import badge, gc, uos
 
 try:
-    if bdev:
-        uos.mount(bdev, '/')
+    badge.mount_root()
+    uos.mount(uos.VfsNative(None), '/')
+    open("/boot.py", "r")
 except OSError:
     import inisetup
     vfs = inisetup.setup()

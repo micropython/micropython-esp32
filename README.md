@@ -1,3 +1,12 @@
+SHA2017 Badge MicroPython
+=========================
+
+NOTE: This repository is part of the [SHA2017Badge Firmware](https://github.com/SHA2017-badge/Firmware) and will probably not work stand-alone as-is.
+
+For a clean repository please refer to [micropython/micropython-esp32](https://github.com/micropython/micropython-esp32)..
+
+---
+
 [![Build Status](https://travis-ci.org/micropython/micropython.png?branch=master)](https://travis-ci.org/micropython/micropython) [![Coverage Status](https://coveralls.io/repos/micropython/micropython/badge.png?branch=master)](https://coveralls.io/r/micropython/micropython?branch=master)
 
 The MicroPython project
