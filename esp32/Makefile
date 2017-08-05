@@ -732,6 +732,10 @@ deploy: $(BUILD)/firmware.bin
 	$(ECHO) "Writing $^ to the board"
 	$(Q)$(ESPTOOL) --chip esp32 --port $(PORT) --baud $(BAUD) write_flash -z --flash_mode $(FLASH_MODE) --flash_freq $(FLASH_FREQ) 0x1000 $^
 
+flash: $(BUILD)/firmware.bin
+	$(ECHO) "Writing $^ to the board"
+	$(Q)$(ESPTOOL) --port $(PORT) --baud $(BAUD) write_flash 0x10000 build/application.bin
+
 erase:
 	$(ECHO) "Erasing flash"
 	$(Q)$(ESPTOOL) --chip esp32 --port $(PORT) --baud $(BAUD) erase_flash
