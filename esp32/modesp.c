@@ -49,6 +49,21 @@
 #include "sdmmc_cmd.h"
 #endif
 
+/* esp.temperature_sens_read() */
+extern int temprature_sens_read();
+STATIC mp_obj_t esp_temperature_sens_read() {
+  return mp_obj_new_int_from_uint(temprature_sens_read());
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(esp_temperature_sens_read_obj, esp_temperature_sens_read);
+
+/* esp.hall_sens_read() */
+extern int hall_sens_read();
+STATIC mp_obj_t esp_hall_sens_read() {
+  return mp_obj_new_int_from_uint(hall_sens_read());
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(esp_hall_sens_read_obj, esp_hall_sens_read);
+
+
 STATIC wl_handle_t fs_handle = WL_INVALID_HANDLE;
 STATIC size_t wl_sect_size = 4096;
 
@@ -360,6 +375,9 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_0(esp_sdcard_sect_size_obj, esp_sdcard_sect_size)
 
 STATIC const mp_rom_map_elem_t esp_module_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_esp)},
+
+    { MP_ROM_QSTR(MP_QSTR_temperature_sens_read), MP_ROM_PTR(&esp_temperature_sens_read_obj) },
+    { MP_ROM_QSTR(MP_QSTR_hall_sens_read), MP_ROM_PTR(&esp_hall_sens_read_obj) },
 
     { MP_ROM_QSTR(MP_QSTR_flash_read), MP_ROM_PTR(&esp_flash_read_obj) },
     { MP_ROM_QSTR(MP_QSTR_flash_write), MP_ROM_PTR(&esp_flash_write_obj) },
