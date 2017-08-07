@@ -91,6 +91,11 @@ $ git submodule init lib/berkeley-db-1.xx
 $ git submodule update
 ```
 
+You will also need to have PySerial installed if it isn't already.
+```bash
+$ pip install pyserial
+```
+
 Then to build MicroPython for the ESP32 run:
 ```bash
 $ cd esp32
@@ -104,6 +109,13 @@ mode and connected to a serial port on your PC.  Refer to the documentation
 for your particular ESP32 module for how to do this.  The serial port and
 flash settings are set in the `Makefile`, and can be overridden in your
 local `makefile`; see above for more details.
+
+You will also need to have user permissions to access the /dev/ttyUSB0 device.
+On Linux, you can enable this by adding your user to the `dialout` group,
+and rebooting or logging out and in again.
+```bash
+$ sudo adduser <username> dialout
+```
 
 If you are installing MicroPython to your module for the first time, or
 after installing any other firmware, you should first erase the flash
@@ -126,7 +138,7 @@ You can get a prompt via the serial port, via UART0, which is the same UART
 that is used for programming the firmware.  The baudrate for the REPL is
 115200 and you can use a command such as:
 ```bash
-$ picocom /dev/ttyUSB0
+$ picocom -b 115200 /dev/ttyUSB0
 ```
 
 Configuring the WiFi and using the board
