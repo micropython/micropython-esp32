@@ -30,6 +30,13 @@ Follow the guide "Setting Up ESP-IDF", for Windows, Mac or Linux.  You
 only need to perform up to "Step 2" of the guide, by which stage you
 should have installed the cross-compile and cloned the ESP-IDF repository.
 
+If you are on a Windows machine then the
+[Windows Subsystem for Linux](https://msdn.microsoft.com/en-au/commandline/wsl/install_guide)
+is the most efficient way to install the ESP32 toolchain and build the project.
+If you use WSL then follow the
+[Linux guidelines](http://esp-idf.readthedocs.io/en/latest/get-started/linux-setup.html)
+for the ESP-IDF instead of the Windows ones.
+
 Be advised that the ESP-IDF is still undergoing changes and only some
 versions are supported.  To find which build is compatible refer to the line
 in the makefile containing the following:
