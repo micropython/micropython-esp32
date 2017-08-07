@@ -151,7 +151,12 @@ STATIC mp_obj_t machine_pin_obj_init_helper(const machine_pin_obj_t *self, size_
 
     // configure mode
     if (args[ARG_mode].u_obj != mp_const_none) {
-        gpio_set_direction(self->id, mp_obj_get_int(args[ARG_mode].u_obj));
+        mp_int_t pin_io_mode = mp_obj_get_int(args[ARG_mode].u_obj);
+        if (self->id >= 34 && (pin_io_mode & GPIO_MODE_DEF_OUTPUT)) {
+            mp_raise_ValueError("pin can only be input");
+        } else {
+            gpio_set_direction(self->id, pin_io_mode);
+        }
     }
 
     // configure pull
@@ -173,7 +178,7 @@ mp_obj_t mp_pin_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, 
         self = (machine_pin_obj_t*)&machine_pin_obj[wanted_pin];
     }
     if (self == NULL || self->base.type == NULL) {
-        nlr_raise(mp_obj_new_exception_msg(&mp_type_ValueError, "invalid pin"));
+        mp_raise_ValueError("invalid pin");
     }
 
     if (n_args > 1 || n_kw > 0) {
