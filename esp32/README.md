@@ -51,6 +51,14 @@ $ git checkout <Current supported ESP-IDF commit hash>
 Note that you will get a warning when building the code if the ESP-IDF
 version is incorrect.
 
+The Espressif ESP-IDF instructions above only install pyserial for Python 2,
+so if you're running Python 3 or a non-system Python you'll also need to
+install `pyserial` (or `esptool`) so that the Makefile can flash the board
+and set parameters:
+```bash
+$ pip install pyserial
+```
+
 Once everything is set up you should have a functioning toolchain with
 prefix xtensa-esp32-elf- (or otherwise if you configured it differently)
 as well as a copy of the ESP-IDF repository.
@@ -112,6 +120,13 @@ for your particular ESP32 module for how to do this.  The serial port and
 flash settings are set in the `Makefile`, and can be overridden in your
 local `makefile`; see above for more details.
 
+You will also need to have user permissions to access the /dev/ttyUSB0 device.
+On Linux, you can enable this by adding your user to the `dialout` group,
+and rebooting or logging out and in again.
+```bash
+$ sudo adduser <username> dialout
+```
+
 If you are installing MicroPython to your module for the first time, or
 after installing any other firmware, you should first erase the flash
 completely:
@@ -133,7 +148,7 @@ You can get a prompt via the serial port, via UART0, which is the same UART
 that is used for programming the firmware.  The baudrate for the REPL is
 115200 and you can use a command such as:
 ```bash
-$ picocom /dev/ttyUSB0
+$ picocom -b 115200 /dev/ttyUSB0
 ```
 
 Configuring the WiFi and using the board
