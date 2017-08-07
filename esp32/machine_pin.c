@@ -151,7 +151,12 @@ STATIC mp_obj_t machine_pin_obj_init_helper(const machine_pin_obj_t *self, size_
 
     // configure mode
     if (args[ARG_mode].u_obj != mp_const_none) {
-        gpio_set_direction(self->id, mp_obj_get_int(args[ARG_mode].u_obj));
+        mp_int_t pin_io_mode = mp_obj_get_int(args[ARG_mode].u_obj);
+        if (self->id >= 34 && (pin_io_mode & GPIO_MODE_DEF_OUTPUT)) {
+            mp_raise_ValueError("pin can only be input");
+        } else {
+            gpio_set_direction(self->id, pin_io_mode);
+        }
     }
 
     // configure pull
