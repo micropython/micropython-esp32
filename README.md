@@ -86,6 +86,10 @@ The subdirectories above may include READMEs with additional info.
 "make" is used to build the components, or "gmake" on BSD-based systems.
 You will also need bash and Python (at least 2.7 or 3.3).
 
+Building on Windows
+----------------
+The [windows-linux subsystem](https://msdn.microsoft.com/en-au/commandline/wsl/install_guide) is the most efficient way to install the ESP32 toolchain and build the project. Then follow the [linux guidelines](http://esp-idf.readthedocs.io/en/latest/get-started/linux-setup.html) on ESP32-IDF instead of the windows ones.
+
 The Unix version
 ----------------
 
