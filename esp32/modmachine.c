@@ -54,8 +54,7 @@ STATIC mp_obj_t machine_freq(size_t n_args, const mp_obj_t *args) {
         // set
         mp_int_t freq = mp_obj_get_int(args[0]) / 1000000;
         if (freq != 80 && freq != 160 && freq != 240) {
-            nlr_raise(mp_obj_new_exception_msg(&mp_type_ValueError,
-                "frequency can only be either 80Mhz, 160MHz or 240MHz"));
+            mp_raise_ValueError("frequency can only be either 80Mhz, 160MHz or 240MHz");
         }
         /*
         system_update_cpu_freq(freq);

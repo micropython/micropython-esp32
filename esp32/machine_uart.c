@@ -126,7 +126,7 @@ STATIC void machine_uart_init_helper(machine_uart_obj_t *self, size_t n_args, co
             self->bits = 8;
             break;
         default:
-            nlr_raise(mp_obj_new_exception_msg_varg(&mp_type_ValueError, "invalid data bits"));
+            mp_raise_ValueError("invalid data bits");
             break;
     }
 
@@ -161,7 +161,7 @@ STATIC void machine_uart_init_helper(machine_uart_obj_t *self, size_t n_args, co
             self->stop = 2;
             break;
         default:
-            nlr_raise(mp_obj_new_exception_msg_varg(&mp_type_ValueError, "invalid stop bits"));
+            mp_raise_ValueError("invalid stop bits");
             break;
     }
 
