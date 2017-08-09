@@ -73,6 +73,12 @@ are `PORT` for the serial port of your esp32 module, and `FLASH_MODE`
 (which may need to be `dio` for some modules)
 and `FLASH_SIZE`.  See the Makefile for further information.
 
+You will also need to have esptool installed so that the Makefile can flash
+the micropython board and set parameters.
+```bash
+$ pip install pyserial
+```
+
 Building the firmware
 ---------------------
 
@@ -89,11 +95,6 @@ module using the commands:
 ```bash
 $ git submodule init lib/berkeley-db-1.xx
 $ git submodule update
-```
-
-You will also need to have PySerial installed if it isn't already.
-```bash
-$ pip install pyserial
 ```
 
 Then to build MicroPython for the ESP32 run:
