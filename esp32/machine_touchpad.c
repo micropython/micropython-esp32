@@ -64,7 +64,7 @@ STATIC mp_obj_t mtp_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_
     for (int i = 0; i < MP_ARRAY_SIZE(touchpad_obj); i++) {
         if (pin_id == touchpad_obj[i].gpio_id) { self = &touchpad_obj[i]; break; }
     }
-    if (!self) nlr_raise(mp_obj_new_exception_msg(&mp_type_ValueError, "invalid pin for touchpad"));
+    if (!self) mp_raise_ValueError("invalid pin for touchpad");
 
     static int initialized = 0;
     if (!initialized) {

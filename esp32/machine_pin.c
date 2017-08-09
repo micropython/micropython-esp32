@@ -173,7 +173,7 @@ mp_obj_t mp_pin_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, 
         self = (machine_pin_obj_t*)&machine_pin_obj[wanted_pin];
     }
     if (self == NULL || self->base.type == NULL) {
-        nlr_raise(mp_obj_new_exception_msg(&mp_type_ValueError, "invalid pin"));
+        mp_raise_ValueError("invalid pin");
     }
 
     if (n_args > 1 || n_kw > 0) {
