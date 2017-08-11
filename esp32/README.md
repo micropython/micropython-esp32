@@ -44,6 +44,14 @@ $ git checkout <Current supported ESP-IDF commit hash>
 Note that you will get a warning when building the code if the ESP-IDF
 version is incorrect.
 
+The Espressif ESP-IDF instructions above only install pyserial for Python 2,
+so if you're running Python 3 or a non-system Python, you'll also need to 
+install `pyserial` or `esptool` so that the Makefile can flash the 
+micropython board and set parameters.
+```bash
+$ pip install pyserial
+```
+
 Once everything is set up you should have a functioning toolchain with
 prefix xtensa-esp32-elf- (or otherwise if you configured it differently)
 as well as a copy of the ESP-IDF repository.
@@ -72,12 +80,6 @@ If the Xtensa cross-compiler is not in your path you can use the
 are `PORT` for the serial port of your esp32 module, and `FLASH_MODE`
 (which may need to be `dio` for some modules)
 and `FLASH_SIZE`.  See the Makefile for further information.
-
-You will also need to have esptool installed so that the Makefile can flash
-the micropython board and set parameters.
-```bash
-$ pip install pyserial
-```
 
 Building the firmware
 ---------------------
