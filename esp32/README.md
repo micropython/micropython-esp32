@@ -49,6 +49,8 @@ the ESP-IDF (and update the submodules accordingly) using:
 $ git checkout <Current supported ESP-IDF commit hash>
 $ git submodule update --recursive
 ```
+After checking out, run `git submodule update --recursive` to also update all submodules.
+
 Note that you will get a warning when building the code if the ESP-IDF
 version is incorrect.
 
