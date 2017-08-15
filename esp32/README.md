@@ -44,9 +44,10 @@ in the makefile containing the following:
 ESPIDF_SUPHASH := <Current supported ESP-IDF commit hash>
 ```
 After finishing "Step 2" you can roll back your current build of
-the ESP-IDF using:
+the ESP-IDF (and update the submodules accordingly) using:
 ```
 $ git checkout <Current supported ESP-IDF commit hash>
+$ git submodule update --recursive
 ```
 Note that you will get a warning when building the code if the ESP-IDF
 version is incorrect.
