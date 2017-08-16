@@ -1,5 +1,5 @@
 /*
- * This file is part of the Micro Python project, http://micropython.org/
+ * This file is part of the MicroPython project, http://micropython.org/
  *
  * The MIT License (MIT)
  *
@@ -50,6 +50,7 @@ typedef enum {
     MP_UNARY_OP_NEGATIVE,
     MP_UNARY_OP_INVERT,
     MP_UNARY_OP_NOT,
+    MP_UNARY_OP_SIZEOF, // for sys.getsizeof()
 } mp_unary_op_t;
 
 typedef enum {
