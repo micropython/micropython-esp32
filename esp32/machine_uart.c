@@ -82,6 +82,9 @@ STATIC void machine_uart_init_helper(machine_uart_obj_t *self, size_t n_args, co
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
     mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
+    // wait for all data to be transmitted before changing settings
+    uart_wait_tx_done(self->uart_num, pdMS_TO_TICKS(1000));
+
     // set baudrate
     if (args[ARG_baudrate].u_int > 0) {
         self->baudrate = args[ARG_baudrate].u_int;
