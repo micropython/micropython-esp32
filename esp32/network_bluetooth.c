@@ -1648,6 +1648,16 @@ STATIC void gap_event_dump(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t 
 }
 #endif // EVENT_DEBUG
 
+STATIC void network_bluetooth_disconnect_helper(network_bluetooth_connection_obj_t* connection) {
+    network_bluetooth_obj_t* bluetooth = network_bluetooth_get_singleton();
+    if (connection != MP_OBJ_NULL && connection->conn_id != -1) {
+        esp_ble_gattc_close(bluetooth->gattc_interface, connection->conn_id);
+        network_bluetooth_del_connection_by_bda(connection->bda);
+        connection->conn_id = -1;
+        connection->services = mp_obj_new_list(0, NULL);
+    }
+}
+
 STATIC mp_obj_t network_bluetooth_callback_queue_handler(mp_obj_t arg) {
     network_bluetooth_obj_t* bluetooth = network_bluetooth_get_singleton();
 
@@ -1908,10 +1918,7 @@ STATIC mp_obj_t network_bluetooth_callback_queue_handler(mp_obj_t arg) {
 
             case NETWORK_BLUETOOTH_GATTC_CLOSE:
                 {
-                    network_bluetooth_connection_obj_t* conn = network_bluetooth_find_connection_by_conn_id(cbdata.gattc_open_close.conn_id);
-                    if (conn != MP_OBJ_NULL) {
-                        conn->conn_id = -1;
-                    }
+                    network_bluetooth_disconnect_helper(network_bluetooth_find_connection_by_conn_id(cbdata.gattc_open_close.conn_id));
                 }
                 break;
 
@@ -2297,8 +2304,8 @@ STATIC void network_bluetooth_adv_updated() {
     esp_ble_gap_config_adv_data(&self->adv_data);
 
     // Restart will be handled in network_bluetooth_gap_event_handler
-
 }
+
 
 /******************************************************************************/
 // MicroPython bindings for network_bluetooth
@@ -2890,14 +2897,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(network_bluetooth_connection_is_connected_obj, 
 // conn.disconnect()
 
 STATIC mp_obj_t network_bluetooth_connection_disconnect(mp_obj_t self_in) {
-    network_bluetooth_obj_t * bluetooth = network_bluetooth_get_singleton();
-    network_bluetooth_connection_obj_t* connection = (network_bluetooth_connection_obj_t*) self_in;
-    if (connection->conn_id != -1) {
-        esp_ble_gattc_close(bluetooth->gattc_interface, connection->conn_id);
-        network_bluetooth_del_connection_by_bda(connection->bda);
-        connection->conn_id = -1;
-        connection->services = mp_obj_new_list(0, NULL);
-    }
+    network_bluetooth_disconnect_helper(self_in);
     return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(network_bluetooth_connection_disconnect_obj, network_bluetooth_connection_disconnect);
