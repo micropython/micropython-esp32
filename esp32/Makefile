@@ -12,6 +12,7 @@ QSTR_DEFS = qstrdefsport.h
 ifeq ($(MICROPY_ESP32_BLUETOOTH),1)
 QSTR_GEN_EXTRA_CFLAGS += $(INC_BT)
 endif
+MICROPY_PY_BTREE = 1
 
 #FROZEN_DIR = scripts
 FROZEN_MPY_DIR = modules
@@ -34,7 +35,7 @@ ESPCOMP = $(ESPIDF)/components
 ESPTOOL ?= $(ESPCOMP)/esptool_py/esptool/esptool.py
 
 # verify the ESP IDF version
-ESPIDF_SUPHASH := 9b955f4c9f1b32652ea165d3e4cdaad01bba170e
+ESPIDF_SUPHASH := 4ec2abbf23084ac060679e4136fa222a2d0ab0e8
 ESPIDF_CURHASH := $(shell git -C $(ESPIDF) show -s --pretty=format:'%H')
 ifneq ($(ESPIDF_CURHASH),$(ESPIDF_SUPHASH))
 $(info ** WARNING **)
@@ -47,7 +48,6 @@ endif
 
 # pretty format of ESP IDF version, used internally by the IDF
 IDF_VER := $(shell git -C $(ESPIDF) describe)
-
 
 # Include dirs for both BT and MAIN
 INC_COMMON =  -I.
@@ -170,7 +170,6 @@ SRC_C = \
 	mphalport.c \
 	fatfs_port.c \
 	help.c \
-	esponewire.c \
 	modutime.c \
 	moduos.c \
 	machine_timer.c \
@@ -199,6 +198,7 @@ ESP8266_SRC_C = $(addprefix esp8266/,\
 	)
 
 EXTMOD_SRC_C = $(addprefix extmod/,\
+	modonewire.c \
 	)
 
 LIB_SRC_C = $(addprefix lib/,\
@@ -241,13 +241,12 @@ DRIVERS_SRC_C = $(addprefix drivers/,\
 OBJ_MP =
 OBJ_MP += $(PY_O)
 OBJ_MP += $(addprefix $(BUILD)/, $(SRC_C:.c=.o))
-OBJ_MP += $(addprefix $(BUILD)/, $(ESP8266_SRC_C:.c=.o))
 OBJ_MP += $(addprefix $(BUILD)/, $(EXTMOD_SRC_C:.c=.o))
 OBJ_MP += $(addprefix $(BUILD)/, $(LIB_SRC_C:.c=.o))
 OBJ_MP += $(addprefix $(BUILD)/, $(DRIVERS_SRC_C:.c=.o))
 
 # List of sources for qstr extraction
-SRC_QSTR += $(SRC_C) $(ESP8266_SRC_C) $(EXTMOD_SRC_C) $(LIB_SRC_C) $(DRIVERS_SRC_C)
+SRC_QSTR += $(SRC_C) $(EXTMOD_SRC_C) $(LIB_SRC_C) $(DRIVERS_SRC_C)
 # Append any auto-generated sources that are needed by sources listed in SRC_QSTR
 SRC_QSTR_AUTO_DEPS +=
 
@@ -277,7 +276,6 @@ ESPIDF_ESP32_O = $(addprefix $(ESPCOMP)/esp32/,\
 	gdbstub.o \
 	crosscore_int.o \
 	deep_sleep.o \
-	heap_alloc_caps.o \
 	ipc.o \
 	int_wdt.o \
 	event_loop.o \
@@ -292,14 +290,20 @@ ESPIDF_ESP32_O = $(addprefix $(ESPCOMP)/esp32/,\
 	dport_access.o \
 	)
 
+ESPIDF_HEAP_O = $(addprefix $(ESPCOMP)/heap/,\
+	heap_caps.o \
+	heap_caps_init.o \
+	multi_heap.o \
+	)
+
 ESPIDF_SOC_O = $(addprefix $(ESPCOMP)/soc/,\
-	esp32/brownout.o \
 	esp32/cpu_util.o \
 	esp32/rtc_clk.o \
 	esp32/rtc_init.o \
 	esp32/rtc_pm.o \
 	esp32/rtc_sleep.o \
 	esp32/rtc_time.o \
+	esp32/soc_memory_layout.o \
 	)
 
 ESPIDF_CXX_O = $(addprefix $(ESPCOMP)/cxx/,\
@@ -454,18 +458,18 @@ ESPIDF_EXPAT_O = $(addprefix $(ESPCOMP)/expat/,\
 
 # Assembler .S files need only basic flags, and in particular should not have
 # -Os because that generates subtly different code.
+# We also need custom CFLAGS for .c files because FreeRTOS has headers with
+# generic names (eg queue.h) which can clash with other files in the port.
 CFLAGS_ASM = -I$(ESPCOMP)/esp32/include -I$(ESPCOMP)/soc/esp32/include -I$(ESPCOMP)/freertos/include/freertos -I.
 $(BUILD)/$(ESPCOMP)/freertos/portasm.o: CFLAGS = $(CFLAGS_ASM)
 $(BUILD)/$(ESPCOMP)/freertos/xtensa_context.o: CFLAGS = $(CFLAGS_ASM)
 $(BUILD)/$(ESPCOMP)/freertos/xtensa_intr_asm.o: CFLAGS = $(CFLAGS_ASM)
 $(BUILD)/$(ESPCOMP)/freertos/xtensa_vectors.o: CFLAGS = $(CFLAGS_ASM)
-$(BUILD)/$(ESPCOMP)/freertos/%.o: CFLAGS += -I$(ESPCOMP)/freertos/include/freertos
+$(BUILD)/$(ESPCOMP)/freertos/%.o: CFLAGS = $(CFLAGS_BASE) -I. $(INC_ESPCOMP) -I$(ESPCOMP)/freertos/include/freertos
 ESPIDF_FREERTOS_O = $(addprefix $(ESPCOMP)/freertos/,\
 	croutine.o \
 	event_groups.o \
 	FreeRTOS-openocd.o \
-	heap_regions_debug.o \
-	heap_regions.o \
 	list.o \
 	portasm.o \
 	port.o \
@@ -727,6 +731,7 @@ OBJ_ESPIDF =
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_NEWLIB_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_DRIVER_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_ESP32_O))
+OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_HEAP_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_SOC_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_CXX_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_ETHERNET_O))
@@ -766,7 +771,7 @@ $(BUILD)/firmware.bin: $(BUILD)/bootloader.bin $(BUILD)/partitions.bin $(BUILD)/
 
 deploy: $(BUILD)/firmware.bin
 	$(ECHO) "Writing $^ to the board"
-	$(Q)$(ESPTOOL) --chip esp32 --port $(PORT) --baud $(BAUD) write_flash -z --flash_mode $(FLASH_MODE) --flash_freq $(FLASH_FREQ) --flash_size $(FLASH_SIZE) 0 $^
+	$(Q)$(ESPTOOL) --chip esp32 --port $(PORT) --baud $(BAUD) write_flash -z --flash_mode $(FLASH_MODE) --flash_freq $(FLASH_FREQ) 0x1000 $^
 
 erase:
 	$(ECHO) "Erasing flash"

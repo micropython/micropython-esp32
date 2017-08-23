@@ -34,6 +34,7 @@
 #include "py/runtime.h"
 #include "py/mphal.h"
 #include "modmachine.h"
+#include "extmod/virtpin.h"
 
 typedef struct _machine_pin_obj_t {
     mp_obj_base_t base;
@@ -150,7 +151,12 @@ STATIC mp_obj_t machine_pin_obj_init_helper(const machine_pin_obj_t *self, size_
 
     // configure mode
     if (args[ARG_mode].u_obj != mp_const_none) {
-        gpio_set_direction(self->id, mp_obj_get_int(args[ARG_mode].u_obj));
+        mp_int_t pin_io_mode = mp_obj_get_int(args[ARG_mode].u_obj);
+        if (self->id >= 34 && (pin_io_mode & GPIO_MODE_DEF_OUTPUT)) {
+            mp_raise_ValueError("pin can only be input");
+        } else {
+            gpio_set_direction(self->id, pin_io_mode);
+        }
     }
 
     // configure pull
@@ -162,7 +168,7 @@ STATIC mp_obj_t machine_pin_obj_init_helper(const machine_pin_obj_t *self, size_
 }
 
 // constructor(id, ...)
-STATIC mp_obj_t machine_pin_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args) {
+mp_obj_t mp_pin_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args) {
     mp_arg_check_num(n_args, n_kw, 1, MP_OBJ_FUN_ARGS_MAX, true);
 
     // get the wanted pin object
@@ -172,7 +178,7 @@ STATIC mp_obj_t machine_pin_make_new(const mp_obj_type_t *type, size_t n_args, s
         self = (machine_pin_obj_t*)&machine_pin_obj[wanted_pin];
     }
     if (self == NULL || self->base.type == NULL) {
-        nlr_raise(mp_obj_new_exception_msg(&mp_type_ValueError, "invalid pin"));
+        mp_raise_ValueError("invalid pin");
     }
 
     if (n_args > 1 || n_kw > 0) {
@@ -257,14 +263,35 @@ STATIC const mp_rom_map_elem_t machine_pin_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_IRQ_FALLING), MP_ROM_INT(GPIO_PIN_INTR_NEGEDGE) },
 };
 
+STATIC mp_uint_t pin_ioctl(mp_obj_t self_in, mp_uint_t request, uintptr_t arg, int *errcode) {
+    (void)errcode;
+    machine_pin_obj_t *self = self_in;
+
+    switch (request) {
+        case MP_PIN_READ: {
+            return gpio_get_level(self->id);
+        }
+        case MP_PIN_WRITE: {
+            gpio_set_level(self->id, arg);
+            return 0;
+        }
+    }
+    return -1;
+}
+
 STATIC MP_DEFINE_CONST_DICT(machine_pin_locals_dict, machine_pin_locals_dict_table);
+
+STATIC const mp_pin_p_t pin_pin_p = {
+  .ioctl = pin_ioctl,
+};
 
 const mp_obj_type_t machine_pin_type = {
     { &mp_type_type },
     .name = MP_QSTR_Pin,
     .print = machine_pin_print,
-    .make_new = machine_pin_make_new,
+    .make_new = mp_pin_make_new,
     .call = machine_pin_call,
+    .protocol = &pin_pin_p,
     .locals_dict = (mp_obj_t)&machine_pin_locals_dict,
 };
 

@@ -1,5 +1,5 @@
 /*
- * This file is part of the Micro Python project, http://micropython.org/
+ * This file is part of the MicroPython project, http://micropython.org/
  *
  * The MIT License (MIT)
  *
@@ -28,9 +28,6 @@
 #include <stdint.h>
 #include <string.h>
 
-#include STM32_HAL_H
-
-#include "py/nlr.h"
 #include "py/runtime.h"
 #include "timer.h"
 #include "dac.h"
@@ -122,12 +119,12 @@ STATIC uint32_t TIMx_Config(mp_obj_t timer) {
         return DAC_TRIGGER_T8_TRGO;
     #endif
     } else {
-        nlr_raise(mp_obj_new_exception_msg(&mp_type_ValueError, "Timer does not support DAC triggering"));
+        mp_raise_ValueError("Timer does not support DAC triggering");
     }
 }
 
 /******************************************************************************/
-// Micro Python bindings
+// MicroPython bindings
 
 typedef enum {
     DAC_STATE_RESET,

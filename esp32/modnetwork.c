@@ -184,7 +184,7 @@ STATIC mp_obj_t get_wlan(size_t n_args, const mp_obj_t *args) {
     } else if (idx == WIFI_IF_AP) {
         return MP_OBJ_FROM_PTR(&wlan_ap_obj);
     } else {
-        mp_raise_msg(&mp_type_ValueError, "invalid WLAN interface identifier");
+        mp_raise_ValueError("invalid WLAN interface identifier");
     }
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(get_wlan_obj, 0, 1, get_wlan);
@@ -309,10 +309,15 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(esp_scan_obj, esp_scan);
 
 STATIC mp_obj_t esp_isconnected(mp_obj_t self_in) {
     wlan_if_obj_t *self = MP_OBJ_TO_PTR(self_in);
-    require_if(self_in, WIFI_IF_STA);
-    tcpip_adapter_ip_info_t info;
-    tcpip_adapter_get_ip_info(self->if_id, &info);
-    return mp_obj_new_bool(info.ip.addr != 0);
+    if (self->if_id == WIFI_IF_STA) {
+        tcpip_adapter_ip_info_t info;
+        tcpip_adapter_get_ip_info(WIFI_IF_STA, &info);
+        return mp_obj_new_bool(info.ip.addr != 0);
+    } else {
+        wifi_sta_list_t sta;
+        esp_wifi_ap_get_sta_list(&sta);
+        return mp_obj_new_bool(sta.num != 0);
+    }
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(esp_isconnected_obj, esp_isconnected);
 
@@ -367,8 +372,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(esp_ifconfig_obj, 1, 2, esp_ifconfig)
 
 STATIC mp_obj_t esp_config(size_t n_args, const mp_obj_t *args, mp_map_t *kwargs) {
     if (n_args != 1 && kwargs->used != 0) {
-        nlr_raise(mp_obj_new_exception_msg(&mp_type_TypeError,
-            "either pos or kw args are allowed"));
+        mp_raise_TypeError("either pos or kw args are allowed");
     }
 
     wlan_if_obj_t *self = MP_OBJ_TO_PTR(args[0]);
@@ -389,8 +393,7 @@ STATIC mp_obj_t esp_config(size_t n_args, const mp_obj_t *args, mp_map_t *kwargs
                         mp_buffer_info_t bufinfo;
                         mp_get_buffer_raise(kwargs->table[i].value, &bufinfo, MP_BUFFER_READ);
                         if (bufinfo.len != 6) {
-                            nlr_raise(mp_obj_new_exception_msg(&mp_type_ValueError,
-                                "invalid buffer length"));
+                            mp_raise_ValueError("invalid buffer length");
                         }
                         ESP_EXCEPTIONS(esp_wifi_set_mac(self->if_id, bufinfo.buf));
                         break;
@@ -448,8 +451,7 @@ STATIC mp_obj_t esp_config(size_t n_args, const mp_obj_t *args, mp_map_t *kwargs
     // Get config
 
     if (n_args != 2) {
-        nlr_raise(mp_obj_new_exception_msg(&mp_type_TypeError,
-            "can query only one param"));
+        mp_raise_TypeError("can query only one param");
     }
 
     int req_if = -1;
@@ -491,8 +493,7 @@ STATIC mp_obj_t esp_config(size_t n_args, const mp_obj_t *args, mp_map_t *kwargs
     return val;
 
 unknown:
-    nlr_raise(mp_obj_new_exception_msg(&mp_type_ValueError,
-        "unknown config param"));
+    mp_raise_ValueError("unknown config param");
 }
 
 STATIC MP_DEFINE_CONST_FUN_OBJ_KW(esp_config_obj, 1, esp_config);

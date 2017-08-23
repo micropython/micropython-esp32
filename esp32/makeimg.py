@@ -11,7 +11,7 @@ files_in = [
 ]
 file_out = sys.argv[4]
 
-cur_offset = 0
+cur_offset = OFFSET_BOOTLOADER
 with open(file_out, 'wb') as fout:
     for name, offset, file_in in files_in:
         assert offset >= cur_offset

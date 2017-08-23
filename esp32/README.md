@@ -30,6 +30,13 @@ Follow the guide "Setting Up ESP-IDF", for Windows, Mac or Linux.  You
 only need to perform up to "Step 2" of the guide, by which stage you
 should have installed the cross-compile and cloned the ESP-IDF repository.
 
+If you are on a Windows machine then the
+[Windows Subsystem for Linux](https://msdn.microsoft.com/en-au/commandline/wsl/install_guide)
+is the most efficient way to install the ESP32 toolchain and build the project.
+If you use WSL then follow the
+[Linux guidelines](http://esp-idf.readthedocs.io/en/latest/get-started/linux-setup.html)
+for the ESP-IDF instead of the Windows ones.
+
 Be advised that the ESP-IDF is still undergoing changes and only some
 versions are supported.  To find which build is compatible refer to the line
 in the makefile containing the following:
@@ -37,12 +44,21 @@ in the makefile containing the following:
 ESPIDF_SUPHASH := <Current supported ESP-IDF commit hash>
 ```
 After finishing "Step 2" you can roll back your current build of
-the ESP-IDF using:
+the ESP-IDF (and update the submodules accordingly) using:
 ```
 $ git checkout <Current supported ESP-IDF commit hash>
+$ git submodule update --recursive
 ```
 Note that you will get a warning when building the code if the ESP-IDF
 version is incorrect.
+
+The Espressif ESP-IDF instructions above only install pyserial for Python 2,
+so if you're running Python 3 or a non-system Python you'll also need to
+install `pyserial` (or `esptool`) so that the Makefile can flash the board
+and set parameters:
+```bash
+$ pip install pyserial
+```
 
 Once everything is set up you should have a functioning toolchain with
 prefix xtensa-esp32-elf- (or otherwise if you configured it differently)
@@ -83,6 +99,14 @@ this repository):
 $ make -C mpy-cross
 ```
 
+The ESP32 port has a dependency on Berkeley DB, which is an external
+dependency (git submodule). You'll need to have git initialize that
+module using the commands:
+```bash
+$ git submodule init lib/berkeley-db-1.xx
+$ git submodule update
+```
+
 Then to build MicroPython for the ESP32 run:
 ```bash
 $ cd esp32
@@ -96,6 +120,13 @@ mode and connected to a serial port on your PC.  Refer to the documentation
 for your particular ESP32 module for how to do this.  The serial port and
 flash settings are set in the `Makefile`, and can be overridden in your
 local `makefile`; see above for more details.
+
+You will also need to have user permissions to access the /dev/ttyUSB0 device.
+On Linux, you can enable this by adding your user to the `dialout` group,
+and rebooting or logging out and in again.
+```bash
+$ sudo adduser <username> dialout
+```
 
 If you are installing MicroPython to your module for the first time, or
 after installing any other firmware, you should first erase the flash
@@ -118,7 +149,7 @@ You can get a prompt via the serial port, via UART0, which is the same UART
 that is used for programming the firmware.  The baudrate for the REPL is
 115200 and you can use a command such as:
 ```bash
-$ picocom /dev/ttyUSB0
+$ picocom -b 115200 /dev/ttyUSB0
 ```
 
 Configuring the WiFi and using the board

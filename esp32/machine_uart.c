@@ -82,6 +82,9 @@ STATIC void machine_uart_init_helper(machine_uart_obj_t *self, size_t n_args, co
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
     mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
+    // wait for all data to be transmitted before changing settings
+    uart_wait_tx_done(self->uart_num, pdMS_TO_TICKS(1000));
+
     // set baudrate
     if (args[ARG_baudrate].u_int > 0) {
         self->baudrate = args[ARG_baudrate].u_int;
@@ -126,7 +129,7 @@ STATIC void machine_uart_init_helper(machine_uart_obj_t *self, size_t n_args, co
             self->bits = 8;
             break;
         default:
-            nlr_raise(mp_obj_new_exception_msg_varg(&mp_type_ValueError, "invalid data bits"));
+            mp_raise_ValueError("invalid data bits");
             break;
     }
 
@@ -161,7 +164,7 @@ STATIC void machine_uart_init_helper(machine_uart_obj_t *self, size_t n_args, co
             self->stop = 2;
             break;
         default:
-            nlr_raise(mp_obj_new_exception_msg_varg(&mp_type_ValueError, "invalid stop bits"));
+            mp_raise_ValueError("invalid stop bits");
             break;
     }
 
@@ -237,8 +240,8 @@ STATIC mp_obj_t machine_uart_make_new(const mp_obj_type_t *type, size_t n_args, 
     // Setup
     uart_param_config(self->uart_num, &uartcfg);
 
-    // RX and TX buffers are currently hardcoded at 256 and 64 bytes respectively.
-    uart_driver_install(uart_num, 256, 64, 10, &UART_QUEUE[self->uart_num], 0);
+    // RX and TX buffers are currently hardcoded at 256 bytes each (IDF minimum).
+    uart_driver_install(uart_num, 256, 256, 10, &UART_QUEUE[self->uart_num], 0);
 
     mp_map_t kw_args;
     mp_map_init_fixed_table(&kw_args, n_kw, args + n_args);
