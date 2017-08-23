@@ -4,7 +4,7 @@ include ../py/mkenv.mk
 MICROPY_PY_USSL = 0
 MICROPY_SSL_AXTLS = 0
 MICROPY_FATFS = 1
-MICROPY_PY_BTREE = 0
+MICROPY_PY_BTREE = 1
 MICROPY_ESP32_BLUETOOTH ?= 1
 
 # qstr definitions (must come before including py.mk)
@@ -12,7 +12,7 @@ QSTR_DEFS = qstrdefsport.h
 ifeq ($(MICROPY_ESP32_BLUETOOTH),1)
 QSTR_GEN_EXTRA_CFLAGS += $(INC_BT)
 endif
-MICROPY_PY_BTREE = 1
+
 
 #FROZEN_DIR = scripts
 FROZEN_MPY_DIR = modules
@@ -49,50 +49,47 @@ endif
 # pretty format of ESP IDF version, used internally by the IDF
 IDF_VER := $(shell git -C $(ESPIDF) describe)
 
-# Include dirs for both BT and MAIN
-INC_COMMON =  -I.
-INC_COMMON += -I..
-INC_COMMON += -I$(BUILD)
-INC_COMMON += -I$(ESPCOMP)/log/include
-INC_COMMON += -I$(ESPCOMP)/esp32/include
-INC_COMMON += -I$(ESPCOMP)/soc/esp32/include
-INC_COMMON += -I$(ESPCOMP)/freertos/include
-INC_COMMON += -I$(ESPCOMP)/tcpip_adapter/include
-INC_COMMON += -I$(ESPCOMP)/lwip/include/lwip
-INC_COMMON += -I$(ESPCOMP)/lwip/include/lwip/port
-INC_COMMON += -I$(ESPCOMP)/driver/include/driver
-INC_COMMON += -I$(ESPCOMP)/driver/include
-INC_COMMON += -I$(ESPCOMP)/nvs_flash/include
+INC += -I.
+INC += -I..
+INC += -I$(BUILD)
 
 # Include dirs for main code base, excluding BT
 INC_MAIN += -I../lib/mp-readline
 INC_MAIN += -I../lib/netutils
 INC_MAIN += -I../lib/timeutils
-INC_MAIN += -I$(ESPCOMP)/spi_flash/include
-INC_MAIN += -I$(ESPCOMP)/bootloader_support/include
-INC_MAIN += -I$(ESPCOMP)/nghttp/port/include
-INC_MAIN += -I$(ESPCOMP)/nghttp/include
-INC_MAIN += -I$(ESPCOMP)/ethernet/include
-INC_MAIN += -I$(ESPCOMP)/expat/include/expat
-INC_MAIN += -I$(ESPCOMP)/expat/port/include
-INC_MAIN += -I$(ESPCOMP)/json/include
-INC_MAIN += -I$(ESPCOMP)/json/port/include
-INC_MAIN += -I$(ESPCOMP)/newlib/include
-INC_MAIN += -I$(ESPCOMP)/lwip/include/lwip/port
-INC_MAIN += -I$(ESPCOMP)/lwip/include/lwip/posix
-INC_MAIN += -I$(ESPCOMP)/mbedtls/include
-INC_MAIN += -I$(ESPCOMP)/mbedtls/port/include
-INC_MAIN += -I$(ESPCOMP)/vfs/include
-INC_MAIN += -I$(ESPCOMP)/newlib/platform_include
-INC_MAIN += -I$(ESPCOMP)/xtensa-debug-module/include
-INC_MAIN += -I$(ESPCOMP)/wpa_supplicant/include
-INC_MAIN += -I$(ESPCOMP)/wpa_supplicant/port/include
-INC_MAIN += -I$(ESPCOMP)/ethernet/include
-INC_MAIN += -I$(ESPCOMP)/tcpip_adapter/include
-INC_MAIN += -I$(ESPCOMP)/app_trace/include
-INC_MAIN += -I$(ESPCOMP)/nghttp/port/include
-INC_MAIN += -I$(ESPCOMP)/nghttp/nghttp2/lib/includes
 
+INC_ESPCOMP += -I$(ESPCOMP)/bootloader_support/include
+INC_ESPCOMP += -I$(ESPCOMP)/driver/include
+INC_ESPCOMP += -I$(ESPCOMP)/driver/include/driver
+INC_ESPCOMP += -I$(ESPCOMP)/nghttp/port/include
+INC_ESPCOMP += -I$(ESPCOMP)/nghttp/nghttp2/lib/includes
+INC_ESPCOMP += -I$(ESPCOMP)/esp32/include
+INC_ESPCOMP += -I$(ESPCOMP)/soc/include
+INC_ESPCOMP += -I$(ESPCOMP)/soc/esp32/include
+INC_ESPCOMP += -I$(ESPCOMP)/ethernet/include
+INC_ESPCOMP += -I$(ESPCOMP)/expat/include/expat
+INC_ESPCOMP += -I$(ESPCOMP)/expat/port/include
+INC_ESPCOMP += -I$(ESPCOMP)/heap/include
+INC_ESPCOMP += -I$(ESPCOMP)/json/include
+INC_ESPCOMP += -I$(ESPCOMP)/json/port/include
+INC_ESPCOMP += -I$(ESPCOMP)/log/include
+INC_ESPCOMP += -I$(ESPCOMP)/newlib/include
+INC_ESPCOMP += -I$(ESPCOMP)/nvs_flash/include
+INC_ESPCOMP += -I$(ESPCOMP)/freertos/include
+INC_ESPCOMP += -I$(ESPCOMP)/tcpip_adapter/include
+INC_ESPCOMP += -I$(ESPCOMP)/lwip/include/lwip
+INC_ESPCOMP += -I$(ESPCOMP)/lwip/include/lwip/port
+INC_ESPCOMP += -I$(ESPCOMP)/lwip/include/lwip/posix
+INC_ESPCOMP += -I$(ESPCOMP)/mbedtls/include
+INC_ESPCOMP += -I$(ESPCOMP)/mbedtls/port/include
+INC_ESPCOMP += -I$(ESPCOMP)/spi_flash/include
+INC_ESPCOMP += -I$(ESPCOMP)/vfs/include
+INC_ESPCOMP += -I$(ESPCOMP)/newlib/platform_include
+INC_ESPCOMP += -I$(ESPCOMP)/xtensa-debug-module/include
+INC_ESPCOMP += -I$(ESPCOMP)/wpa_supplicant/include
+INC_ESPCOMP += -I$(ESPCOMP)/wpa_supplicant/port/include
+INC_ESPCOMP += -I$(ESPCOMP)/ethernet/include
+INC_ESPCOMP += -I$(ESPCOMP)/app_trace/include
 
 # Bluetooth includes have to be separate because
 # esp-idf/components/bt/bluedroid/osi/include/list.h
@@ -126,17 +123,22 @@ INC_BT += -I$(ESPCOMP)/bt/bluedroid/stack/smp/include/
 INC_BT += -I$(ESPCOMP)/bt/include
 INC_BT += -I$(ESPCOMP)/bt/bluedroid/stack/sdp/include/
 
-CFLAGS = -std=gnu99 -Os -ffunction-sections -fdata-sections -fstrict-volatile-bitfields -mlongcalls -nostdlib -Wall -Werror -Wno-error=unused-function -Wno-error=unused-but-set-variable -Wno-error=unused-variable -Wno-error=deprecated-declarations -DMBEDTLS_CONFIG_FILE='"mbedtls/esp_config.h"' -DHAVE_CONFIG_H -DESP_PLATFORM
+CFLAGS_BASE = -std=gnu99 -Os -ffunction-sections -fdata-sections -fstrict-volatile-bitfields -mlongcalls -nostdlib -Wall -Werror -Wno-error=unused-function -Wno-error=unused-but-set-variable -Wno-error=unused-variable -Wno-error=deprecated-declarations -DMBEDTLS_CONFIG_FILE='"mbedtls/esp_config.h"' -DHAVE_CONFIG_H -DESP_PLATFORM
 
 ifeq ($(MICROPY_ESP32_BLUETOOTH),1)
-CFLAGS += -DMICROPY_ESP32_BLUETOOTH=1
+CFLAGS_BASE += -DMICROPY_ESP32_BLUETOOTH=1
 endif
+
+CFLAGS = $(CFLAGS_BASE) $(INC) $(INC_MAIN) $(INC_ESPCOMP)
+CFLAGS_BT := $(CFLAGS_BASE) $(INC) $(INC_BT) $(INC_ESPCOMP)
+
+
 
 CFLAGS += -DIDF_VER=\"$(IDF_VER)\"
 CFLAGS += $(CFLAGS_MOD)
 
 # this is what ESPIDF uses for c++ compilation
-CXXFLAGS = -std=gnu++11 -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -fstrict-volatile-bitfields -mlongcalls -nostdlib -Wall -Werror -Wno-error=unused-function -Wno-error=unused-but-set-variable -Wno-error=unused-variable -Wno-error=deprecated-declarations -DESP_PLATFORM $(INC_COMMON) $(INC_MAIN)
+CXXFLAGS = -std=gnu++11 -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -fstrict-volatile-bitfields -mlongcalls -nostdlib -Wall -Werror -Wno-error=unused-function -Wno-error=unused-but-set-variable -Wno-error=unused-variable -Wno-error=deprecated-declarations -DESP_PLATFORM $(INC) $(INC_MAIN) $(INC_ESPCOMP)
 
 LDFLAGS = -nostdlib -Map=$(@:.elf=.map) --cref
 LDFLAGS += --gc-sections -static -EL
@@ -156,9 +158,6 @@ else
 COPT += -Os -DNDEBUG
 #LDFLAGS += --gc-sections
 endif
-
-CFLAGS_BT := $(CFLAGS) $(INC_COMMON) $(INC_BT)
-CFLAGS += $(INC_COMMON) $(INC_MAIN)
 
 ################################################################################
 # List of MicroPython source and object files
@@ -192,10 +191,6 @@ SRC_C = \
 ifeq ($(MICROPY_ESP32_BLUETOOTH),1)
 SRC_C += network_bluetooth.c
 endif
-
-ESP8266_SRC_C = $(addprefix esp8266/,\
-	modonewire.c \
-	)
 
 EXTMOD_SRC_C = $(addprefix extmod/,\
 	modonewire.c \
