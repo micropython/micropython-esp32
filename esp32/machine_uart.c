@@ -42,7 +42,6 @@ typedef struct _machine_uart_obj_t {
     uint8_t bits;
     uint8_t parity;
     uint8_t stop;
-    uint32_t baudrate;
     int8_t tx;
     int8_t rx;
     int8_t rts;
@@ -60,8 +59,10 @@ QueueHandle_t UART_QUEUE[UART_NUM_MAX] = {};
 
 STATIC void machine_uart_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
     machine_uart_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    uint32_t baudrate;
+    uart_get_baudrate(self->uart_num, &baudrate);
     mp_printf(print, "UART(%u, baudrate=%u, bits=%u, parity=%s, stop=%u, tx=%d, rx=%d, rts=%d, cts=%d, timeout=%u, timeout_char=%u)",
-        self->uart_num, self->baudrate, self->bits, _parity_name[self->parity],
+        self->uart_num, baudrate, self->bits, _parity_name[self->parity],
         self->stop, self->tx, self->rx, self->rts, self->cts, self->timeout, self->timeout_char);
 }
 
@@ -86,9 +87,10 @@ STATIC void machine_uart_init_helper(machine_uart_obj_t *self, size_t n_args, co
     uart_wait_tx_done(self->uart_num, pdMS_TO_TICKS(1000));
 
     // set baudrate
+    uint32_t baudrate = 115200;
     if (args[ARG_baudrate].u_int > 0) {
-        self->baudrate = args[ARG_baudrate].u_int;
-        uart_set_baudrate(self->uart_num, self->baudrate);
+        uart_set_baudrate(self->uart_num, args[ARG_baudrate].u_int);
+        uart_get_baudrate(self->uart_num, &baudrate);
     }
 
     uart_set_pin(self->uart_num, args[ARG_tx].u_int, args[ARG_rx].u_int, args[ARG_rts].u_int, args[ARG_cts].u_int);
@@ -174,7 +176,7 @@ STATIC void machine_uart_init_helper(machine_uart_obj_t *self, size_t n_args, co
     // set timeout_char
     // make sure it is at least as long as a whole character (13 bits to be safe)
     self->timeout_char = args[ARG_timeout_char].u_int;
-    uint32_t min_timeout_char = 13000 / self->baudrate + 1;
+    uint32_t min_timeout_char = 13000 / baudrate + 1;
     if (self->timeout_char < min_timeout_char) {
         self->timeout_char = min_timeout_char;
     }
@@ -209,7 +211,6 @@ STATIC mp_obj_t machine_uart_make_new(const mp_obj_type_t *type, size_t n_args, 
     machine_uart_obj_t *self = m_new_obj(machine_uart_obj_t);
     self->base.type = &machine_uart_type;
     self->uart_num = uart_num;
-    self->baudrate = 115200;
     self->bits = 8;
     self->parity = 0;
     self->stop = 1;
