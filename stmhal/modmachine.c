@@ -52,6 +52,7 @@
 #include "spi.h"
 #include "uart.h"
 #include "wdt.h"
+#include "genhdr/pllfreqtable.h"
 
 #if defined(MCU_SERIES_F4)
 // the HAL does not define these constants
@@ -76,6 +77,12 @@ void machine_init(void) {
         // came out of standby
         reset_cause = PYB_RESET_DEEPSLEEP;
         PWR->CR |= PWR_CR_CSBF;
+    } else
+    #elif defined(MCU_SERIES_F7)
+    if (PWR->CSR1 & PWR_CSR1_SBF) {
+        // came out of standby
+        reset_cause = PYB_RESET_DEEPSLEEP;
+        PWR->CR1 |= PWR_CR1_CSBF;
     } else
     #endif
     {
@@ -202,6 +209,11 @@ STATIC NORETURN mp_obj_t machine_bootloader(void) {
     HAL_RCC_DeInit();
     HAL_DeInit();
 
+    #if (__MPU_PRESENT == 1)
+    // MPU must be disabled for bootloader to function correctly
+    HAL_MPU_Disable();
+    #endif
+
 #if defined(MCU_SERIES_F7)
     // arm-none-eabi-gcc 4.9.0 does not correctly inline this
     // MSP function, so we write it out explicitly here.
@@ -265,61 +277,31 @@ STATIC mp_obj_t machine_freq(mp_uint_t n_args, const mp_obj_t *args) {
         uint32_t m = HSE_VALUE / 1000000, n = 336, p = 2, q = 7;
         uint32_t sysclk_source;
 
-        // the following logic assumes HSE < HSI
-        if (HSE_VALUE / 1000000 <= wanted_sysclk && wanted_sysclk < HSI_VALUE / 1000000) {
-            // use HSE as SYSCLK
-            sysclk_source = RCC_SYSCLKSOURCE_HSE;
-        } else if (HSI_VALUE / 1000000 <= wanted_sysclk && wanted_sysclk < 24) {
-            // use HSI as SYSCLK
-            sysclk_source = RCC_SYSCLKSOURCE_HSI;
-        } else {
-            // search for a valid PLL configuration that keeps USB at 48MHz
-            for (; wanted_sysclk > 0; wanted_sysclk--) {
-                for (p = 2; p <= 8; p += 2) {
-                    // compute VCO_OUT
-                    mp_uint_t vco_out = wanted_sysclk * p;
-                    // make sure VCO_OUT is between 192MHz and 432MHz
-                    if (vco_out < 192 || vco_out > 432) {
-                        continue;
-                    }
-                    // make sure Q is an integer
-                    if (vco_out % 48 != 0) {
-                        continue;
-                    }
-                    // solve for Q to get PLL48CK at 48MHz
-                    q = vco_out / 48;
-                    // make sure Q is in range
-                    if (q < 2 || q > 15) {
-                        continue;
-                    }
-                    // make sure N/M is an integer
-                    if (vco_out % (HSE_VALUE / 1000000) != 0) {
-                        continue;
-                    }
-                    // solve for N/M
-                    mp_uint_t n_by_m = vco_out / (HSE_VALUE / 1000000);
-                    // solve for M, making sure VCO_IN (=HSE/M) is between 1MHz and 2MHz
-                    m = 192 / n_by_m;
-                    while (m < (HSE_VALUE / 2000000) || n_by_m * m < 192) {
-                        m += 1;
-                    }
-                    if (m > (HSE_VALUE / 1000000)) {
-                        continue;
-                    }
-                    // solve for N
-                    n = n_by_m * m;
-                    // make sure N is in range
-                    if (n < 192 || n > 432) {
-                        continue;
-                    }
-
-                    // found values!
+        // search for a valid PLL configuration that keeps USB at 48MHz
+        for (const uint16_t *pll = &pll_freq_table[MP_ARRAY_SIZE(pll_freq_table) - 1]; pll >= &pll_freq_table[0]; --pll) {
+            uint32_t sys = *pll & 0xff;
+            if (sys <= wanted_sysclk) {
+                m = (*pll >> 10) & 0x3f;
+                p = ((*pll >> 7) & 0x6) + 2;
+                if (m == 0) {
+                    // special entry for using HSI directly
+                    sysclk_source = RCC_SYSCLKSOURCE_HSI;
+                    goto set_clk;
+                } else if (m == 1) {
+                    // special entry for using HSE directly
+                    sysclk_source = RCC_SYSCLKSOURCE_HSE;
+                    goto set_clk;
+                } else {
+                    // use PLL
                     sysclk_source = RCC_SYSCLKSOURCE_PLLCLK;
+                    uint32_t vco_out = sys * p;
+                    n = vco_out * m / (HSE_VALUE / 1000000);
+                    q = vco_out / 48;
                     goto set_clk;
                 }
             }
-            mp_raise_ValueError("can't make valid freq");
         }
+        mp_raise_ValueError("can't make valid freq");
 
     set_clk:
         //printf("%lu %lu %lu %lu %lu\n", sysclk_source, m, n, p, q);
@@ -381,6 +363,21 @@ STATIC mp_obj_t machine_freq(mp_uint_t n_args, const mp_obj_t *args) {
 
         // set PLL as system clock source if wanted
         if (sysclk_source == RCC_SYSCLKSOURCE_PLLCLK) {
+            #if defined(MCU_SERIES_F7)
+            // if possible, scale down the internal voltage regulator to save power
+            uint32_t volt_scale;
+            if (wanted_sysclk <= 151000000) {
+                volt_scale = PWR_REGULATOR_VOLTAGE_SCALE3;
+            } else if (wanted_sysclk <= 180000000) {
+                volt_scale = PWR_REGULATOR_VOLTAGE_SCALE2;
+            } else {
+                volt_scale = PWR_REGULATOR_VOLTAGE_SCALE1;
+            }
+            if (HAL_PWREx_ControlVoltageScaling(volt_scale) != HAL_OK) {
+                goto fail;
+            }
+            #endif
+
             #if !defined(MICROPY_HW_FLASH_LATENCY)
             #define MICROPY_HW_FLASH_LATENCY FLASH_LATENCY_5
             #endif
@@ -450,7 +447,11 @@ STATIC mp_obj_t machine_sleep(void) {
     // takes longer to wake but reduces stop current
     HAL_PWREx_EnableFlashPowerDown();
 
+    # if defined(MCU_SERIES_F7)
+    HAL_PWR_EnterSTOPMode((PWR_CR1_LPDS | PWR_CR1_LPUDS | PWR_CR1_FPDS | PWR_CR1_UDEN), PWR_STOPENTRY_WFI);
+    # else
     HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON, PWR_STOPENTRY_WFI);
+    #endif
 
     // reconfigure the system clock after waking up
 
@@ -478,7 +479,7 @@ MP_DEFINE_CONST_FUN_OBJ_0(machine_sleep_obj, machine_sleep);
 STATIC mp_obj_t machine_deepsleep(void) {
     rtc_init_finalise();
 
-#if defined(MCU_SERIES_F7) || defined(MCU_SERIES_L4)
+#if defined(MCU_SERIES_L4)
     printf("machine.deepsleep not supported yet\n");
 #else
     // We need to clear the PWR wake-up-flag before entering standby, since
@@ -500,8 +501,15 @@ STATIC mp_obj_t machine_deepsleep(void) {
     // clear RTC wake-up flags
     RTC->ISR &= ~(RTC_ISR_ALRAF | RTC_ISR_ALRBF | RTC_ISR_WUTF | RTC_ISR_TSF);
 
+    #if defined(MCU_SERIES_F7)
+    // disable wake-up flags
+    PWR->CSR2 &= ~(PWR_CSR2_EWUP6 | PWR_CSR2_EWUP5 | PWR_CSR2_EWUP4 | PWR_CSR2_EWUP3 | PWR_CSR2_EWUP2 | PWR_CSR2_EWUP1);
+    // clear global wake-up flag
+    PWR->CR2 |= PWR_CR2_CWUPF6 | PWR_CR2_CWUPF5 | PWR_CR2_CWUPF4 | PWR_CR2_CWUPF3 | PWR_CR2_CWUPF2 | PWR_CR2_CWUPF1;
+    #else
     // clear global wake-up flag
     PWR->CR |= PWR_CR_CWUF;
+    #endif
 
     // enable previously-enabled RTC interrupts
     RTC->CR |= save_irq_bits;
