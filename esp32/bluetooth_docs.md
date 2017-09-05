@@ -332,7 +332,7 @@ def bcb(b,e,d,u):
             complete = False
             found = {}
 
-        adx, name = d
+        adx, name, rssi = d
         if adx not in found:
             found[adx] = name
 
@@ -342,7 +342,6 @@ def bcb(b,e,d,u):
         print ('\nFinal List:')
         for adx, name in found.items():
             print ('Found:' + ':'.join(['%02X' % i for i in adx]), name)
-        onScanComplete()
     else:
         print ('Unknown event', e,d)
 
