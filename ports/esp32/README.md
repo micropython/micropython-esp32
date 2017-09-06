@@ -109,7 +109,7 @@ $ git submodule update
 
 Then to build MicroPython for the ESP32 run:
 ```bash
-$ cd esp32
+$ cd ports/esp32
 $ make
 ```
 This will produce binary firmware images in the `build/` subdirectory

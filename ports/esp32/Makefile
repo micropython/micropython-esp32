@@ -1,4 +1,4 @@
-include ../py/mkenv.mk
+include ../../py/mkenv.mk
 
 # qstr definitions (must come before including py.mk)
 QSTR_DEFS = qstrdefsport.h
@@ -12,7 +12,7 @@ MICROPY_PY_BTREE = 1
 FROZEN_MPY_DIR = modules
 
 # include py core make definitions
-include ../py/py.mk
+include $(TOP)/py/py.mk
 
 PORT ?= /dev/ttyUSB0
 BAUD ?= 460800
@@ -44,10 +44,10 @@ endif
 IDF_VER := $(shell git -C $(ESPIDF) describe)
 
 INC += -I.
-INC += -I..
-INC += -I../lib/mp-readline
-INC += -I../lib/netutils
-INC += -I../lib/timeutils
+INC += -I$(TOP)
+INC += -I$(TOP)/lib/mp-readline
+INC += -I$(TOP)/lib/netutils
+INC += -I$(TOP)/lib/timeutils
 INC += -I$(BUILD)
 
 INC_ESPCOMP += -I$(ESPCOMP)/bootloader_support/include
@@ -698,4 +698,4 @@ $(BUILD)/partitions.bin: $(PART_SRC)
 
 ################################################################################
 
-include ../py/mkrules.mk
+include $(TOP)/py/mkrules.mk
