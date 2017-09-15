@@ -29,7 +29,7 @@ ESPCOMP = $(ESPIDF)/components
 ESPTOOL ?= $(ESPCOMP)/esptool_py/esptool/esptool.py
 
 # verify the ESP IDF version
-ESPIDF_SUPHASH := 4ec2abbf23084ac060679e4136fa222a2d0ab0e8
+ESPIDF_SUPHASH := 9a26296a0e88a4c3ae27e9c848be970946fff87e
 ESPIDF_CURHASH := $(shell git -C $(ESPIDF) show -s --pretty=format:'%H')
 ifneq ($(ESPIDF_CURHASH),$(ESPIDF_SUPHASH))
 $(info ** WARNING **)
@@ -93,9 +93,14 @@ CXXFLAGS = -std=gnu++11 -fno-exceptions -fno-rtti -ffunction-sections -fdata-sec
 
 LDFLAGS = -nostdlib -Map=$(@:.elf=.map) --cref
 LDFLAGS += --gc-sections -static -EL
-LDFLAGS += -u call_user_start_cpu0 -u uxTopUsedPriority
+LDFLAGS += -u call_user_start_cpu0 -u uxTopUsedPriority -u ld_include_panic_highint_hdl
 LDFLAGS += -u __cxa_guard_dummy # so that implementation of static guards is taken from cxx_guards.o instead of libstdc++.a
-LDFLAGS += -L$(ESPCOMP)/esp32/ld -T $(BUILD)/esp32_out.ld -T ./esp32.custom_common.ld -T esp32.rom.ld -T esp32.rom.spiflash.ld -T esp32.peripherals.ld
+LDFLAGS += -L$(ESPCOMP)/esp32/ld
+LDFLAGS += -T $(BUILD)/esp32_out.ld
+LDFLAGS += -T ./esp32.custom_common.ld
+LDFLAGS += -T esp32.rom.ld
+LDFLAGS += -T esp32.rom.spiram_incompatible_fns.ld
+LDFLAGS += -T esp32.peripherals.ld
 
 LIBGCC_FILE_NAME = $(shell $(CC) $(CFLAGS) -print-libgcc-file-name)
 LIBSTDCXX_FILE_NAME = $(shell $(CXX) $(CXXFLAGS) -print-file-name=libstdc++.a)
@@ -209,7 +214,11 @@ ESPIDF_DRIVER_O = $(addprefix $(ESPCOMP)/driver/,\
 $(BUILD)/$(ESPCOMP)/esp32/dport_access.o: CFLAGS += -Wno-array-bounds
 ESPIDF_ESP32_O = $(addprefix $(ESPCOMP)/esp32/,\
 	panic.o \
+	esp_timer.o \
+	esp_timer_esp32.o \
+	ets_timer_legacy.o \
 	event_default_handlers.o \
+	fast_crypto_ops.o \
 	task_wdt.o \
 	cache_err_int.o \
 	clk.o \
@@ -217,7 +226,6 @@ ESPIDF_ESP32_O = $(addprefix $(ESPCOMP)/esp32/,\
 	cpu_start.o \
 	gdbstub.o \
 	crosscore_int.o \
-	deep_sleep.o \
 	ipc.o \
 	int_wdt.o \
 	event_loop.o \
@@ -230,6 +238,7 @@ ESPIDF_ESP32_O = $(addprefix $(ESPCOMP)/esp32/,\
 	phy_init.o \
 	intr_alloc.o \
 	dport_access.o \
+	wifi_init.o \
 	)
 
 ESPIDF_HEAP_O = $(addprefix $(ESPCOMP)/heap/,\
@@ -269,6 +278,10 @@ ESPIDF_EXPAT_O = $(addprefix $(ESPCOMP)/expat/,\
 	port/chardata.o \
 	)
 
+ESPIDF_PTHREAD_O = $(addprefix $(ESPCOMP)/pthread/,\
+	pthread.o \
+	)
+
 # Assembler .S files need only basic flags, and in particular should not have
 # -Os because that generates subtly different code.
 # We also need custom CFLAGS for .c files because FreeRTOS has headers with
@@ -295,6 +308,7 @@ ESPIDF_FREERTOS_O = $(addprefix $(ESPCOMP)/freertos/,\
 	xtensa_intr_asm.o \
 	xtensa_intr.o \
 	xtensa_overlay_os_hook.o \
+	xtensa_vector_defaults.o \
 	xtensa_vectors.o \
 	)
 
@@ -436,7 +450,6 @@ ESPIDF_LWIP_O = $(addprefix $(ESPCOMP)/lwip/,\
 
 ESPIDF_MBEDTLS_O = $(addprefix $(ESPCOMP)/mbedtls/,\
 	library/entropy.o \
-	library/net.o \
 	library/pkcs12.o \
 	library/ccm.o \
 	library/pk.o \
@@ -505,7 +518,6 @@ ESPIDF_MBEDTLS_O = $(addprefix $(ESPCOMP)/mbedtls/,\
 	library/ctr_drbg.o \
 	library/x509write_crt.o \
 	library/pk_wrap.o \
-	port/net.o \
 	port/esp_bignum.o \
 	port/esp_hardware.o \
 	port/esp_sha1.o \
@@ -536,6 +548,10 @@ ESPIDF_WPA_SUPPLICANT_O = $(addprefix $(ESPCOMP)/wpa_supplicant/,\
 	src/crypto/bignum.o \
 	src/crypto/crypto_internal-modexp.o \
 	src/crypto/crypto_internal-cipher.o \
+	src/fast_crypto/fast_aes-unwrap.o \
+	src/fast_crypto/fast_aes-wrap.o \
+	src/fast_crypto/fast_sha256.o \
+	src/fast_crypto/fast_sha256-internal.o \
 	port/os_xtensa.o \
 	)
 
@@ -548,6 +564,7 @@ OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_SOC_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_CXX_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_ETHERNET_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_EXPAT_O))
+OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_PTHREAD_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_FREERTOS_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_VFS_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_JSON_O))
@@ -636,6 +653,7 @@ $(BUILD)/bootloader/$(ESPCOMP)/%.o: CFLAGS += -DBOOTLOADER_BUILD=1 -I$(ESPCOMP)/
 BOOTLOADER_OBJ = $(addprefix $(BUILD)/bootloader/$(ESPCOMP)/,\
 	bootloader_support/src/bootloader_flash.o \
 	bootloader_support/src/bootloader_random.o \
+	bootloader_support/src/bootloader_sha.o \
 	bootloader_support/src/secure_boot_signatures.o \
 	bootloader_support/src/secure_boot.o \
 	bootloader_support/src/esp_image_format.o \
@@ -646,7 +664,7 @@ BOOTLOADER_OBJ = $(addprefix $(BUILD)/bootloader/$(ESPCOMP)/,\
 	soc/esp32/rtc_clk.o \
 	soc/esp32/rtc_time.o \
 	micro-ecc/micro-ecc/uECC.o \
-	bootloader/src/main/bootloader_start.o \
+	bootloader/subproject/main/bootloader_start.o \
 	)
 
 BOOTLOADER_LIBS =
@@ -665,10 +683,10 @@ BOOTLOADER_LDFLAGS += -Wl,--gc-sections
 BOOTLOADER_LDFLAGS += -static
 BOOTLOADER_LDFLAGS += -Wl,-EL
 BOOTLOADER_LDFLAGS += -Wl,-Map=$(@:.elf=.map) -Wl,--cref
-BOOTLOADER_LDFLAGS += -T $(ESPCOMP)/bootloader/src/main/esp32.bootloader.ld
-BOOTLOADER_LDFLAGS += -T $(ESPCOMP)/bootloader/src/main/esp32.bootloader.rom.ld
+BOOTLOADER_LDFLAGS += -T $(ESPCOMP)/bootloader/subproject/main/esp32.bootloader.ld
+BOOTLOADER_LDFLAGS += -T $(ESPCOMP)/bootloader/subproject/main/esp32.bootloader.rom.ld
 BOOTLOADER_LDFLAGS += -T $(ESPCOMP)/esp32/ld/esp32.rom.ld
-BOOTLOADER_LDFLAGS += -T $(ESPCOMP)/esp32/ld/esp32.rom.spiflash.ld
+BOOTLOADER_LDFLAGS += -T $(ESPCOMP)/esp32/ld/esp32.rom.spiram_incompatible_fns.ld
 
 BOOTLOADER_OBJ_DIRS = $(sort $(dir $(BOOTLOADER_OBJ)))
 $(BOOTLOADER_OBJ): | $(BOOTLOADER_OBJ_DIRS)

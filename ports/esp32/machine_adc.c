@@ -81,7 +81,7 @@ STATIC void madc_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_
 
 STATIC mp_obj_t madc_read(mp_obj_t self_in) {
     madc_obj_t *self = self_in;
-    int val = adc1_get_voltage(self->adc1_id);
+    int val = adc1_get_raw(self->adc1_id);
     if (val == -1) mp_raise_ValueError("Parameter Error");
     return MP_OBJ_NEW_SMALL_INT(val);
 }

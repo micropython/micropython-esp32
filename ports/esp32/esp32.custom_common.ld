@@ -83,14 +83,18 @@ SECTIONS
     _iram_text_start = ABSOLUTE(.);
     *(.iram1 .iram1.*)
     *freertos/*(.literal .text .literal.* .text.*)
+    *heap/multi_heap.o(.literal .text .literal.* .text.*)
+    *heap/multi_heap_poisoning.o(.literal .text .literal.* .text.*)
     *esp32/panic.o(.literal .text .literal.* .text.*)
     *esp32/core_dump.o(.literal .text .literal.* .text.*)
-    *esp32/heap_alloc_caps.o(.literal .text .literal.* .text.*)
+    *app_trace/*(.literal .text .literal.* .text.*)
+    *xtensa-debug-module/eri.o(.literal .text .literal.* .text.*)
     *esp32/app_trace.o(.literal .text .literal.* .text.*)
     *libphy.a:(.literal .text .literal.* .text.*)
     *librtc.a:(.literal .text .literal.* .text.*)
     *libsoc.a:(.literal .text .literal.* .text.*)
     *libhal.a:(.literal .text .literal.* .text.*)
+    *libgcc.a:lib2funcs.o(.literal .text .literal.* .text.*)
     *spi_flash/spi_flash_rom_patch.o(.literal .text .literal.* .text.*)
     *py/scheduler.o*(.literal .text .literal.* .text.*)
     _iram_text_end = ABSOLUTE(.);
@@ -99,21 +103,23 @@ SECTIONS
   .dram0.data :
   {
     _data_start = ABSOLUTE(.);
-    KEEP(*(.data))
-    KEEP(*(.data.*))
-    KEEP(*(.gnu.linkonce.d.*))
-    KEEP(*(.data1))
-    KEEP(*(.sdata))
-    KEEP(*(.sdata.*))
-    KEEP(*(.gnu.linkonce.s.*))
-    KEEP(*(.sdata2))
-    KEEP(*(.sdata2.*))
-    KEEP(*(.gnu.linkonce.s2.*))
-    KEEP(*(.jcr))
+    *(.data)
+    *(.data.*)
+    *(.gnu.linkonce.d.*)
+    *(.data1)
+    *(.sdata)
+    *(.sdata.*)
+    *(.gnu.linkonce.s.*)
+    *(.sdata2)
+    *(.sdata2.*)
+    *(.gnu.linkonce.s2.*)
+    *(.jcr)
     *(.dram1 .dram1.*)
     *esp32/panic.o(.rodata .rodata.*)
-    *esp32/app_trace.o(.rodata .rodata.*)
     *libphy.a:(.rodata .rodata.*)
+    *app_trace/app_trace.o:(.rodata .rodata.*)
+    *heap/multi_heap.o(.rodata .rodata.*)
+    *heap/multi_heap_poisoning.o(.rodata .rodata.*)
     _data_end = ABSOLUTE(.);
     . = ALIGN(4);
   } >dram0_0_seg
@@ -152,11 +158,13 @@ SECTIONS
     *(.rodata1)
     __XT_EXCEPTION_TABLE_ = ABSOLUTE(.);
     *(.xt_except_table)
-    *(.gcc_except_table)
+    *(.gcc_except_table .gcc_except_table.*)
     *(.gnu.linkonce.e.*)
     *(.gnu.version_r)
-    *(.eh_frame)
     . = (. + 3) & ~ 3;
+    __eh_frame = ABSOLUTE(.);
+    KEEP(*(.eh_frame))
+    . = (. + 7) & ~ 3;
     /*  C++ constructor and destructor tables, properly ordered:  */
     __init_array_start = ABSOLUTE(.);
     KEEP (*crtbegin.o(.ctors))
