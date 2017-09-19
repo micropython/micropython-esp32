@@ -155,9 +155,9 @@ bluetooth.ble_settings(int_min = 1280, int_max = 1280,
 
 ### Start and stop advertising
 
-`bluetooth.adv_enable(True)`
+`bluetooth.ble_adv_enable(True)`
 
-`bluetooth.adv_enable(False)`
+`bluetooth.ble_adv_enable(False)`
 
 When a GATTC connects, advertising ends.  After disconnect, then advertising must be restarted.
 
