@@ -51,6 +51,7 @@
 #include "lwip/sockets.h"
 #include "lwip/netdb.h"
 #include "lwip/ip4.h"
+#include "lwip/igmp.h"
 #include "esp_log.h"
 
 #define SOCKET_POLL_US (100000)
