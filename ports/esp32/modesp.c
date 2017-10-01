@@ -104,6 +104,11 @@ STATIC mp_obj_t esp_neopixel_write_(mp_obj_t pin, mp_obj_t buf, mp_obj_t timing)
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_3(esp_neopixel_write_obj, esp_neopixel_write_);
 
+STATIC mp_obj_t esp_temperature_read(void) {
+    return mp_obj_new_int_from_uint(temprature_sens_read());
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(esp_temperature_read_obj, esp_temperature_read);
+
 STATIC const mp_rom_map_elem_t esp_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_esp) },
 
@@ -118,6 +123,7 @@ STATIC const mp_rom_map_elem_t esp_module_globals_table[] = {
 
     { MP_ROM_QSTR(MP_QSTR_neopixel_write), MP_ROM_PTR(&esp_neopixel_write_obj) },
     { MP_ROM_QSTR(MP_QSTR_dht_readinto), MP_ROM_PTR(&dht_readinto_obj) },
+    { MP_ROM_QSTR(MP_QSTR_temperature_read), MP_ROM_PTR(&esp_temperature_read_obj) },
 };
 
 STATIC MP_DEFINE_CONST_DICT(esp_module_globals, esp_module_globals_table);
