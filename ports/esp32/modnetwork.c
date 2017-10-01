@@ -412,6 +412,10 @@ STATIC mp_obj_t esp_config(size_t n_args, const mp_obj_t *args, mp_map_t *kwargs
                         ESP_EXCEPTIONS(esp_wifi_set_mac(self->if_id, bufinfo.buf));
                         break;
                     }
+                    case QS(MP_QSTR_protocol): {
+			esp_wifi_set_protocol(self->if_id, mp_obj_get_int(kwargs->table[i].value));
+			break;
+		    }
                     case QS(MP_QSTR_essid): {
                         req_if = WIFI_IF_AP;
                         mp_uint_t len;
@@ -556,6 +560,8 @@ STATIC const mp_map_elem_t mp_module_network_globals_table[] = {
         MP_OBJ_NEW_SMALL_INT(WIFI_PROTOCOL_11G) },
     { MP_OBJ_NEW_QSTR(MP_QSTR_MODE_11N),
         MP_OBJ_NEW_SMALL_INT(WIFI_PROTOCOL_11N) },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_MODE_LR),
+        MP_OBJ_NEW_SMALL_INT(WIFI_PROTOCOL_LR) },
 
     { MP_OBJ_NEW_QSTR(MP_QSTR_AUTH_OPEN),
         MP_OBJ_NEW_SMALL_INT(WIFI_AUTH_OPEN) },
