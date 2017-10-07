@@ -403,7 +403,7 @@ STATIC mp_obj_t esp_config(size_t n_args, const mp_obj_t *args, mp_map_t *kwargs
                         break;
                     }
                     case QS(MP_QSTR_protocol): {
-			esp_wifi_set_protocol(self->if_id, mp_obj_get_int(kwargs->table[i].value));
+			ESP_EXCEPTIONS(esp_wifi_set_protocol(self->if_id, mp_obj_get_int(kwargs->table[i].value)));
 			break;
 		    }
                     case QS(MP_QSTR_essid): {
@@ -471,6 +471,11 @@ STATIC mp_obj_t esp_config(size_t n_args, const mp_obj_t *args, mp_map_t *kwargs
             uint8_t mac[6];
             ESP_EXCEPTIONS(esp_wifi_get_mac(self->if_id, mac));
             return mp_obj_new_bytes(mac, sizeof(mac));
+        }
+	case QS(MP_QSTR_protocol): {
+            uint8_t protocol_bitmap;
+            ESP_EXCEPTIONS(esp_wifi_get_protocol(self->if_id, &protocol_bitmap));
+            return mp_obj_new_int(protocol_bitmap);
         }
         case QS(MP_QSTR_essid):
             req_if = WIFI_IF_AP;
