@@ -1,5 +1,5 @@
 /*
- * This file is part of the Micro Python project, http://micropython.org/
+ * This file is part of the MicroPython project, http://micropython.org/
  *
  * The MIT License (MIT)
  *
@@ -48,6 +48,12 @@
 
  Definition of normalise: ?
 */
+
+STATIC size_t mpn_remove_trailing_zeros(mpz_dig_t *oidig, mpz_dig_t *idig) {
+    for (--idig; idig >= oidig && *idig == 0; --idig) {
+    }
+    return idig + 1 - oidig;
+}
 
 /* compares i with j
    returns sign(i - j)
@@ -190,16 +196,7 @@ STATIC size_t mpn_sub(mpz_dig_t *idig, const mpz_dig_t *jdig, size_t jlen, const
         borrow >>= DIG_SIZE;
     }
 
-    for (--idig; idig >= oidig && *idig == 0; --idig) {
-    }
-
-    return idig + 1 - oidig;
-}
-
-STATIC size_t mpn_remove_trailing_zeros(mpz_dig_t *oidig, mpz_dig_t *idig) {
-    for (--idig; idig >= oidig && *idig == 0; --idig) {
-    }
-    return idig + 1 - oidig;
+    return mpn_remove_trailing_zeros(oidig, idig);
 }
 
 #if MICROPY_OPT_MPZ_BITWISE
@@ -938,10 +935,8 @@ void mpz_set_from_bytes(mpz_t *z, bool big_endian, size_t len, const byte *buf) 
         #endif
         num_bits -= DIG_SIZE;
     }
-}
 
-bool mpz_is_zero(const mpz_t *z) {
-    return z->len == 0;
+    z->len = mpn_remove_trailing_zeros(z->dig, z->dig + z->len);
 }
 
 #if 0
@@ -949,10 +944,6 @@ these functions are unused
 
 bool mpz_is_pos(const mpz_t *z) {
     return z->len > 0 && z->neg == 0;
-}
-
-bool mpz_is_neg(const mpz_t *z) {
-    return z->len > 0 && z->neg != 0;
 }
 
 bool mpz_is_odd(const mpz_t *z) {

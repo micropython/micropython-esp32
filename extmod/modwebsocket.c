@@ -27,7 +27,6 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
-#include <errno.h>
 
 #include "py/nlr.h"
 #include "py/obj.h"
@@ -88,7 +87,7 @@ STATIC mp_uint_t websocket_read(mp_obj_t self_in, void *buf, mp_uint_t size, int
             self->buf_pos += out_sz;
             self->to_recv -= out_sz;
             if (self->to_recv != 0) {
-                *errcode = EAGAIN;
+                *errcode = MP_EAGAIN;
                 return MP_STREAM_ERROR;
             }
         }
@@ -132,7 +131,7 @@ STATIC mp_uint_t websocket_read(mp_obj_t self_in, void *buf, mp_uint_t size, int
 
                 self->buf_pos = 0;
                 self->to_recv = to_recv;
-                self->msg_sz = sz; // May be overriden by FRAME_OPT
+                self->msg_sz = sz; // May be overridden by FRAME_OPT
                 if (to_recv != 0) {
                     self->state = FRAME_OPT;
                 } else {
@@ -267,7 +266,7 @@ STATIC mp_uint_t websocket_ioctl(mp_obj_t self_in, mp_uint_t request, uintptr_t 
             return cur;
         }
         default:
-            *errcode = EINVAL;
+            *errcode = MP_EINVAL;
             return MP_STREAM_ERROR;
     }
 }

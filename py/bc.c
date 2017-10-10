@@ -1,5 +1,5 @@
 /*
- * This file is part of the Micro Python project, http://micropython.org/
+ * This file is part of the MicroPython project, http://micropython.org/
  *
  * The MIT License (MIT)
  *
@@ -35,7 +35,7 @@
 #include "py/bc0.h"
 #include "py/bc.h"
 
-#if 0 // print debugging info
+#if MICROPY_DEBUG_VERBOSE // print debugging info
 #define DEBUG_PRINT (1)
 #else // don't print debugging info
 #define DEBUG_PRINT (0)
@@ -62,6 +62,14 @@ mp_uint_t mp_decode_uint(const byte **ptr) {
 // and reused later in the function.
 mp_uint_t mp_decode_uint_value(const byte *ptr) {
     return mp_decode_uint(&ptr);
+}
+
+// This function is used to help reduce stack usage at the caller, for the case when
+// the caller doesn't need the actual value and just wants to skip over it.
+const byte *mp_decode_uint_skip(const byte *ptr) {
+    while ((*ptr++) & 0x80) {
+    }
+    return ptr;
 }
 
 STATIC NORETURN void fun_pos_args_mismatch(mp_obj_fun_bc_t *f, size_t expected, size_t given) {
@@ -115,7 +123,7 @@ void mp_setup_code_state(mp_code_state_t *code_state, size_t n_args, size_t n_kw
 
     // get params
     size_t n_state = mp_decode_uint(&code_state->ip);
-    mp_decode_uint(&code_state->ip); // skip n_exc_stack
+    code_state->ip = mp_decode_uint_skip(code_state->ip); // skip n_exc_stack
     size_t scope_flags = *code_state->ip++;
     size_t n_pos_args = *code_state->ip++;
     size_t n_kwonly_args = *code_state->ip++;
@@ -304,7 +312,7 @@ STATIC const byte opcode_format_table[64] = {
     OC4(U, U, U, U), // 0x0c-0x0f
     OC4(B, B, B, U), // 0x10-0x13
     OC4(V, U, Q, V), // 0x14-0x17
-    OC4(B, U, V, V), // 0x18-0x1b
+    OC4(B, V, V, Q), // 0x18-0x1b
     OC4(Q, Q, Q, Q), // 0x1c-0x1f
     OC4(B, B, V, V), // 0x20-0x23
     OC4(Q, Q, Q, B), // 0x24-0x27

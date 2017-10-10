@@ -1,5 +1,5 @@
 /*
- * This file is part of the Micro Python project, http://micropython.org/
+ * This file is part of the MicroPython project, http://micropython.org/
  *
  * The MIT License (MIT)
  *
@@ -162,9 +162,13 @@ mp_vm_return_kind_t mp_execute_bytecode(mp_code_state_t *code_state, volatile mp
 run_code_state: ;
 #endif
     // Pointers which are constant for particular invocation of mp_execute_bytecode()
-    size_t n_state = mp_decode_uint_value(code_state->fun_bc->bytecode);
-    mp_obj_t * /*const*/ fastn = &code_state->state[n_state - 1];
-    mp_exc_stack_t * /*const*/ exc_stack = (mp_exc_stack_t*)(code_state->state + n_state);
+    mp_obj_t * /*const*/ fastn;
+    mp_exc_stack_t * /*const*/ exc_stack;
+    {
+        size_t n_state = mp_decode_uint_value(code_state->fun_bc->bytecode);
+        fastn = &code_state->state[n_state - 1];
+        exc_stack = (mp_exc_stack_t*)(code_state->state + n_state);
+    }
 
     // variables that are visible to the exception handler (declared volatile)
     volatile bool currently_in_except_block = MP_TAGPTR_TAG0(code_state->exc_sp); // 0 or 1, to detect nested exceptions
@@ -373,6 +377,14 @@ dispatch_loop:
                     DECODE_QSTR;
                     mp_load_method(*sp, qst, sp);
                     sp += 1;
+                    DISPATCH();
+                }
+
+                ENTRY(MP_BC_LOAD_SUPER_METHOD): {
+                    MARK_EXC_IP_SELECTIVE();
+                    DECODE_QSTR;
+                    sp -= 1;
+                    mp_load_super_method(qst, sp - 1);
                     DISPATCH();
                 }
 
@@ -682,8 +694,7 @@ unwind_jump:;
                     }
                     ip = (const byte*)MP_OBJ_TO_PTR(POP()); // pop destination ip for jump
                     if (unum != 0) {
-                        // pop iter and iter_buf
-                        sp--;
+                        // pop the exhausted iterator
                         sp -= MP_OBJ_ITER_BUF_NSLOTS;
                     }
                     DISPATCH_WITH_PEND_EXC_CHECK();
@@ -940,7 +951,7 @@ unwind_jump:;
                     DECODE_UINT;
                     // unum & 0xff == n_positional
                     // (unum >> 8) & 0xff == n_keyword
-                    // We have folowing stack layout here:
+                    // We have following stack layout here:
                     // fun arg0 arg1 ... kw0 val0 kw1 val1 ... seq dict <- TOS
                     sp -= (unum & 0xff) + ((unum >> 7) & 0x1fe) + 2;
                     #if MICROPY_STACKLESS
@@ -1011,7 +1022,7 @@ unwind_jump:;
                     DECODE_UINT;
                     // unum & 0xff == n_positional
                     // (unum >> 8) & 0xff == n_keyword
-                    // We have folowing stack layout here:
+                    // We have following stack layout here:
                     // fun self arg0 arg1 ... kw0 val0 kw1 val1 ... seq dict <- TOS
                     sp -= (unum & 0xff) + ((unum >> 7) & 0x1fe) + 3;
                     #if MICROPY_STACKLESS
@@ -1152,8 +1163,7 @@ yield:
                         ip--;
                         PUSH(ret_value);
                         goto yield;
-                    }
-                    if (ret_kind == MP_VM_RETURN_NORMAL) {
+                    } else if (ret_kind == MP_VM_RETURN_NORMAL) {
                         // Pop exhausted gen
                         sp--;
                         // TODO: When ret_value can be MP_OBJ_NULL here??
@@ -1169,8 +1179,8 @@ yield:
                         // if it was swallowed, we re-raise GeneratorExit
                         GENERATOR_EXIT_IF_NEEDED(t_exc);
                         DISPATCH();
-                    }
-                    if (ret_kind == MP_VM_RETURN_EXCEPTION) {
+                    } else {
+                        assert(ret_kind == MP_VM_RETURN_EXCEPTION);
                         // Pop exhausted gen
                         sp--;
                         if (EXC_MATCH(ret_value, MP_OBJ_FROM_PTR(&mp_type_StopIteration))) {
@@ -1356,22 +1366,25 @@ unwind_loop:
             // TODO need a better way of not adding traceback to constant objects (right now, just GeneratorExit_obj and MemoryError_obj)
             if (nlr.ret_val != &mp_const_GeneratorExit_obj && nlr.ret_val != &mp_const_MemoryError_obj) {
                 const byte *ip = code_state->fun_bc->bytecode;
-                mp_decode_uint(&ip); // skip n_state
-                mp_decode_uint(&ip); // skip n_exc_stack
+                ip = mp_decode_uint_skip(ip); // skip n_state
+                ip = mp_decode_uint_skip(ip); // skip n_exc_stack
                 ip++; // skip scope_params
                 ip++; // skip n_pos_args
                 ip++; // skip n_kwonly_args
                 ip++; // skip n_def_pos_args
                 size_t bc = code_state->ip - ip;
-                size_t code_info_size = mp_decode_uint(&ip);
+                size_t code_info_size = mp_decode_uint_value(ip);
+                ip = mp_decode_uint_skip(ip); // skip code_info_size
                 bc -= code_info_size;
                 #if MICROPY_PERSISTENT_CODE
                 qstr block_name = ip[0] | (ip[1] << 8);
                 qstr source_file = ip[2] | (ip[3] << 8);
                 ip += 4;
                 #else
-                qstr block_name = mp_decode_uint(&ip);
-                qstr source_file = mp_decode_uint(&ip);
+                qstr block_name = mp_decode_uint_value(ip);
+                ip = mp_decode_uint_skip(ip);
+                qstr source_file = mp_decode_uint_value(ip);
+                ip = mp_decode_uint_skip(ip);
                 #endif
                 size_t source_line = 1;
                 size_t c;
@@ -1428,6 +1441,7 @@ unwind_loop:
             } else if (code_state->prev != NULL) {
                 mp_globals_set(code_state->old_globals);
                 code_state = code_state->prev;
+                size_t n_state = mp_decode_uint_value(code_state->fun_bc->bytecode);
                 fastn = &code_state->state[n_state - 1];
                 exc_stack = (mp_exc_stack_t*)(code_state->state + n_state);
                 // variables that are visible to the exception handler (declared volatile)

@@ -1,5 +1,5 @@
 /*
- * This file is part of the Micro Python project, http://micropython.org/
+ * This file is part of the MicroPython project, http://micropython.org/
  *
  * The MIT License (MIT)
  *
@@ -243,6 +243,11 @@ const byte *mp_bytecode_print_str(const byte *ip) {
         case MP_BC_LOAD_METHOD:
             DECODE_QSTR;
             printf("LOAD_METHOD %s", qstr_str(qst));
+            break;
+
+        case MP_BC_LOAD_SUPER_METHOD:
+            DECODE_QSTR;
+            printf("LOAD_SUPER_METHOD %s", qstr_str(qst));
             break;
 
         case MP_BC_LOAD_BUILD_CLASS:

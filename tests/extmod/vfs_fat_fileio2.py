@@ -1,4 +1,3 @@
-import sys
 try:
     import uerrno
     try:
@@ -8,13 +7,13 @@ try:
         import uos
 except ImportError:
     print("SKIP")
-    sys.exit()
+    raise SystemExit
 
 try:
     uos.VfsFat
 except AttributeError:
     print("SKIP")
-    sys.exit()
+    raise SystemExit
 
 
 class RAMFS:
@@ -46,7 +45,7 @@ try:
     bdev = RAMFS(50)
 except MemoryError:
     print("SKIP")
-    sys.exit()
+    raise SystemExit
 
 uos.VfsFat.mkfs(bdev)
 vfs = uos.VfsFat(bdev)
@@ -91,23 +90,23 @@ except OSError as e:
 
 # trim full path
 vfs.rename("foo_dir/file-in-dir.txt", "foo_dir/file.txt")
-print(vfs.listdir("foo_dir"))
+print(list(vfs.ilistdir("foo_dir")))
 
 vfs.rename("foo_dir/file.txt", "moved-to-root.txt")
-print(vfs.listdir())
+print(list(vfs.ilistdir()))
 
 # check that renaming to existing file will overwrite it
 with open("temp", "w") as f:
     f.write("new text")
 vfs.rename("temp", "moved-to-root.txt")
-print(vfs.listdir())
+print(list(vfs.ilistdir()))
 with open("moved-to-root.txt") as f:
     print(f.read())
 
 # valid removes
 vfs.remove("foo_dir/sub_file.txt")
 vfs.rmdir("foo_dir")
-print(vfs.listdir())
+print(list(vfs.ilistdir()))
 
 # disk full
 try:

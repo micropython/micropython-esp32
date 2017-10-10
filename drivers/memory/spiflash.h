@@ -23,7 +23,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-
 #ifndef MICROPY_INCLUDED_DRIVERS_MEMORY_SPIFLASH_H
 #define MICROPY_INCLUDED_DRIVERS_MEMORY_SPIFLASH_H
 
@@ -31,8 +30,7 @@
 
 typedef struct _mp_spiflash_t {
     mp_hal_pin_obj_t cs;
-    // TODO replace with generic SPI object
-    mp_machine_soft_spi_obj_t spi;
+    mp_obj_base_t *spi; // object must have protocol pointing to mp_machine_spi_p_t struct
 } mp_spiflash_t;
 
 void mp_spiflash_init(mp_spiflash_t *self);

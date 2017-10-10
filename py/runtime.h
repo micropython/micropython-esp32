@@ -1,5 +1,5 @@
 /*
- * This file is part of the Micro Python project, http://micropython.org/
+ * This file is part of the MicroPython project, http://micropython.org/
  *
  * The MIT License (MIT)
  *
@@ -23,8 +23,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#ifndef __MICROPY_INCLUDED_PY_RUNTIME_H__
-#define __MICROPY_INCLUDED_PY_RUNTIME_H__
+#ifndef MICROPY_INCLUDED_PY_RUNTIME_H
+#define MICROPY_INCLUDED_PY_RUNTIME_H
 
 #include "py/mpstate.h"
 #include "py/obj.h"
@@ -96,8 +96,8 @@ void mp_store_global(qstr qst, mp_obj_t obj);
 void mp_delete_name(qstr qst);
 void mp_delete_global(qstr qst);
 
-mp_obj_t mp_unary_op(mp_uint_t op, mp_obj_t arg);
-mp_obj_t mp_binary_op(mp_uint_t op, mp_obj_t lhs, mp_obj_t rhs);
+mp_obj_t mp_unary_op(mp_unary_op_t op, mp_obj_t arg);
+mp_obj_t mp_binary_op(mp_binary_op_t op, mp_obj_t lhs, mp_obj_t rhs);
 
 mp_obj_t mp_call_function_0(mp_obj_t fun);
 mp_obj_t mp_call_function_1(mp_obj_t fun, mp_obj_t arg);
@@ -131,6 +131,7 @@ mp_obj_t mp_load_attr(mp_obj_t base, qstr attr);
 void mp_convert_member_lookup(mp_obj_t obj, const mp_obj_type_t *type, mp_obj_t member, mp_obj_t *dest);
 void mp_load_method(mp_obj_t base, qstr attr, mp_obj_t *dest);
 void mp_load_method_maybe(mp_obj_t base, qstr attr, mp_obj_t *dest);
+void mp_load_super_method(qstr attr, mp_obj_t *dest);
 void mp_store_attr(mp_obj_t base, qstr attr, mp_obj_t val);
 
 mp_obj_t mp_getiter(mp_obj_t o, mp_obj_iter_buf_t *iter_buf);
@@ -148,8 +149,8 @@ NORETURN void mp_raise_msg(const mp_obj_type_t *exc_type, const char *msg);
 //NORETURN void nlr_raise_msg_varg(const mp_obj_type_t *exc_type, const char *fmt, ...);
 NORETURN void mp_raise_ValueError(const char *msg);
 NORETURN void mp_raise_TypeError(const char *msg);
+NORETURN void mp_raise_NotImplementedError(const char *msg);
 NORETURN void mp_raise_OSError(int errno_);
-NORETURN void mp_not_implemented(const char *msg); // Raise NotImplementedError with given message
 NORETURN void mp_exc_recursion_depth(void);
 
 #if MICROPY_BUILTIN_METHOD_CHECK_SELF_ARG
@@ -177,4 +178,4 @@ void mp_warning(const char *msg, ...);
 #define mp_warning(msg, ...)
 #endif
 
-#endif // __MICROPY_INCLUDED_PY_RUNTIME_H__
+#endif // MICROPY_INCLUDED_PY_RUNTIME_H

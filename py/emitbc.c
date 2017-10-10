@@ -1,5 +1,5 @@
 /*
- * This file is part of the Micro Python project, http://micropython.org/
+ * This file is part of the MicroPython project, http://micropython.org/
  *
  * The MIT License (MIT)
  *
@@ -448,7 +448,19 @@ bool mp_emit_bc_last_emit_was_return_value(emit_t *emit) {
 }
 
 void mp_emit_bc_adjust_stack_size(emit_t *emit, mp_int_t delta) {
+    if (emit->pass == MP_PASS_SCOPE) {
+        return;
+    }
+    assert((mp_int_t)emit->stack_size + delta >= 0);
     emit->stack_size += delta;
+    if (emit->stack_size > emit->scope->stack_size) {
+        emit->scope->stack_size = emit->stack_size;
+    }
+    emit->last_emit_was_return_value = false;
+}
+
+static inline void emit_bc_pre(emit_t *emit, mp_int_t stack_size_delta) {
+    mp_emit_bc_adjust_stack_size(emit, stack_size_delta);
 }
 
 void mp_emit_bc_set_source_line(emit_t *emit, mp_uint_t source_line) {
@@ -469,18 +481,6 @@ void mp_emit_bc_set_source_line(emit_t *emit, mp_uint_t source_line) {
     (void)emit;
     (void)source_line;
 #endif
-}
-
-STATIC void emit_bc_pre(emit_t *emit, mp_int_t stack_size_delta) {
-    if (emit->pass == MP_PASS_SCOPE) {
-        return;
-    }
-    assert((mp_int_t)emit->stack_size + stack_size_delta >= 0);
-    emit->stack_size += stack_size_delta;
-    if (emit->stack_size > emit->scope->stack_size) {
-        emit->scope->stack_size = emit->stack_size;
-    }
-    emit->last_emit_was_return_value = false;
 }
 
 void mp_emit_bc_label_assign(emit_t *emit, mp_uint_t l) {
@@ -594,9 +594,9 @@ void mp_emit_bc_load_attr(emit_t *emit, qstr qst) {
     }
 }
 
-void mp_emit_bc_load_method(emit_t *emit, qstr qst) {
-    emit_bc_pre(emit, 1);
-    emit_write_bytecode_byte_qstr(emit, MP_BC_LOAD_METHOD, qst);
+void mp_emit_bc_load_method(emit_t *emit, qstr qst, bool is_super) {
+    emit_bc_pre(emit, 1 - 2 * is_super);
+    emit_write_bytecode_byte_qstr(emit, is_super ? MP_BC_LOAD_SUPER_METHOD : MP_BC_LOAD_METHOD, qst);
 }
 
 void mp_emit_bc_load_build_class(emit_t *emit) {
@@ -902,7 +902,7 @@ void mp_emit_bc_make_closure(emit_t *emit, scope_t *scope, mp_uint_t n_closed_ov
         emit_write_bytecode_byte(emit, n_closed_over);
     } else {
         assert(n_closed_over <= 255);
-        emit_bc_pre(emit, -2 - n_closed_over + 1);
+        emit_bc_pre(emit, -2 - (mp_int_t)n_closed_over + 1);
         emit_write_bytecode_byte_raw_code(emit, MP_BC_MAKE_CLOSURE_DEFARGS, scope->raw_code);
         emit_write_bytecode_byte(emit, n_closed_over);
     }

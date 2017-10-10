@@ -1,5 +1,5 @@
 /*
- * This file is part of the Micro Python project, http://micropython.org/
+ * This file is part of the MicroPython project, http://micropython.org/
  *
  * The MIT License (MIT)
  *
@@ -116,6 +116,7 @@ mp_obj_t mp_obj_int_from_bytes_impl(bool big_endian, size_t len, const byte *buf
 void mp_obj_int_to_bytes_impl(mp_obj_t self_in, bool big_endian, size_t len, byte *buf) {
     assert(MP_OBJ_IS_TYPE(self_in, &mp_type_int));
     mp_obj_int_t *self = MP_OBJ_TO_PTR(self_in);
+    memset(buf, 0, len);
     mpz_as_bytes(&self->mpz, big_endian, len, buf);
 }
 
@@ -161,7 +162,7 @@ mp_obj_t mp_obj_int_abs(mp_obj_t self_in) {
     }
 }
 
-mp_obj_t mp_obj_int_unary_op(mp_uint_t op, mp_obj_t o_in) {
+mp_obj_t mp_obj_int_unary_op(mp_unary_op_t op, mp_obj_t o_in) {
     mp_obj_int_t *o = MP_OBJ_TO_PTR(o_in);
     switch (op) {
         case MP_UNARY_OP_BOOL: return mp_obj_new_bool(!mpz_is_zero(&o->mpz));
@@ -173,7 +174,7 @@ mp_obj_t mp_obj_int_unary_op(mp_uint_t op, mp_obj_t o_in) {
     }
 }
 
-mp_obj_t mp_obj_int_binary_op(mp_uint_t op, mp_obj_t lhs_in, mp_obj_t rhs_in) {
+mp_obj_t mp_obj_int_binary_op(mp_binary_op_t op, mp_obj_t lhs_in, mp_obj_t rhs_in) {
     const mpz_t *zlhs;
     const mpz_t *zrhs;
     mpz_t z_int;
@@ -289,6 +290,13 @@ mp_obj_t mp_obj_int_binary_op(mp_uint_t op, mp_obj_t lhs_in, mp_obj_t rhs_in) {
 
             case MP_BINARY_OP_POWER:
             case MP_BINARY_OP_INPLACE_POWER:
+                if (mpz_is_neg(zrhs)) {
+                    #if MICROPY_PY_BUILTINS_FLOAT
+                    return mp_obj_float_binary_op(op, mpz_as_float(zlhs), rhs_in);
+                    #else
+                    mp_raise_ValueError("negative power with no float support");
+                    #endif
+                }
                 mpz_pow_inpl(&res->mpz, zlhs, zrhs);
                 break;
 

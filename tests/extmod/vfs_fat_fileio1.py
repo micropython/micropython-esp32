@@ -1,4 +1,3 @@
-import sys
 try:
     import uerrno
     try:
@@ -8,13 +7,13 @@ try:
         import uos
 except ImportError:
     print("SKIP")
-    sys.exit()
+    raise SystemExit
 
 try:
     uos.VfsFat
 except AttributeError:
     print("SKIP")
-    sys.exit()
+    raise SystemExit
 
 
 class RAMFS:
@@ -46,7 +45,7 @@ try:
     bdev = RAMFS(50)
 except MemoryError:
     print("SKIP")
-    sys.exit()
+    raise SystemExit
 
 uos.VfsFat.mkfs(bdev)
 vfs = uos.VfsFat(bdev)
@@ -115,4 +114,4 @@ except OSError as e:
     print(e.args[0] == 20) # uerrno.ENOTDIR
 
 vfs.remove("foo_file.txt")
-print(vfs.listdir())
+print(list(vfs.ilistdir()))

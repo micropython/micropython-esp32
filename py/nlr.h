@@ -1,5 +1,5 @@
 /*
- * This file is part of the Micro Python project, http://micropython.org/
+ * This file is part of the MicroPython project, http://micropython.org/
  *
  * The MIT License (MIT)
  *
@@ -23,8 +23,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#ifndef __MICROPY_INCLUDED_PY_NLR_H__
-#define __MICROPY_INCLUDED_PY_NLR_H__
+#ifndef MICROPY_INCLUDED_PY_NLR_H
+#define MICROPY_INCLUDED_PY_NLR_H
 
 // non-local return
 // exception handling, basically a stack of setjmp/longjmp buffers
@@ -85,7 +85,7 @@ NORETURN void nlr_jump(void *val);
 NORETURN void nlr_jump_fail(void *val);
 
 // use nlr_raise instead of nlr_jump so that debugging is easier
-#ifndef DEBUG
+#ifndef MICROPY_DEBUG_NLR
 #define nlr_raise(val) nlr_jump(MP_OBJ_TO_PTR(val))
 #else
 #include "mpstate.h"
@@ -112,4 +112,4 @@ NORETURN void nlr_jump_fail(void *val);
 
 #endif
 
-#endif // __MICROPY_INCLUDED_PY_NLR_H__
+#endif // MICROPY_INCLUDED_PY_NLR_H

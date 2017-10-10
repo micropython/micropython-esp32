@@ -1,4 +1,3 @@
-import sys
 try:
     import uerrno
     try:
@@ -7,13 +6,13 @@ try:
         import uos
 except ImportError:
     print("SKIP")
-    sys.exit()
+    raise SystemExit
 
 try:
     uos.VfsFat
 except AttributeError:
     print("SKIP")
-    sys.exit()
+    raise SystemExit
 
 
 class RAMFS:
@@ -45,7 +44,7 @@ try:
     bdev = RAMFS(50)
 except MemoryError:
     print("SKIP")
-    sys.exit()
+    raise SystemExit
 
 uos.VfsFat.mkfs(bdev)
 
@@ -65,7 +64,7 @@ except OSError as e:
 
 with vfs.open("foo_file.txt", "w") as f:
     f.write("hello!")
-print(vfs.listdir())
+print(list(vfs.ilistdir()))
 
 print("stat root:", vfs.stat("/"))
 print("stat file:", vfs.stat("foo_file.txt")[:-3]) # timestamps differ across runs
@@ -76,7 +75,7 @@ print(b"hello!" in bdev.data)
 vfs.mkdir("foo_dir")
 vfs.chdir("foo_dir")
 print("getcwd:", vfs.getcwd())
-print(vfs.listdir())
+print(list(vfs.ilistdir()))
 
 with vfs.open("sub_file.txt", "w") as f:
     f.write("subdir file")
@@ -92,4 +91,10 @@ print("getcwd:", vfs.getcwd())
 uos.umount(vfs)
 
 vfs = uos.VfsFat(bdev)
-print(vfs.listdir(b""))
+print(list(vfs.ilistdir(b"")))
+
+# list a non-existent directory
+try:
+    vfs.ilistdir(b"no_exist")
+except OSError as e:
+    print('ENOENT:', e.args[0] == uerrno.ENOENT)

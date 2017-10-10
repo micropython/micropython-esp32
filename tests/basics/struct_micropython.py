@@ -6,9 +6,8 @@ except:
     try:
         import struct
     except ImportError:
-        import sys
         print("SKIP")
-        sys.exit()
+        raise SystemExit
 
 class A():
     pass
@@ -18,6 +17,9 @@ o = A()
 s = struct.pack("<O", o)
 o2 = struct.unpack("<O", s)
 print(o is o2[0])
+
+# pack can accept less arguments than required for the format spec
+print(struct.pack('<2I', 1))
 
 # pack and unpack pointer to a string
 # This requires uctypes to get the address of the string and instead of

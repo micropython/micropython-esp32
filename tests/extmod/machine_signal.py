@@ -9,8 +9,7 @@ try:
     machine.Signal
 except AttributeError:
     print("SKIP")
-    import sys
-    sys.exit()
+    raise SystemExit
 
 class Pin(machine.PinBase):
     def __init__(self):
@@ -33,7 +32,7 @@ print(p.value(), s.value())
 
 # test inverted, and using on/off methods
 p = Pin()
-s = machine.Signal(p, inverted=True)
+s = machine.Signal(p, invert=True)
 s.off()
 print(p.value(), s.value())
 s.on()

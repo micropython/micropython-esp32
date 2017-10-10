@@ -53,7 +53,7 @@ which is stored within the external serial flash memory.  If a micro SD card
 is hooked-up and mounted, it will be available as well.
 
 When the WiPy starts up, it always boots from the ``boot.py`` located in the
-``/flash`` file system.
+``/flash`` file system. On boot up, the current directory is ``/flash``.
 
 The file system is accessible via the native FTP server running in the WiPy.
 Open your FTP client of choice and connect to:
@@ -240,6 +240,23 @@ Additional Pin methods:
    Returns a list of the alternate functions supported by the pin. List items are
    a tuple of the form: ``('ALT_FUN_NAME', ALT_FUN_INDEX)``
 
+Additional details for machine.I2C
+----------------------------------
+
+On the WiPy there is a single hardware I2C peripheral, identified by "0".  By
+default this is the peripheral that is used when constructing an I2C instance.
+The default pins are GP23 for SCL and GP13 for SDA, and one can create the
+default I2C peripheral simply by doing::
+
+    i2c = machine.I2C()
+
+The pins and frequency can be specified as::
+
+    i2c = machine.I2C(freq=400000, scl='GP23', sda='GP13')
+
+Only certain pins can be used as SCL/SDA.  Please refer to the pinout for further
+information.
+
 Known issues
 ------------
 
@@ -253,6 +270,29 @@ SSL sockets need to be created the following way before wrapping them with.
   import ssl
   s = socket(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_SEC)
   ss = ssl.wrap_socket(s)
+
+Certificates must be used in order to validate the other side of the connection, and also to
+authenticate ourselves with the other end. Such certificates must be stored as files using the
+FTP server, and they must be placed in specific paths with specific names.
+
+- The certificate to validate the other side goes in: **'/flash/cert/ca.pem'**
+- The certificate to authenticate ourselves goes in: **'/flash/cert/cert.pem'**
+- The key for our own certificate goes in: **'/flash/cert/private.key'**
+
+.. note::
+
+  When these files are stored, they are placed inside the internal **hidden** file system
+  (just like firmware updates), and therefore they are never visible.
+
+For instance to connect to the Blynk servers using certificates, take the file ``ca.pem`` located
+in the `blynk examples folder <https://github.com/wipy/wipy/tree/master/examples/blynk>`_.
+and put it in '/flash/cert/'. Then do::
+
+  import socket
+  import ssl
+  s = socket.socket(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_SEC)
+  ss = ssl.wrap_socket(s, cert_reqs=ssl.CERT_REQUIRED, ca_certs='/flash/cert/ca.pem')
+  ss.connect(socket.getaddrinfo('cloud.blynk.cc', 8441)[0][-1])
 
 Incompatibilities in uhashlib module
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -273,3 +313,73 @@ Example::
    ...
    hash.update('12345')                      # last chunk may be of any length
    hash.digest()
+
+Unrelated function in machine module
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. function:: main(filename)
+
+    Set the filename of the main script to run after boot.py is finished.  If
+    this function is not called then the default file main.py will be executed.
+
+    It only makes sense to call this function from within boot.py.
+
+Adhoc way to control telnet/FTP server via network module
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The ``Server`` class controls the behaviour and the configuration of the FTP and telnet
+services running on the WiPy. Any changes performed using this class' methods will
+affect both.
+
+Example::
+
+    import network
+    server = network.Server()
+    server.deinit() # disable the server
+    # enable the server again with new settings
+    server.init(login=('user', 'password'), timeout=600)
+
+.. class:: network.Server(id, ...)
+
+   Create a server instance, see ``init`` for parameters of initialization.
+
+.. method:: server.init(\*, login=('micro', 'python'), timeout=300)
+
+   Init (and effectively start the server). Optionally a new ``user``, ``password``
+   and ``timeout`` (in seconds) can be passed.
+
+.. method:: server.deinit()
+
+   Stop the server
+
+.. method:: server.timeout([timeout_in_seconds])
+
+   Get or set the server timeout.
+
+.. method:: server.isrunning()
+
+   Returns ``True`` if the server is running, ``False`` otherwise.
+
+Adhoc VFS-like support
+~~~~~~~~~~~~~~~~~~~~~~
+
+WiPy doesn't implement full MicroPython VFS support, instead following
+functions are defined in ``uos`` module:
+
+.. function:: mount(block_device, mount_point, \*, readonly=False)
+
+   Mounts a block device (like an ``SD`` object) in the specified mount
+   point. Example::
+
+      os.mount(sd, '/sd')
+
+.. function:: unmount(path)
+
+   Unmounts a previously mounted block device from the given path.
+
+.. function:: mkfs(block_device or path)
+
+   Formats the specified path, must be either ``/flash`` or ``/sd``.
+   A block device can also be passed like an ``SD`` object before
+   being mounted.
+

@@ -55,8 +55,8 @@ CFLAGS += -U _FORTIFY_SOURCE
 endif
 
 # On OSX, 'gcc' is a symlink to clang unless a real gcc is installed.
-# The unix port of micropython on OSX must be compiled with clang,
-# while cross-compile ports require gcc, so we test here for OSX and 
+# The unix port of MicroPython on OSX must be compiled with clang,
+# while cross-compile ports require gcc, so we test here for OSX and
 # if necessary override the value of 'CC' set in py/mkenv.mk
 ifeq ($(UNAME_S),Darwin)
 CC = clang
@@ -170,7 +170,7 @@ SRC_QSTR_AUTO_DEPS +=
 include $(MPTOP)/py/mkrules.mk
 
 # Value of configure's --host= option (required for cross-compilation).
-# Deduce it from CROSS_COMPILE by default, but can be overriden.
+# Deduce it from CROSS_COMPILE by default, but can be overridden.
 ifneq ($(CROSS_COMPILE),)
 CROSS_COMPILE_HOST = --host=$(patsubst %-,%,$(CROSS_COMPILE))
 else

@@ -1,5 +1,5 @@
 /*
- * This file is part of the Micro Python project, http://micropython.org/
+ * This file is part of the MicroPython project, http://micropython.org/
  *
  * These math functions are taken from newlib-nano-2, the newlib/libm/math
  * directory, available from https://github.com/32bitmicro/newlib-nano-2.
@@ -32,7 +32,7 @@
 	float value; int exp;
 #endif
 {
-	if(!finitef(value)||value==(float)0.0) return value;
+	if(!isfinite(value)||value==(float)0.0) return value;
 	value = scalbnf(value,exp);
 	//if(!finitef(value)||value==(float)0.0) errno = ERANGE;
 	return value;

@@ -1,4 +1,5 @@
 .. currentmodule:: machine
+.. _machine.RTC:
 
 class RTC -- real time clock
 ============================
@@ -37,7 +38,7 @@ Methods
 
    Resets the RTC to the time of January 1, 2015 and starts running it again.
 
-.. method:: RTC.alarm(id, time, /*, repeat=False)
+.. method:: RTC.alarm(id, time, \*, repeat=False)
 
    Set the RTC alarm. Time might be either a millisecond value to program the alarm to
    current time + time_in_ms in the future, or a datetimetuple. If the time passed is in

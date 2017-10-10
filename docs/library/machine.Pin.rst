@@ -1,4 +1,5 @@
 .. currentmodule:: machine
+.. _machine.Pin:
 
 class Pin -- control I/O pins
 =============================
@@ -145,31 +146,19 @@ Methods
 
    When setting the value this method returns ``None``.
 
-.. method:: Pin.out_value()
-
-   Return the value stored in the output buffer of a pin, regardless of its mode.
-
-   Not all ports implement this method.
-
 .. method:: Pin.__call__([x])
 
    Pin objects are callable.  The call method provides a (fast) shortcut to set
    and get the value of the pin.  It is equivalent to Pin.value([x]).
    See :meth:`Pin.value` for more details.
 
-.. method:: Pin.toggle()
+.. method:: Pin.on()
 
-   Toggle the output value of the pin.  Equivalent to ``pin.value(not pin.out_value())``.
-   Returns ``None``.
+   Set pin to "1" output level.
 
-   Not all ports implement this method.
+.. method:: Pin.off()
 
-   Availability: WiPy.
-
-.. method:: Pin.id()
-
-   Get the pin identifier.  This may return the ``id`` as specified in the
-   constructor.  Or it may return a canonical software-specific pin id.
+   Set pin to "0" output level.
 
 .. method:: Pin.mode([mode])
 
@@ -224,19 +213,6 @@ Methods
        more than one power mode.
 
    This method returns a callback object.
-
-Attributes
-----------
-
-.. class:: Pin.board
-
-    Contains all ``Pin`` objects supported by the board. Examples::
-
-        Pin.board.GP25
-        led = Pin(Pin.board.GP25, mode=Pin.OUT)
-        Pin.board.GP2.alt_list()
-
-    Availability: WiPy.
 
 Constants
 ---------
