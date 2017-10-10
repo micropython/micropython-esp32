@@ -4,6 +4,7 @@
  * The MIT License (MIT)
  *
  * Copyright (c) 2016 Paul Sokolovsky
+ * Copyright (c) 2017 Eric Poulsen
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -49,10 +50,11 @@ STATIC mp_obj_t machine_wdt_make_new(const mp_obj_type_t *type_in, size_t n_args
     }
 
     switch (id) {
-    case 0:
-        return &wdt_default;
-    default:
-        mp_raise_ValueError("");
+        case 0:
+            esp_task_wdt_feed();
+            return &wdt_default;
+        default:
+            mp_raise_ValueError("");
     }
 }
 
@@ -63,16 +65,9 @@ STATIC mp_obj_t machine_wdt_feed(mp_obj_t self_in) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(machine_wdt_feed_obj, machine_wdt_feed);
 
-STATIC mp_obj_t machine_wdt_deinit(mp_obj_t self_in) {
-    (void)self_in;
-    esp_task_wdt_delete();
-    return mp_const_none;
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(machine_wdt_deinit_obj, machine_wdt_deinit);
 
 STATIC const mp_map_elem_t machine_wdt_locals_dict_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR_feed), (mp_obj_t)&machine_wdt_feed_obj },
-    { MP_OBJ_NEW_QSTR(MP_QSTR_deinit), (mp_obj_t)&machine_wdt_deinit_obj },
 };
 STATIC MP_DEFINE_CONST_DICT(machine_wdt_locals_dict, machine_wdt_locals_dict_table);
 
