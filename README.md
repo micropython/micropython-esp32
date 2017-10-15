@@ -17,11 +17,11 @@ This repository is a clone of the main, upstream repository found at
 https://github.com/micropython/micropython.  This repository adds a new
 branch called `esp32` which contains a port of MicroPython to the ESP32
 microcontroller, under the MIT license.  Please see the `README.md` file
-in the `esp32/` subdirectory for details of this port.
+in the `ports/esp32/` subdirectory for details of this port.
 
 This `esp32` branch is the default branch and all pull requests should be
 made to this branch, and any issues should discuss only the code developed
-in the `esp32/` subdirectory.
+in the `ports/esp32/` subdirectory.
 
 The `esp32` branch will not be rebased so it is safe to clone/fork it and
 base your work on it.  New commits from the upstream repository will
