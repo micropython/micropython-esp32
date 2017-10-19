@@ -29,6 +29,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/time.h>
+#include <py/nlr.h>
+#include <py/smallint.h>
+#include "lib/timeutils/timeutils.h"
 
 #include "py/runtime.h"
 #include "lib/timeutils/timeutils.h"
