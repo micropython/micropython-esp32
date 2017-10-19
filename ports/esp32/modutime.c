@@ -6,7 +6,6 @@
  * The MIT License (MIT)
  *
  * Copyright (c) 2016 Damien P. George
- * Copyright (c) 2015 Josef Gajdusek
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -32,27 +31,10 @@
 #include <sys/time.h>
 #include <py/nlr.h>
 #include <py/smallint.h>
-#include "timeutils.h"
+#include "lib/timeutils/timeutils.h"
 
 #include "extmod/utime_mphal.h"
 
-/// \module time - time related functions
-///
-/// The `time` module provides functions for getting the current time and date,
-/// and for sleeping.
-
-/// \function localtime([secs])
-/// Convert a time expressed in seconds since Jan 1, 2000 into an 8-tuple which
-/// contains: (year, month, mday, hour, minute, second, weekday, yearday)
-/// If secs is not provided or None, then the current time from the RTC is used.
-/// year includes the century (for example 2014)
-/// month   is 1-12
-/// mday    is 1-31
-/// hour    is 0-23
-/// minute  is 0-59
-/// second  is 0-59
-/// weekday is 0-6 for Mon-Sun.
-/// yearday is 1-366
 STATIC mp_obj_t time_localtime(size_t n_args, const mp_obj_t *args) {
     timeutils_struct_time_t tm;
     mp_int_t seconds;
@@ -76,12 +58,8 @@ STATIC mp_obj_t time_localtime(size_t n_args, const mp_obj_t *args) {
     };
     return mp_obj_new_tuple(8, tuple);
 }
-MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(time_localtime_obj, 0, 1, time_localtime);
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(time_localtime_obj, 0, 1, time_localtime);
 
-/// \function mktime()
-/// This is inverse function of localtime. It's argument is a full 8-tuple
-/// which expresses a time as per localtime. It returns an integer which is
-/// the number of seconds since Jan 1, 2000.
 STATIC mp_obj_t time_mktime(mp_obj_t tuple) {
     size_t len;
     mp_obj_t *elem;
@@ -96,7 +74,7 @@ STATIC mp_obj_t time_mktime(mp_obj_t tuple) {
             mp_obj_get_int(elem[1]), mp_obj_get_int(elem[2]), mp_obj_get_int(elem[3]),
             mp_obj_get_int(elem[4]), mp_obj_get_int(elem[5])));
 }
-MP_DEFINE_CONST_FUN_OBJ_1(time_mktime_obj, time_mktime);
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(time_mktime_obj, time_mktime);
 
 STATIC mp_obj_t time_time(void) {
     struct timeval tv;
