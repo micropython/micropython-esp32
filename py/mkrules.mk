@@ -103,7 +103,7 @@ endif
 
 ifneq ($(FROZEN_MPY_DIR),)
 # to build the MicroPython cross compiler
-$(TOP)/mpy-cross/mpy-cross: $(TOP)/py/*.[ch] $(TOP)/mpy-cross/*.[ch] $(TOP)/windows/fmode.c
+$(TOP)/mpy-cross/mpy-cross: $(TOP)/py/*.[ch] $(TOP)/mpy-cross/*.[ch] $(TOP)/ports/windows/fmode.c
 	$(Q)$(MAKE) -C $(TOP)/mpy-cross
 
 # make a list of all the .py files that need compiling and freezing
@@ -135,7 +135,7 @@ $(PROG): $(OBJ)
 ifndef DEBUG
 	$(Q)$(STRIP) $(STRIPFLAGS_EXTRA) $(PROG)
 endif
-	$(Q)$(SIZE) $$(find $(BUILD)/build -name "frozen*.o") $(PROG)
+	$(Q)$(SIZE) $$(find $(BUILD) -path "$(BUILD)/build/frozen*.o") $(PROG)
 
 clean: clean-prog
 clean-prog:

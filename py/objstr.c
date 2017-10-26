@@ -280,7 +280,7 @@ const byte *find_subbytes(const byte *haystack, size_t hlen, const byte *needle,
 // Note: this function is used to check if an object is a str or bytes, which
 // works because both those types use it as their binary_op method.  Revisit
 // MP_OBJ_IS_STR_OR_BYTES if this fact changes.
-mp_obj_t mp_obj_str_binary_op(mp_uint_t op, mp_obj_t lhs_in, mp_obj_t rhs_in) {
+mp_obj_t mp_obj_str_binary_op(mp_binary_op_t op, mp_obj_t lhs_in, mp_obj_t rhs_in) {
     // check for modulo
     if (op == MP_BINARY_OP_MODULO) {
         mp_obj_t *args = &rhs_in;
@@ -380,9 +380,10 @@ mp_obj_t mp_obj_str_binary_op(mp_uint_t op, mp_obj_t lhs_in, mp_obj_t rhs_in) {
         case MP_BINARY_OP_MORE:
         case MP_BINARY_OP_MORE_EQUAL:
             return mp_obj_new_bool(mp_seq_cmp_bytes(op, lhs_data, lhs_len, rhs_data, rhs_len));
-    }
 
-    return MP_OBJ_NULL; // op not supported
+        default:
+            return MP_OBJ_NULL; // op not supported
+    }
 }
 
 #if !MICROPY_PY_BUILTINS_STR_UNICODE
@@ -726,7 +727,8 @@ MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(str_rindex_obj, 2, 4, str_rindex);
 STATIC mp_obj_t str_startswith(size_t n_args, const mp_obj_t *args) {
     const mp_obj_type_t *self_type = mp_obj_get_type(args[0]);
     GET_STR_DATA_LEN(args[0], str, str_len);
-    GET_STR_DATA_LEN(args[1], prefix, prefix_len);
+    size_t prefix_len;
+    const char *prefix = mp_obj_str_get_data(args[1], &prefix_len);
     const byte *start = str;
     if (n_args > 2) {
         start = str_index_to_ptr(self_type, str, str_len, args[2], true);
@@ -740,7 +742,8 @@ MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(str_startswith_obj, 2, 3, str_startswith);
 
 STATIC mp_obj_t str_endswith(size_t n_args, const mp_obj_t *args) {
     GET_STR_DATA_LEN(args[0], str, str_len);
-    GET_STR_DATA_LEN(args[1], suffix, suffix_len);
+    size_t suffix_len;
+    const char *suffix = mp_obj_str_get_data(args[1], &suffix_len);
     if (n_args > 2) {
         mp_raise_NotImplementedError("start/end indices");
     }
