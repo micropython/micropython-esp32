@@ -36,6 +36,7 @@
 #include "py/mperrno.h"
 #include "py/mphal.h"
 #include "drivers/dht/dht.h"
+#include "driver/adc.h"
 #include "modesp.h"
 
 STATIC mp_obj_t esp_flash_read(mp_obj_t offset_in, mp_obj_t buf_in) {
@@ -104,6 +105,12 @@ STATIC mp_obj_t esp_neopixel_write_(mp_obj_t pin, mp_obj_t buf, mp_obj_t timing)
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_3(esp_neopixel_write_obj, esp_neopixel_write_);
 
+STATIC mp_obj_t esp_hall_sensor(void) {
+    adc1_config_width(ADC_WIDTH_12Bit);
+    return mp_obj_new_int_from_uint(hall_sensor_read());
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(esp_hall_sensor_obj, esp_hall_sensor);
+
 STATIC const mp_rom_map_elem_t esp_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_esp) },
 
@@ -112,7 +119,9 @@ STATIC const mp_rom_map_elem_t esp_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_flash_erase), MP_ROM_PTR(&esp_flash_erase_obj) },
     { MP_ROM_QSTR(MP_QSTR_flash_size), MP_ROM_PTR(&esp_flash_size_obj) },
     { MP_ROM_QSTR(MP_QSTR_flash_user_start), MP_ROM_PTR(&esp_flash_user_start_obj) },
-
+    
+    { MP_ROM_QSTR(MP_QSTR_hall_sensor), MP_ROM_PTR(&esp_hall_sensor_obj) },
+    
     { MP_ROM_QSTR(MP_QSTR_gpio_matrix_in), MP_ROM_PTR(&esp_gpio_matrix_in_obj) },
     { MP_ROM_QSTR(MP_QSTR_gpio_matrix_out), MP_ROM_PTR(&esp_gpio_matrix_out_obj) },
 
