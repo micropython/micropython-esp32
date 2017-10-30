@@ -28,9 +28,8 @@
 #include <string.h>
 #include <assert.h>
 
-#include "py/nlr.h"
-#include "py/runtime0.h"
 #include "py/runtime.h"
+#include "py/smallint.h"
 #include "py/emitglue.h"
 #include "py/bc.h"
 
@@ -172,6 +171,8 @@ void *const mp_fun_table[MP_F_NUMBER_OF] = {
     mp_obj_new_cell,
     mp_make_closure_from_raw_code,
     mp_setup_code_state,
+    mp_small_int_floor_divide,
+    mp_small_int_modulo,
 };
 
 /*

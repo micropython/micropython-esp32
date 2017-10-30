@@ -84,7 +84,7 @@ Additional components:
 The subdirectories above may include READMEs with additional info.
 
 "make" is used to build the components, or "gmake" on BSD-based systems.
-You will also need bash and Python (at least 2.7 or 3.3).
+You will also need bash, gcc, and Python (at least 2.7 or 3.3).
 
 The Unix version
 ----------------
@@ -97,6 +97,7 @@ Alternatively, fallback implementation based on setjmp/longjmp can be used.
 
 To build (see section below for required dependencies):
 
+    $ git submodule update --init
     $ cd ports/unix
     $ make axtls
     $ make
@@ -129,43 +130,48 @@ Standard library modules come from
 External dependencies
 ---------------------
 
-Building Unix version requires some dependencies installed. For
+Building MicroPython ports may require some dependencies installed.
+
+For Unix port, `libffi` library and `pkg-config` tool are required. On
 Debian/Ubuntu/Mint derivative Linux distros, install `build-essential`
 (includes toolchain and make), `libffi-dev`, and `pkg-config` packages.
 
-Other dependencies can be built together with MicroPython. Oftentimes,
-you need to do this to enable extra features or capabilities. To build
+Other dependencies can be built together with MicroPython. This may
+be required to enable extra features or capabilities, and in recent
+versions of MicroPython, these may be enabled by default. To build
 these additional dependencies, first fetch git submodules for them:
 
     $ git submodule update --init
 
-Use this same command to get the latest versions of dependencies, as
-they are updated from time to time. After that, in `ports/unix/` dir, execute:
+Use the same command to get the latest versions of dependencies, as
+they are updated from time to time. After that, in the port directory
+(e.g. `ports/unix/`), execute:
 
     $ make deplibs
 
 This will build all available dependencies (regardless whether they
 are used or not). If you intend to build MicroPython with additional
 options (like cross-compiling), the same set of options should be passed
-to `make deplibs`. To actually enabled use of dependencies, edit
+to `make deplibs`. To actually enable/disable use of dependencies, edit
 `ports/unix/mpconfigport.mk` file, which has inline descriptions of the options.
-For example, to build SSL module (required for `upip` tool described above),
-set `MICROPY_PY_USSL` to 1.
+For example, to build SSL module (required for `upip` tool described above,
+and so enabled by dfeault), `MICROPY_PY_USSL` should be set to 1.
 
-In `ports/unix/mpconfigport.mk`, you can also disable some dependencies enabled
-by default, like FFI support, which requires libffi development files to
-be installed.
+For some ports, building required dependences is transparent, and happens
+automatically. They still need to be fetched with the git submodule command
+above.
 
 The STM32 version
 -----------------
 
 The "stm32" port requires an ARM compiler, arm-none-eabi-gcc, and associated
-bin-utils.  For those using Arch Linux, you need arm-none-eabi-binutils and
-arm-none-eabi-gcc packages.  Otherwise, try here:
+bin-utils.  For those using Arch Linux, you need arm-none-eabi-binutils,
+arm-none-eabi-gcc and arm-none-eabi-newlib packages.  Otherwise, try here:
 https://launchpad.net/gcc-arm-embedded
 
 To build:
 
+    $ git submodule update --init
     $ cd ports/stm32
     $ make
 
@@ -181,3 +187,13 @@ This will use the included `tools/pydfu.py` script.  If flashing the firmware
 does not work it may be because you don't have the correct permissions, and
 need to use `sudo make deploy`.
 See the README.md file in the ports/stm32/ directory for further details.
+
+Contributing
+------------
+
+MicroPython is an open-source project and welcomes contributions. To be
+productive, please be sure to follow the
+[Contributors' Guidelines](https://github.com/micropython/micropython/wiki/ContributorGuidelines)
+and the [Code Conventions](https://github.com/micropython/micropython/blob/master/CODECONVENTIONS.md).
+Note that MicroPython is licenced under the MIT license, and all contributions
+should follow this license.

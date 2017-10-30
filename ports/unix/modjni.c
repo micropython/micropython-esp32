@@ -30,8 +30,6 @@
 #include <dlfcn.h>
 #include <ctype.h>
 
-#include "py/nlr.h"
-#include "py/runtime0.h"
 #include "py/runtime.h"
 #include "py/binary.h"
 
@@ -268,7 +266,7 @@ STATIC mp_obj_t jobject_subscr(mp_obj_t self_in, mp_obj_t index, mp_obj_t value)
                 return mp_const_none;
             }
         }
-        mp_raise_NotImplementedError("");
+        mp_raise_NotImplementedError(NULL);
     }
 
     if (!JJ(IsInstanceOf, self->obj, List_class)) {

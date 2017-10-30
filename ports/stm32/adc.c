@@ -27,7 +27,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "py/nlr.h"
 #include "py/runtime.h"
 #include "py/binary.h"
 #include "py/mphal.h"
@@ -95,7 +94,7 @@
       defined(STM32F746xx) || defined(STM32F767xx) || \
       defined(STM32F769xx) || defined(STM32F446xx)
 #define VBAT_DIV (4)
-#elif defined(STM32L476xx)
+#elif defined(STM32L475xx) || defined(STM32L476xx)
 #define VBAT_DIV (3)
 #else
 #error Unsupported processor

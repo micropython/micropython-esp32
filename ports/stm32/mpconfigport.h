@@ -126,6 +126,7 @@
 #define MICROPY_PY_USELECT          (1)
 #define MICROPY_PY_UTIMEQ           (1)
 #define MICROPY_PY_UTIME_MP_HAL     (1)
+#define MICROPY_PY_OS_DUPTERM       (1)
 #define MICROPY_PY_MACHINE          (1)
 #define MICROPY_PY_MACHINE_PULSE    (1)
 #define MICROPY_PY_MACHINE_PIN_MAKE_NEW mp_pin_make_new
@@ -232,9 +233,15 @@ extern const struct _mp_obj_module_t mp_module_onewire;
 
 #if defined(MCU_SERIES_F7)
 #define PYB_EXTI_NUM_VECTORS (24)
+#define MICROPY_HW_MAX_TIMER (17)
 #define MICROPY_HW_MAX_UART (8)
+#elif defined(MCU_SERIES_L4)
+#define PYB_EXTI_NUM_VECTORS (23)
+#define MICROPY_HW_MAX_TIMER (17)
+#define MICROPY_HW_MAX_UART (6)
 #else
 #define PYB_EXTI_NUM_VECTORS (23)
+#define MICROPY_HW_MAX_TIMER (14)
 #define MICROPY_HW_MAX_UART (6)
 #endif
 
@@ -254,8 +261,8 @@ extern const struct _mp_obj_module_t mp_module_onewire;
     \
     mp_obj_t pyb_extint_callback[PYB_EXTI_NUM_VECTORS]; \
     \
-    /* Used to do callbacks to Python code on interrupt */ \
-    struct _pyb_timer_obj_t *pyb_timer_obj_all[14]; \
+    /* pointers to all Timer objects (if they have been created) */ \
+    struct _pyb_timer_obj_t *pyb_timer_obj_all[MICROPY_HW_MAX_TIMER]; \
     \
     /* stdio is repeated on this UART object if it's not null */ \
     struct _pyb_uart_obj_t *pyb_stdio_uart; \
@@ -320,6 +327,8 @@ static inline mp_uint_t disable_irq(void) {
             __WFI(); \
         } \
     } while (0);
+
+#define MICROPY_THREAD_YIELD() pyb_thread_yield()
 #else
 #define MICROPY_EVENT_POLL_HOOK \
     do { \
@@ -327,7 +336,12 @@ static inline mp_uint_t disable_irq(void) {
         mp_handle_pending(); \
         __WFI(); \
     } while (0);
+
+#define MICROPY_THREAD_YIELD()
 #endif
+
+// We need an implementation of the log2 function which is not a macro
+#define MP_NEED_LOG2 (1)
 
 // There is no classical C heap in bare-metal ports, only Python
 // garbage-collected heap. For completeness, emulate C heap via

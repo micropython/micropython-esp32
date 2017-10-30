@@ -31,8 +31,6 @@
 #include "esp_mphal.h"
 #include "user_interface.h"
 #include "ets_alt_task.h"
-#include "py/obj.h"
-#include "py/mpstate.h"
 #include "py/runtime.h"
 #include "extmod/misc.h"
 #include "lib/utils/pyexec.h"
@@ -72,11 +70,6 @@ int mp_hal_stdin_rx_chr(void) {
     }
 }
 
-void mp_hal_stdout_tx_char(char c) {
-    uart_tx_one_char(UART0, c);
-    mp_uos_dupterm_tx_strn(&c, 1);
-}
-
 #if 0
 void mp_hal_debug_str(const char *str) {
     while (*str) {
@@ -87,23 +80,39 @@ void mp_hal_debug_str(const char *str) {
 #endif
 
 void mp_hal_stdout_tx_str(const char *str) {
+    const char *last = str;
     while (*str) {
-        mp_hal_stdout_tx_char(*str++);
+        uart_tx_one_char(UART0, *str++);
     }
+    mp_uos_dupterm_tx_strn(last, str - last);
 }
 
 void mp_hal_stdout_tx_strn(const char *str, uint32_t len) {
+    const char *last = str;
     while (len--) {
-        mp_hal_stdout_tx_char(*str++);
+        uart_tx_one_char(UART0, *str++);
     }
+    mp_uos_dupterm_tx_strn(last, str - last);
 }
 
 void mp_hal_stdout_tx_strn_cooked(const char *str, uint32_t len) {
+    const char *last = str;
     while (len--) {
         if (*str == '\n') {
-            mp_hal_stdout_tx_char('\r');
+            if (str > last) {
+                mp_uos_dupterm_tx_strn(last, str - last);
+            }
+            uart_tx_one_char(UART0, '\r');
+            uart_tx_one_char(UART0, '\n');
+            mp_uos_dupterm_tx_strn("\r\n", 2);
+            ++str;
+            last = str;
+        } else {
+            uart_tx_one_char(UART0, *str++);
         }
-        mp_hal_stdout_tx_char(*str++);
+    }
+    if (str > last) {
+        mp_uos_dupterm_tx_strn(last, str - last);
     }
 }
 
@@ -146,41 +155,6 @@ void mp_hal_signal_input(void) {
     #endif
 }
 
-static int call_dupterm_read(void) {
-    if (MP_STATE_PORT(term_obj) == NULL) {
-        return -1;
-    }
-
-    nlr_buf_t nlr;
-    if (nlr_push(&nlr) == 0) {
-        mp_obj_t readinto_m[3];
-        mp_load_method(MP_STATE_PORT(term_obj), MP_QSTR_readinto, readinto_m);
-        readinto_m[2] = MP_STATE_PORT(dupterm_arr_obj);
-        mp_obj_t res = mp_call_method_n_kw(1, 0, readinto_m);
-        if (res == mp_const_none) {
-            nlr_pop();
-            return -2;
-        }
-        if (res == MP_OBJ_NEW_SMALL_INT(0)) {
-            mp_uos_deactivate("dupterm: EOF received, deactivating\n", MP_OBJ_NULL);
-            nlr_pop();
-            return -1;
-        }
-        mp_buffer_info_t bufinfo;
-        mp_get_buffer_raise(MP_STATE_PORT(dupterm_arr_obj), &bufinfo, MP_BUFFER_READ);
-        nlr_pop();
-        if (*(byte*)bufinfo.buf == mp_interrupt_char) {
-            mp_keyboard_interrupt();
-            return -2;
-        }
-        return *(byte*)bufinfo.buf;
-    } else {
-        mp_uos_deactivate("dupterm: Exception in read() method, deactivating: ", nlr.ret_val);
-    }
-
-    return -1;
-}
-
 STATIC void dupterm_task_handler(os_event_t *evt) {
     static byte lock;
     if (lock) {
@@ -188,7 +162,7 @@ STATIC void dupterm_task_handler(os_event_t *evt) {
     }
     lock = 1;
     while (1) {
-        int c = call_dupterm_read();
+        int c = mp_uos_dupterm_rx_chr();
         if (c < 0) {
             break;
         }

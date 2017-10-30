@@ -31,10 +31,8 @@
 #include <string.h>
 #include <errno.h> // needed because mp_is_nonblocking_error uses system error codes
 
-#include "py/nlr.h"
 #include "py/runtime.h"
 #include "py/stream.h"
-#include "py/obj.h"
 
 // mbedtls_time_t
 #include "mbedtls/platform.h"
@@ -67,23 +65,30 @@ struct ssl_args {
 
 STATIC const mp_obj_type_t ussl_socket_type;
 
-static void mbedtls_debug(void *ctx, int level, const char *file, int line, const char *str) {
+#ifdef MBEDTLS_DEBUG_C
+STATIC void mbedtls_debug(void *ctx, int level, const char *file, int line, const char *str) {
+    (void)ctx;
+    (void)level;
     printf("DBG:%s:%04d: %s\n", file, line, str);
 }
+#endif
 
 // TODO: FIXME!
-int null_entropy_func(void *data, unsigned char *output, size_t len) {
+STATIC int null_entropy_func(void *data, unsigned char *output, size_t len) {
+    (void)data;
+    (void)output;
+    (void)len;
     // enjoy random bytes
     return 0;
 }
 
-int _mbedtls_ssl_send(void *ctx, const byte *buf, size_t len) {
+STATIC int _mbedtls_ssl_send(void *ctx, const byte *buf, size_t len) {
     mp_obj_t sock = *(mp_obj_t*)ctx;
 
     const mp_stream_p_t *sock_stream = mp_get_stream_raise(sock, MP_STREAM_OP_WRITE);
     int err;
 
-    int out_sz = sock_stream->write(sock, buf, len, &err);
+    mp_uint_t out_sz = sock_stream->write(sock, buf, len, &err);
     if (out_sz == MP_STREAM_ERROR) {
         if (mp_is_nonblocking_error(err)) {
             return MBEDTLS_ERR_SSL_WANT_WRITE;
@@ -94,13 +99,13 @@ int _mbedtls_ssl_send(void *ctx, const byte *buf, size_t len) {
     }
 }
 
-int _mbedtls_ssl_recv(void *ctx, byte *buf, size_t len) {
+STATIC int _mbedtls_ssl_recv(void *ctx, byte *buf, size_t len) {
     mp_obj_t sock = *(mp_obj_t*)ctx;
 
     const mp_stream_p_t *sock_stream = mp_get_stream_raise(sock, MP_STREAM_OP_READ);
     int err;
 
-    int out_sz = sock_stream->read(sock, buf, len, &err);
+    mp_uint_t out_sz = sock_stream->read(sock, buf, len, &err);
     if (out_sz == MP_STREAM_ERROR) {
         if (mp_is_nonblocking_error(err)) {
             return MBEDTLS_ERR_SSL_WANT_READ;
@@ -113,7 +118,11 @@ int _mbedtls_ssl_recv(void *ctx, byte *buf, size_t len) {
 
 
 STATIC mp_obj_ssl_socket_t *socket_new(mp_obj_t sock, struct ssl_args *args) {
+#if MICROPY_PY_USSL_FINALISER
+    mp_obj_ssl_socket_t *o = m_new_obj_with_finaliser(mp_obj_ssl_socket_t);
+#else
     mp_obj_ssl_socket_t *o = m_new_obj(mp_obj_ssl_socket_t);
+#endif
     o->base.type = &ussl_socket_type;
 
     int ret;
@@ -123,8 +132,10 @@ STATIC mp_obj_ssl_socket_t *socket_new(mp_obj_t sock, struct ssl_args *args) {
     mbedtls_x509_crt_init(&o->cert);
     mbedtls_pk_init(&o->pkey);
     mbedtls_ctr_drbg_init(&o->ctr_drbg);
+    #ifdef MBEDTLS_DEBUG_C
     // Debug level (0-4)
     mbedtls_debug_set_threshold(0);
+    #endif
 
     mbedtls_entropy_init(&o->entropy);
     const byte seed[] = "upy";
@@ -144,7 +155,9 @@ STATIC mp_obj_ssl_socket_t *socket_new(mp_obj_t sock, struct ssl_args *args) {
 
     mbedtls_ssl_conf_authmode(&o->conf, MBEDTLS_SSL_VERIFY_NONE);
     mbedtls_ssl_conf_rng(&o->conf, mbedtls_ctr_drbg_random, &o->ctr_drbg);
+    #ifdef MBEDTLS_DEBUG_C
     mbedtls_ssl_conf_dbg(&o->conf, mbedtls_debug, NULL);
+    #endif
 
     ret = mbedtls_ssl_setup(&o->ssl, &o->conf);
     if (ret != 0) {
@@ -270,6 +283,9 @@ STATIC const mp_rom_map_elem_t ussl_socket_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_write), MP_ROM_PTR(&mp_stream_write_obj) },
     { MP_ROM_QSTR(MP_QSTR_setblocking), MP_ROM_PTR(&socket_setblocking_obj) },
     { MP_ROM_QSTR(MP_QSTR_close), MP_ROM_PTR(&socket_close_obj) },
+#if MICROPY_PY_USSL_FINALISER
+    { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&socket_close_obj) },
+#endif
     { MP_ROM_QSTR(MP_QSTR_getpeercert), MP_ROM_PTR(&mod_ssl_getpeercert_obj) },
 };
 

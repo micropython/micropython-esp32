@@ -28,8 +28,6 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "py/nlr.h"
-#include "py/obj.h"
 #include "py/runtime.h"
 #include "py/stream.h"
 #include "py/builtin.h"
@@ -310,7 +308,7 @@ STATIC mp_obj_t webrepl_set_password(mp_obj_t passwd_in) {
     size_t len;
     const char *passwd = mp_obj_str_get_data(passwd_in, &len);
     if (len > sizeof(webrepl_passwd) - 1) {
-        mp_raise_ValueError("");
+        mp_raise_ValueError(NULL);
     }
     strcpy(webrepl_passwd, passwd);
     return mp_const_none;

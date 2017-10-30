@@ -29,9 +29,7 @@
 #include <string.h>
 #include <assert.h>
 
-#include "py/nlr.h"
 #include "py/parsenum.h"
-#include "py/runtime0.h"
 #include "py/runtime.h"
 
 #if MICROPY_PY_BUILTINS_FLOAT
@@ -162,6 +160,14 @@ STATIC mp_obj_t float_unary_op(mp_unary_op_t op, mp_obj_t o_in) {
         case MP_UNARY_OP_HASH: return MP_OBJ_NEW_SMALL_INT(mp_float_hash(val));
         case MP_UNARY_OP_POSITIVE: return o_in;
         case MP_UNARY_OP_NEGATIVE: return mp_obj_new_float(-val);
+        case MP_UNARY_OP_ABS: {
+            // TODO check for NaN etc
+            if (val < 0) {
+                return mp_obj_new_float(-val);
+            } else {
+                return o_in;
+            }
+        }
         default: return MP_OBJ_NULL; // op not supported
     }
 }
@@ -289,6 +295,13 @@ mp_obj_t mp_obj_float_binary_op(mp_binary_op_t op, mp_float_t lhs_val, mp_obj_t 
         case MP_BINARY_OP_INPLACE_POWER:
             if (lhs_val == 0 && rhs_val < 0) {
                 goto zero_division_error;
+            }
+            if (lhs_val < 0 && rhs_val != MICROPY_FLOAT_C_FUN(floor)(rhs_val)) {
+                #if MICROPY_PY_BUILTINS_COMPLEX
+                return mp_obj_complex_binary_op(MP_BINARY_OP_POWER, lhs_val, 0, rhs_in);
+                #else
+                mp_raise_ValueError("complex values not supported");
+                #endif
             }
             lhs_val = MICROPY_FLOAT_C_FUN(pow)(lhs_val, rhs_val);
             break;

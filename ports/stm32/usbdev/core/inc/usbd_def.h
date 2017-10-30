@@ -168,10 +168,10 @@ typedef struct _Device_cb
   uint8_t  (*IsoINIncomplete)  (struct _USBD_HandleTypeDef *pdev , uint8_t epnum); 
   uint8_t  (*IsoOUTIncomplete) (struct _USBD_HandleTypeDef *pdev , uint8_t epnum);   
 
-  uint8_t  *(*GetHSConfigDescriptor)(uint16_t *length); 
-  uint8_t  *(*GetFSConfigDescriptor)(uint16_t *length);   
-  uint8_t  *(*GetOtherSpeedConfigDescriptor)(uint16_t *length);
-  uint8_t  *(*GetDeviceQualifierDescriptor)(uint16_t *length);
+  uint8_t  *(*GetHSConfigDescriptor)(struct _USBD_HandleTypeDef *pdev, uint16_t *length); 
+  uint8_t  *(*GetFSConfigDescriptor)(struct _USBD_HandleTypeDef *pdev, uint16_t *length);   
+  uint8_t  *(*GetOtherSpeedConfigDescriptor)(struct _USBD_HandleTypeDef *pdev, uint16_t *length);
+  uint8_t  *(*GetDeviceQualifierDescriptor)(struct _USBD_HandleTypeDef *pdev, uint16_t *length);
 #if (USBD_SUPPORT_USER_STRING == 1)
   uint8_t  *(*GetUsrStrDescriptor)(struct _USBD_HandleTypeDef *pdev ,uint8_t index,  uint16_t *length);   
 #endif  
@@ -193,16 +193,18 @@ typedef enum {
   USBD_FAIL,
 }USBD_StatusTypeDef;
 
+struct _USBD_HandleTypeDef;
+
 /* USB Device descriptors structure */
 typedef struct
 {
-  uint8_t  *(*GetDeviceDescriptor)( USBD_SpeedTypeDef speed , uint16_t *length);  
-  uint8_t  *(*GetLangIDStrDescriptor)( USBD_SpeedTypeDef speed , uint16_t *length); 
-  uint8_t  *(*GetManufacturerStrDescriptor)( USBD_SpeedTypeDef speed , uint16_t *length);  
-  uint8_t  *(*GetProductStrDescriptor)( USBD_SpeedTypeDef speed , uint16_t *length);  
-  uint8_t  *(*GetSerialStrDescriptor)( USBD_SpeedTypeDef speed , uint16_t *length);  
-  uint8_t  *(*GetConfigurationStrDescriptor)( USBD_SpeedTypeDef speed , uint16_t *length);  
-  uint8_t  *(*GetInterfaceStrDescriptor)( USBD_SpeedTypeDef speed , uint16_t *length);   
+  uint8_t *(*GetDeviceDescriptor)(struct _USBD_HandleTypeDef *pdev, uint16_t *length);
+  uint8_t *(*GetLangIDStrDescriptor)(struct _USBD_HandleTypeDef *pdev, uint16_t *length);
+  uint8_t *(*GetManufacturerStrDescriptor)(struct _USBD_HandleTypeDef *pdev, uint16_t *length);
+  uint8_t *(*GetProductStrDescriptor)(struct _USBD_HandleTypeDef *pdev, uint16_t *length);
+  uint8_t *(*GetSerialStrDescriptor)(struct _USBD_HandleTypeDef *pdev, uint16_t *length);
+  uint8_t *(*GetConfigurationStrDescriptor)(struct _USBD_HandleTypeDef *pdev, uint16_t *length);
+  uint8_t *(*GetInterfaceStrDescriptor)(struct _USBD_HandleTypeDef *pdev, uint16_t *length);
 } USBD_DescriptorsTypeDef;
 
 /* USB Device handle structure */
@@ -235,7 +237,7 @@ typedef struct _USBD_HandleTypeDef
 
   USBD_SetupReqTypedef    request;
   USBD_DescriptorsTypeDef *pDesc;
-  USBD_ClassTypeDef       *pClass;
+  const USBD_ClassTypeDef *pClass;
   void                    *pClassData;  
   void                    *pUserData;    
   void                    *pData;    

@@ -28,10 +28,7 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include "py/nlr.h"
-#include "py/obj.h"
 #include "py/parsenum.h"
-#include "py/runtime0.h"
 #include "py/runtime.h"
 
 #if MICROPY_PY_BUILTINS_COMPLEX
@@ -124,6 +121,8 @@ STATIC mp_obj_t complex_unary_op(mp_unary_op_t op, mp_obj_t o_in) {
         case MP_UNARY_OP_HASH: return MP_OBJ_NEW_SMALL_INT(mp_float_hash(o->real) ^ mp_float_hash(o->imag));
         case MP_UNARY_OP_POSITIVE: return o_in;
         case MP_UNARY_OP_NEGATIVE: return mp_obj_new_complex(-o->real, -o->imag);
+        case MP_UNARY_OP_ABS:
+            return mp_obj_new_float(MICROPY_FLOAT_C_FUN(sqrt)(o->real*o->real + o->imag*o->imag));
         default: return MP_OBJ_NULL; // op not supported
     }
 }

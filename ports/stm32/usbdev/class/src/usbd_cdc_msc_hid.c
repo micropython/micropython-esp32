@@ -27,7 +27,6 @@
 #include "usbd_ioreq.h"
 #include "usbd_cdc_msc_hid.h"
 
-#define MAX_TEMPLATE_CONFIG_DESC_SIZE (107) // should be maximum of all template config desc's
 #define CDC_TEMPLATE_CONFIG_DESC_SIZE (67)
 #define CDC_MSC_TEMPLATE_CONFIG_DESC_SIZE (98)
 #define CDC_HID_TEMPLATE_CONFIG_DESC_SIZE (107)
@@ -71,40 +70,6 @@
 #define HID_REQ_GET_PROTOCOL    (0x03)
 #define HID_REQ_SET_IDLE        (0x0a)
 #define HID_REQ_GET_IDLE        (0x02)
-
-typedef enum {
-    HID_IDLE = 0,
-    HID_BUSY,
-} HID_StateTypeDef;
-
-typedef struct {
-    uint32_t             Protocol;
-    uint32_t             IdleState;
-    uint32_t             AltSetting;
-    HID_StateTypeDef     state;
-    uint8_t              *RxBuffer;
-    uint32_t             RxLength;
-} USBD_HID_HandleTypeDef;
-
-static uint8_t usbd_mode;
-static uint8_t cdc_iface_num;
-static uint8_t hid_in_ep;
-static uint8_t hid_out_ep;
-static uint8_t hid_iface_num;
-static uint8_t usbd_config_desc_size;
-static uint8_t *hid_desc;
-static const uint8_t *hid_report_desc;
-
-static USBD_CDC_ItfTypeDef *CDC_fops;
-static USBD_StorageTypeDef *MSC_fops;
-static USBD_HID_ItfTypeDef *HID_fops;
-
-static USBD_CDC_HandleTypeDef CDC_ClassData;
-static USBD_MSC_BOT_HandleTypeDef MSC_BOT_ClassData;
-static USBD_HID_HandleTypeDef HID_ClassData;
-
-// RAM to hold the current configuration descriptor, which we configure on the fly
-__ALIGN_BEGIN static uint8_t usbd_config_desc[MAX_TEMPLATE_CONFIG_DESC_SIZE] __ALIGN_END;
 
 /*
 // this is used only in high-speed mode, which we don't support
@@ -578,36 +543,36 @@ __ALIGN_BEGIN const uint8_t USBD_HID_KEYBOARD_ReportDesc[USBD_HID_KEYBOARD_REPOR
 };
 
 // return the saved usb mode
-uint8_t USBD_GetMode() {
-    return usbd_mode;
+uint8_t USBD_GetMode(usbd_cdc_msc_hid_state_t *usbd) {
+    return usbd->usbd_mode;
 }
 
-int USBD_SelectMode(uint32_t mode, USBD_HID_ModeInfoTypeDef *hid_info) {
+int USBD_SelectMode(usbd_cdc_msc_hid_state_t *usbd, uint32_t mode, USBD_HID_ModeInfoTypeDef *hid_info) {
     // save mode
-    usbd_mode = mode;
+    usbd->usbd_mode = mode;
 
     // construct config desc
-    switch (usbd_mode) {
+    switch (usbd->usbd_mode) {
         case USBD_MODE_CDC_MSC:
-            usbd_config_desc_size = sizeof(cdc_msc_template_config_desc);
-            memcpy(usbd_config_desc, cdc_msc_template_config_desc, sizeof(cdc_msc_template_config_desc));
-            cdc_iface_num = CDC_IFACE_NUM_WITH_MSC;
+            usbd->usbd_config_desc_size = sizeof(cdc_msc_template_config_desc);
+            memcpy(usbd->usbd_config_desc, cdc_msc_template_config_desc, sizeof(cdc_msc_template_config_desc));
+            usbd->cdc_iface_num = CDC_IFACE_NUM_WITH_MSC;
             break;
 
         case USBD_MODE_CDC_HID:
-            usbd_config_desc_size = sizeof(cdc_hid_template_config_desc);
-            memcpy(usbd_config_desc, cdc_hid_template_config_desc, sizeof(cdc_hid_template_config_desc));
-            cdc_iface_num = CDC_IFACE_NUM_WITH_HID;
-            hid_in_ep = HID_IN_EP_WITH_CDC;
-            hid_out_ep = HID_OUT_EP_WITH_CDC;
-            hid_iface_num = HID_IFACE_NUM_WITH_CDC;
-            hid_desc = usbd_config_desc + CDC_HID_TEMPLATE_HID_DESC_OFFSET;
+            usbd->usbd_config_desc_size = sizeof(cdc_hid_template_config_desc);
+            memcpy(usbd->usbd_config_desc, cdc_hid_template_config_desc, sizeof(cdc_hid_template_config_desc));
+            usbd->cdc_iface_num = CDC_IFACE_NUM_WITH_HID;
+            usbd->hid_in_ep = HID_IN_EP_WITH_CDC;
+            usbd->hid_out_ep = HID_OUT_EP_WITH_CDC;
+            usbd->hid_iface_num = HID_IFACE_NUM_WITH_CDC;
+            usbd->hid_desc = usbd->usbd_config_desc + CDC_HID_TEMPLATE_HID_DESC_OFFSET;
             break;
 
         case USBD_MODE_CDC:
-            usbd_config_desc_size = sizeof(cdc_template_config_desc);
-            memcpy(usbd_config_desc, cdc_template_config_desc, sizeof(cdc_template_config_desc));
-            cdc_iface_num = CDC_IFACE_NUM_ALONE;
+            usbd->usbd_config_desc_size = sizeof(cdc_template_config_desc);
+            memcpy(usbd->usbd_config_desc, cdc_template_config_desc, sizeof(cdc_template_config_desc));
+            usbd->cdc_iface_num = CDC_IFACE_NUM_ALONE;
             break;
 
             /*
@@ -625,7 +590,8 @@ int USBD_SelectMode(uint32_t mode, USBD_HID_ModeInfoTypeDef *hid_info) {
     }
 
     // configure the HID descriptor, if needed
-    if (usbd_mode & USBD_MODE_HID) {
+    if (usbd->usbd_mode & USBD_MODE_HID) {
+        uint8_t *hid_desc = usbd->hid_desc;
         hid_desc[HID_DESC_OFFSET_SUBCLASS] = hid_info->subclass;
         hid_desc[HID_DESC_OFFSET_PROTOCOL] = hid_info->protocol;
         hid_desc[HID_DESC_OFFSET_REPORT_DESC_LEN] = hid_info->report_desc_len;
@@ -635,7 +601,7 @@ int USBD_SelectMode(uint32_t mode, USBD_HID_ModeInfoTypeDef *hid_info) {
         hid_desc[HID_DESC_OFFSET_MAX_PACKET_OUT_LO] = hid_info->max_packet_len;
         hid_desc[HID_DESC_OFFSET_MAX_PACKET_OUT_HI] = 0;
         hid_desc[HID_DESC_OFFSET_POLLING_INTERVAL_OUT] = hid_info->polling_interval;
-        hid_report_desc = hid_info->report_desc;
+        usbd->hid_report_desc = hid_info->report_desc;
     }
 
     return 0;
@@ -647,7 +613,9 @@ static uint8_t USBD_CDC_MSC_HID_Init(USBD_HandleTypeDef *pdev, uint8_t cfgidx) {
         return 1;
     }
 
-    if (usbd_mode & USBD_MODE_CDC) {
+    usbd_cdc_msc_hid_state_t *usbd = pdev->pClassData;
+
+    if (usbd->usbd_mode & USBD_MODE_CDC) {
         // CDC VCP component
 
         // Open EP IN
@@ -669,17 +637,17 @@ static uint8_t USBD_CDC_MSC_HID_Init(USBD_HandleTypeDef *pdev, uint8_t cfgidx) {
                        CDC_CMD_PACKET_SIZE);
 
         // Init physical Interface components
-        CDC_fops->Init(pdev);
+        uint8_t *buf = usbd_cdc_init(usbd->cdc, usbd);
 
         // Init Xfer states
-        CDC_ClassData.TxState =0;
-        CDC_ClassData.RxState =0;
+        usbd->CDC_ClassData.TxState = 0;
+        usbd->CDC_ClassData.RxState = 0;
 
         // Prepare Out endpoint to receive next packet
-        USBD_LL_PrepareReceive(pdev, CDC_OUT_EP, CDC_ClassData.RxBuffer, CDC_DATA_OUT_PACKET_SIZE);
+        USBD_LL_PrepareReceive(pdev, CDC_OUT_EP, buf, CDC_DATA_OUT_PACKET_SIZE);
     }
 
-    if (usbd_mode & USBD_MODE_MSC) {
+    if (usbd->usbd_mode & USBD_MODE_MSC) {
         // MSC component
 
         // Open EP OUT
@@ -694,61 +662,57 @@ static uint8_t USBD_CDC_MSC_HID_Init(USBD_HandleTypeDef *pdev, uint8_t cfgidx) {
                        USBD_EP_TYPE_BULK,
                        MSC_MAX_PACKET);
 
-        // MSC uses the pClassData pointer because SCSI and BOT reference it
-        pdev->pClassData = &MSC_BOT_ClassData;
-
         // Init the BOT layer
         MSC_BOT_Init(pdev);
     }
 
-    if (usbd_mode & USBD_MODE_HID) {
+    if (usbd->usbd_mode & USBD_MODE_HID) {
         // HID component
 
         // get max packet lengths from descriptor
         uint16_t mps_in =
-            hid_desc[HID_DESC_OFFSET_MAX_PACKET_LO]
-            | (hid_desc[HID_DESC_OFFSET_MAX_PACKET_HI] << 8);
+            usbd->hid_desc[HID_DESC_OFFSET_MAX_PACKET_LO]
+            | (usbd->hid_desc[HID_DESC_OFFSET_MAX_PACKET_HI] << 8);
         uint16_t mps_out =
-            hid_desc[HID_DESC_OFFSET_MAX_PACKET_OUT_LO]
-            | (hid_desc[HID_DESC_OFFSET_MAX_PACKET_OUT_HI] << 8);
+            usbd->hid_desc[HID_DESC_OFFSET_MAX_PACKET_OUT_LO]
+            | (usbd->hid_desc[HID_DESC_OFFSET_MAX_PACKET_OUT_HI] << 8);
 
         // Open EP IN
         USBD_LL_OpenEP(pdev,
-                       hid_in_ep,
+                       usbd->hid_in_ep,
                        USBD_EP_TYPE_INTR,
                        mps_in);
 
         // Open EP OUT
         USBD_LL_OpenEP(pdev,
-                       hid_out_ep,
+                       usbd->hid_out_ep,
                        USBD_EP_TYPE_INTR,
                        mps_out);
 
-        HID_fops->Init(pdev);
+        uint8_t *buf = usbd_hid_init(usbd->hid, usbd);
 
         // Prepare Out endpoint to receive next packet
-        USBD_LL_PrepareReceive(pdev, hid_out_ep, HID_ClassData.RxBuffer, mps_out);
+        USBD_LL_PrepareReceive(pdev, usbd->hid_out_ep, buf, mps_out);
 
-        HID_ClassData.state = HID_IDLE;
+        usbd->HID_ClassData.state = HID_IDLE;
     }
 
     return 0;
 }
 
 static uint8_t USBD_CDC_MSC_HID_DeInit(USBD_HandleTypeDef *pdev, uint8_t cfgidx) {
-    if (usbd_mode & USBD_MODE_CDC) {
+    usbd_cdc_msc_hid_state_t *usbd = pdev->pClassData;
+
+    if ((usbd->usbd_mode & USBD_MODE_CDC) && usbd->cdc) {
         // CDC VCP component
 
         // close endpoints
         USBD_LL_CloseEP(pdev, CDC_IN_EP);
         USBD_LL_CloseEP(pdev, CDC_OUT_EP);
         USBD_LL_CloseEP(pdev, CDC_CMD_EP);
-
-        // DeInit physical Interface components
-        CDC_fops->DeInit();
     }
 
-    if (usbd_mode & USBD_MODE_MSC) {
+    if (usbd->usbd_mode & USBD_MODE_MSC) {
         // MSC component
 
         // close endpoints
@@ -757,17 +721,14 @@ static uint8_t USBD_CDC_MSC_HID_DeInit(USBD_HandleTypeDef *pdev, uint8_t cfgidx)
 
         // DeInit the BOT layer
         MSC_BOT_DeInit(pdev);
-
-        // clear the pointer
-        pdev->pClassData = NULL;
     }
 
-    if (usbd_mode & USBD_MODE_HID) {
+    if (usbd->usbd_mode & USBD_MODE_HID) {
         // HID component
 
         // close endpoints
-        USBD_LL_CloseEP(pdev, hid_in_ep);
-        USBD_LL_CloseEP(pdev, hid_out_ep);
+        USBD_LL_CloseEP(pdev, usbd->hid_in_ep);
+        USBD_LL_CloseEP(pdev, usbd->hid_out_ep);
     }
 
     return 0;
@@ -791,36 +752,38 @@ static uint8_t USBD_CDC_MSC_HID_Setup(USBD_HandleTypeDef *pdev, USBD_SetupReqTyp
         SU: 21 20 0 1
     */
 
+    usbd_cdc_msc_hid_state_t *usbd = pdev->pClassData;
+
     switch (req->bmRequest & USB_REQ_TYPE_MASK) {
 
         // Class request
         case USB_REQ_TYPE_CLASS:
             // req->wIndex is the recipient interface number
-            if ((usbd_mode & USBD_MODE_CDC) && req->wIndex == cdc_iface_num) {
+            if ((usbd->usbd_mode & USBD_MODE_CDC) && req->wIndex == usbd->cdc_iface_num) {
                 // CDC component
                 if (req->wLength) {
                     if (req->bmRequest & 0x80) {
                         // device-to-host request
-                        CDC_fops->Control(req->bRequest, (uint8_t*)CDC_ClassData.data, req->wLength);
-                        USBD_CtlSendData(pdev, (uint8_t*)CDC_ClassData.data, req->wLength);
+                        usbd_cdc_control(usbd->cdc, req->bRequest, (uint8_t*)usbd->CDC_ClassData.data, req->wLength);
+                        USBD_CtlSendData(pdev, (uint8_t*)usbd->CDC_ClassData.data, req->wLength);
                     } else {
                         // host-to-device request
-                        CDC_ClassData.CmdOpCode = req->bRequest;
-                        CDC_ClassData.CmdLength = req->wLength;
-                        USBD_CtlPrepareRx(pdev, (uint8_t*)CDC_ClassData.data, req->wLength);
+                        usbd->CDC_ClassData.CmdOpCode = req->bRequest;
+                        usbd->CDC_ClassData.CmdLength = req->wLength;
+                        USBD_CtlPrepareRx(pdev, (uint8_t*)usbd->CDC_ClassData.data, req->wLength);
                     }
                 } else {
                     // Not a Data request
                     // Transfer the command to the interface layer
-                    return CDC_fops->Control(req->bRequest, NULL, req->wValue);
+                    return usbd_cdc_control(usbd->cdc, req->bRequest, NULL, req->wValue);
                 }
-            } else if ((usbd_mode & USBD_MODE_MSC) && req->wIndex == MSC_IFACE_NUM_WITH_CDC) {
+            } else if ((usbd->usbd_mode & USBD_MODE_MSC) && req->wIndex == MSC_IFACE_NUM_WITH_CDC) {
                 // MSC component
                 switch (req->bRequest) {
                     case BOT_GET_MAX_LUN:
                         if ((req->wValue  == 0) && (req->wLength == 1) && ((req->bmRequest & 0x80) == 0x80)) {
-                            MSC_BOT_ClassData.max_lun = MSC_fops->GetMaxLun();
-                            USBD_CtlSendData(pdev, (uint8_t *)&MSC_BOT_ClassData.max_lun, 1);
+                            usbd->MSC_BOT_ClassData.max_lun = usbd->MSC_BOT_ClassData.bdev_ops->GetMaxLun();
+                            USBD_CtlSendData(pdev, (uint8_t *)&usbd->MSC_BOT_ClassData.max_lun, 1);
                         } else {
                             USBD_CtlError(pdev, req);
                             return USBD_FAIL;
@@ -840,22 +803,22 @@ static uint8_t USBD_CDC_MSC_HID_Setup(USBD_HandleTypeDef *pdev, USBD_SetupReqTyp
                         USBD_CtlError(pdev, req);
                         return USBD_FAIL;
                 }
-            } else if ((usbd_mode & USBD_MODE_HID) && req->wIndex == hid_iface_num) {
+            } else if ((usbd->usbd_mode & USBD_MODE_HID) && req->wIndex == usbd->hid_iface_num) {
                 switch (req->bRequest) {
                     case HID_REQ_SET_PROTOCOL:
-                        HID_ClassData.Protocol = (uint8_t)(req->wValue);
+                        usbd->HID_ClassData.Protocol = (uint8_t)(req->wValue);
                         break;
 
                     case HID_REQ_GET_PROTOCOL:
-                        USBD_CtlSendData (pdev, (uint8_t *)&HID_ClassData.Protocol, 1);
+                        USBD_CtlSendData(pdev, (uint8_t *)&usbd->HID_ClassData.Protocol, 1);
                         break;
 
                     case HID_REQ_SET_IDLE:
-                        HID_ClassData.IdleState = (uint8_t)(req->wValue >> 8);
+                        usbd->HID_ClassData.IdleState = (uint8_t)(req->wValue >> 8);
                         break;
 
                     case HID_REQ_GET_IDLE:
-                        USBD_CtlSendData (pdev, (uint8_t *)&HID_ClassData.IdleState, 1);
+                        USBD_CtlSendData(pdev, (uint8_t *)&usbd->HID_ClassData.IdleState, 1);
                         break;
 
                     default:
@@ -867,14 +830,14 @@ static uint8_t USBD_CDC_MSC_HID_Setup(USBD_HandleTypeDef *pdev, USBD_SetupReqTyp
 
         // Interface & Endpoint request
         case USB_REQ_TYPE_STANDARD:
-            if ((usbd_mode & USBD_MODE_MSC) && req->wIndex == MSC_IFACE_NUM_WITH_CDC) {
+            if ((usbd->usbd_mode & USBD_MODE_MSC) && req->wIndex == MSC_IFACE_NUM_WITH_CDC) {
                 switch (req->bRequest) {
                     case USB_REQ_GET_INTERFACE :
-                        USBD_CtlSendData(pdev, (uint8_t *)&MSC_BOT_ClassData.interface, 1);
+                        USBD_CtlSendData(pdev, (uint8_t *)&usbd->MSC_BOT_ClassData.interface, 1);
                         break;
 
                     case USB_REQ_SET_INTERFACE :
-                        MSC_BOT_ClassData.interface = (uint8_t)(req->wValue);
+                        usbd->MSC_BOT_ClassData.interface = (uint8_t)(req->wValue);
                         break;
 
                     case USB_REQ_CLEAR_FEATURE:
@@ -894,29 +857,29 @@ static uint8_t USBD_CDC_MSC_HID_Setup(USBD_HandleTypeDef *pdev, USBD_SetupReqTyp
                         MSC_BOT_CplClrFeature(pdev, (uint8_t)req->wIndex);
                         break;
                 }
-            } else if ((usbd_mode & USBD_MODE_HID) && req->wIndex == hid_iface_num) {
+            } else if ((usbd->usbd_mode & USBD_MODE_HID) && req->wIndex == usbd->hid_iface_num) {
                 switch (req->bRequest) {
                     case USB_REQ_GET_DESCRIPTOR: {
                         uint16_t len = 0;
                         const uint8_t *pbuf = NULL;
                         if (req->wValue >> 8 == HID_REPORT_DESC) {
-                            len = hid_desc[HID_DESC_OFFSET_REPORT_DESC_LEN];
+                            len = usbd->hid_desc[HID_DESC_OFFSET_REPORT_DESC_LEN];
                             len = MIN(len, req->wLength);
-                            pbuf = hid_report_desc;
+                            pbuf = usbd->hid_report_desc;
                         } else if (req->wValue >> 8 == HID_DESCRIPTOR_TYPE) {
                             len = MIN(HID_SUBDESC_LEN, req->wLength);
-                            pbuf = hid_desc + HID_DESC_OFFSET_SUBDESC;
+                            pbuf = usbd->hid_desc + HID_DESC_OFFSET_SUBDESC;
                         }
                         USBD_CtlSendData(pdev, (uint8_t*)pbuf, len);
                         break;
                     }
 
                     case USB_REQ_GET_INTERFACE:
-                        USBD_CtlSendData (pdev, (uint8_t *)&HID_ClassData.AltSetting, 1);
+                        USBD_CtlSendData(pdev, (uint8_t *)&usbd->HID_ClassData.AltSetting, 1);
                         break;
 
                     case USB_REQ_SET_INTERFACE:
-                        HID_ClassData.AltSetting = (uint8_t)(req->wValue);
+                        usbd->HID_ClassData.AltSetting = (uint8_t)(req->wValue);
                         break;
                 }
             }
@@ -931,25 +894,27 @@ static uint8_t EP0_TxSent(USBD_HandleTypeDef *pdev) {
 */
 
 static uint8_t USBD_CDC_MSC_HID_EP0_RxReady(USBD_HandleTypeDef *pdev) {
-    if ((CDC_fops != NULL) && (CDC_ClassData.CmdOpCode != 0xff)) {
-        CDC_fops->Control(CDC_ClassData.CmdOpCode, (uint8_t*)CDC_ClassData.data, CDC_ClassData.CmdLength);
-        CDC_ClassData.CmdOpCode = 0xff;
+    usbd_cdc_msc_hid_state_t *usbd = pdev->pClassData;
+    if (usbd->cdc != NULL && usbd->CDC_ClassData.CmdOpCode != 0xff) {
+        usbd_cdc_control(usbd->cdc, usbd->CDC_ClassData.CmdOpCode, (uint8_t*)usbd->CDC_ClassData.data, usbd->CDC_ClassData.CmdLength);
+        usbd->CDC_ClassData.CmdOpCode = 0xff;
     }
 
     return USBD_OK;
 }
 
 static uint8_t USBD_CDC_MSC_HID_DataIn(USBD_HandleTypeDef *pdev, uint8_t epnum) {
-    if ((usbd_mode & USBD_MODE_CDC) && (epnum == (CDC_IN_EP & 0x7f) || epnum == (CDC_CMD_EP & 0x7f))) {
-        CDC_ClassData.TxState = 0;
+    usbd_cdc_msc_hid_state_t *usbd = pdev->pClassData;
+    if ((usbd->usbd_mode & USBD_MODE_CDC) && (epnum == (CDC_IN_EP & 0x7f) || epnum == (CDC_CMD_EP & 0x7f))) {
+        usbd->CDC_ClassData.TxState = 0;
         return USBD_OK;
-    } else if ((usbd_mode & USBD_MODE_MSC) && epnum == (MSC_IN_EP & 0x7f)) {
+    } else if ((usbd->usbd_mode & USBD_MODE_MSC) && epnum == (MSC_IN_EP & 0x7f)) {
         MSC_BOT_DataIn(pdev, epnum);
         return USBD_OK;
-    } else if ((usbd_mode & USBD_MODE_HID) && epnum == (hid_in_ep & 0x7f)) {
+    } else if ((usbd->usbd_mode & USBD_MODE_HID) && epnum == (usbd->hid_in_ep & 0x7f)) {
         /* Ensure that the FIFO is empty before a new transfer, this condition could
         be caused by  a new transfer before the end of the previous transfer */
-        HID_ClassData.state = HID_IDLE;
+        usbd->HID_ClassData.state = HID_IDLE;
         return USBD_OK;
     }
 
@@ -957,33 +922,35 @@ static uint8_t USBD_CDC_MSC_HID_DataIn(USBD_HandleTypeDef *pdev, uint8_t epnum) 
 }
 
 static uint8_t USBD_CDC_MSC_HID_DataOut(USBD_HandleTypeDef *pdev, uint8_t epnum) {
-    if ((usbd_mode & USBD_MODE_CDC) && epnum == (CDC_OUT_EP & 0x7f)) {
+    usbd_cdc_msc_hid_state_t *usbd = pdev->pClassData;
+    if ((usbd->usbd_mode & USBD_MODE_CDC) && epnum == (CDC_OUT_EP & 0x7f)) {
         /* Get the received data length */
-        CDC_ClassData.RxLength = USBD_LL_GetRxDataSize (pdev, epnum);
+        size_t len = USBD_LL_GetRxDataSize (pdev, epnum);
 
         /* USB data will be immediately processed, this allow next USB traffic being
         NAKed till the end of the application Xfer */
-        CDC_fops->Receive(pdev, CDC_ClassData.RxBuffer, &CDC_ClassData.RxLength);
+        usbd_cdc_receive(usbd->cdc, len);
 
         return USBD_OK;
-    } else if ((usbd_mode & USBD_MODE_MSC) && epnum == (MSC_OUT_EP & 0x7f)) {
+    } else if ((usbd->usbd_mode & USBD_MODE_MSC) && epnum == (MSC_OUT_EP & 0x7f)) {
         MSC_BOT_DataOut(pdev, epnum);
         return USBD_OK;
-    } else if ((usbd_mode & USBD_MODE_HID) && epnum == (hid_out_ep & 0x7f)) {
-        HID_ClassData.RxLength = USBD_LL_GetRxDataSize(pdev, epnum);
-        HID_fops->Receive(pdev, HID_ClassData.RxBuffer, HID_ClassData.RxLength);
+    } else if ((usbd->usbd_mode & USBD_MODE_HID) && epnum == (usbd->hid_out_ep & 0x7f)) {
+        size_t len = USBD_LL_GetRxDataSize(pdev, epnum);
+        usbd_hid_receive(usbd->hid, len);
     }
 
     return USBD_OK;
 }
 
-static uint8_t *USBD_CDC_MSC_HID_GetCfgDesc(uint16_t *length) {
-    *length = usbd_config_desc_size;
-    return usbd_config_desc;
+static uint8_t *USBD_CDC_MSC_HID_GetCfgDesc(USBD_HandleTypeDef *pdev, uint16_t *length) {
+    usbd_cdc_msc_hid_state_t *usbd = pdev->pClassData;
+    *length = usbd->usbd_config_desc_size;
+    return usbd->usbd_config_desc;
 }
 
 // this is used only in high-speed mode, which we don't support
-uint8_t *USBD_CDC_MSC_HID_GetDeviceQualifierDescriptor (uint16_t *length) {
+uint8_t *USBD_CDC_MSC_HID_GetDeviceQualifierDescriptor(USBD_HandleTypeDef *pdev, uint16_t *length) {
     /*
     *length = sizeof(USBD_CDC_MSC_HID_DeviceQualifierDesc);
     return USBD_CDC_MSC_HID_DeviceQualifierDesc;
@@ -992,34 +959,14 @@ uint8_t *USBD_CDC_MSC_HID_GetDeviceQualifierDescriptor (uint16_t *length) {
     return NULL;
 }
 
-uint8_t USBD_CDC_RegisterInterface(USBD_HandleTypeDef *pdev, USBD_CDC_ItfTypeDef *fops) {
-    if (fops == NULL) {
-        return USBD_FAIL;
-    } else {
-        CDC_fops = fops;
-        return USBD_OK;
-    }
-}
-
-uint8_t USBD_CDC_SetTxBuffer(USBD_HandleTypeDef *pdev, uint8_t *pbuff, uint16_t length) {
-    CDC_ClassData.TxBuffer = pbuff;
-    CDC_ClassData.TxLength = length;
-    return USBD_OK;
-}
-
-uint8_t USBD_CDC_SetRxBuffer(USBD_HandleTypeDef *pdev, uint8_t *pbuff) {
-    CDC_ClassData.RxBuffer = pbuff;
-    return USBD_OK;
-}
-
 // data received on non-control OUT endpoint
-uint8_t USBD_CDC_TransmitPacket(USBD_HandleTypeDef *pdev) {
-    if (CDC_ClassData.TxState == 0) {
+uint8_t USBD_CDC_TransmitPacket(usbd_cdc_msc_hid_state_t *usbd, size_t len, const uint8_t *buf) {
+    if (usbd->CDC_ClassData.TxState == 0) {
         // transmit next packet
-        USBD_LL_Transmit(pdev, CDC_IN_EP, CDC_ClassData.TxBuffer, CDC_ClassData.TxLength);
+        USBD_LL_Transmit(usbd->pdev, CDC_IN_EP, (uint8_t*)buf, len);
 
         // Tx transfer in progress
-        CDC_ClassData.TxState = 1;
+        usbd->CDC_ClassData.TxState = 1;
         return USBD_OK;
     } else {
         return USBD_BUSY;
@@ -1027,84 +974,60 @@ uint8_t USBD_CDC_TransmitPacket(USBD_HandleTypeDef *pdev) {
 }
 
 // prepare OUT endpoint for reception
-uint8_t USBD_CDC_ReceivePacket(USBD_HandleTypeDef *pdev) {
+uint8_t USBD_CDC_ReceivePacket(usbd_cdc_msc_hid_state_t *usbd, uint8_t *buf) {
     // Suspend or Resume USB Out process
-    if (pdev->dev_speed == USBD_SPEED_HIGH) {
+    if (usbd->pdev->dev_speed == USBD_SPEED_HIGH) {
         return USBD_FAIL;
     }
 
     // Prepare Out endpoint to receive next packet
-    USBD_LL_PrepareReceive(pdev, CDC_OUT_EP, CDC_ClassData.RxBuffer, CDC_DATA_OUT_PACKET_SIZE);
+    USBD_LL_PrepareReceive(usbd->pdev, CDC_OUT_EP, buf, CDC_DATA_OUT_PACKET_SIZE);
 
-    return USBD_OK;
-}
-
-uint8_t USBD_MSC_RegisterStorage(USBD_HandleTypeDef *pdev, USBD_StorageTypeDef *fops) {
-    if (fops == NULL) {
-        return USBD_FAIL;
-    } else {
-        MSC_fops = fops;
-        pdev->pUserData = fops; // MSC uses pUserData because SCSI and BOT reference it
-        return USBD_OK;
-    }
-}
-
-uint8_t USBD_HID_RegisterInterface(USBD_HandleTypeDef *pdev, USBD_HID_ItfTypeDef *fops) {
-    if (fops == NULL) {
-        return USBD_FAIL;
-    } else {
-        HID_fops = fops;
-        return USBD_OK;
-    }
-}
-
-uint8_t USBD_HID_SetRxBuffer(USBD_HandleTypeDef *pdev, uint8_t *pbuff) {
-    HID_ClassData.RxBuffer = pbuff;
     return USBD_OK;
 }
 
 // prepare OUT endpoint for reception
-uint8_t USBD_HID_ReceivePacket(USBD_HandleTypeDef *pdev) {
+uint8_t USBD_HID_ReceivePacket(usbd_cdc_msc_hid_state_t *usbd, uint8_t *buf) {
     // Suspend or Resume USB Out process
-    if (pdev->dev_speed == USBD_SPEED_HIGH) {
+    if (usbd->pdev->dev_speed == USBD_SPEED_HIGH) {
         return USBD_FAIL;
     }
 
     // Prepare Out endpoint to receive next packet
     uint16_t mps_out =
-        hid_desc[HID_DESC_OFFSET_MAX_PACKET_OUT_LO]
-        | (hid_desc[HID_DESC_OFFSET_MAX_PACKET_OUT_HI] << 8);
-    USBD_LL_PrepareReceive(pdev, hid_out_ep, HID_ClassData.RxBuffer, mps_out);
+        usbd->hid_desc[HID_DESC_OFFSET_MAX_PACKET_OUT_LO]
+        | (usbd->hid_desc[HID_DESC_OFFSET_MAX_PACKET_OUT_HI] << 8);
+    USBD_LL_PrepareReceive(usbd->pdev, usbd->hid_out_ep, buf, mps_out);
 
     return USBD_OK;
 }
 
-int USBD_HID_CanSendReport(USBD_HandleTypeDef *pdev) {
-    return pdev->dev_state == USBD_STATE_CONFIGURED && HID_ClassData.state == HID_IDLE;
+int USBD_HID_CanSendReport(usbd_cdc_msc_hid_state_t *usbd) {
+    return usbd->pdev->dev_state == USBD_STATE_CONFIGURED && usbd->HID_ClassData.state == HID_IDLE;
 }
 
-uint8_t USBD_HID_SendReport(USBD_HandleTypeDef *pdev, uint8_t *report, uint16_t len) {
-    if (pdev->dev_state == USBD_STATE_CONFIGURED) {
-        if (HID_ClassData.state == HID_IDLE) {
-            HID_ClassData.state = HID_BUSY;
-            USBD_LL_Transmit(pdev, hid_in_ep, report, len);
+uint8_t USBD_HID_SendReport(usbd_cdc_msc_hid_state_t *usbd, uint8_t *report, uint16_t len) {
+    if (usbd->pdev->dev_state == USBD_STATE_CONFIGURED) {
+        if (usbd->HID_ClassData.state == HID_IDLE) {
+            usbd->HID_ClassData.state = HID_BUSY;
+            USBD_LL_Transmit(usbd->pdev, usbd->hid_in_ep, report, len);
         }
     }
     return USBD_OK;
 }
 
-uint8_t USBD_HID_SetNAK(USBD_HandleTypeDef *pdev) {
+uint8_t USBD_HID_SetNAK(usbd_cdc_msc_hid_state_t *usbd) {
     // get USBx object from pdev (needed for USBx_OUTEP macro below)
-    PCD_HandleTypeDef *hpcd = pdev->pData;
+    PCD_HandleTypeDef *hpcd = usbd->pdev->pData;
     USB_OTG_GlobalTypeDef *USBx = hpcd->Instance;
     // set NAK on HID OUT endpoint
     USBx_OUTEP(HID_OUT_EP_WITH_CDC)->DOEPCTL |= USB_OTG_DOEPCTL_SNAK;
     return USBD_OK;
 }
 
-uint8_t USBD_HID_ClearNAK(USBD_HandleTypeDef *pdev) {
+uint8_t USBD_HID_ClearNAK(usbd_cdc_msc_hid_state_t *usbd) {
     // get USBx object from pdev (needed for USBx_OUTEP macro below)
-    PCD_HandleTypeDef *hpcd = pdev->pData;
+    PCD_HandleTypeDef *hpcd = usbd->pdev->pData;
     USB_OTG_GlobalTypeDef *USBx = hpcd->Instance;
     // clear NAK on HID OUT endpoint
     USBx_OUTEP(HID_OUT_EP_WITH_CDC)->DOEPCTL |= USB_OTG_DOEPCTL_CNAK;
@@ -1112,7 +1035,7 @@ uint8_t USBD_HID_ClearNAK(USBD_HandleTypeDef *pdev) {
 }
 
 // CDC/MSC/HID interface class callback structure
-USBD_ClassTypeDef USBD_CDC_MSC_HID = {
+const USBD_ClassTypeDef USBD_CDC_MSC_HID = {
     USBD_CDC_MSC_HID_Init,
     USBD_CDC_MSC_HID_DeInit,
     USBD_CDC_MSC_HID_Setup,

@@ -30,7 +30,6 @@
 // CC3000 defines its own ENOBUFS (different to standard one!)
 #undef ENOBUFS
 
-#include "py/nlr.h"
 #include "py/objtuple.h"
 #include "py/objlist.h"
 #include "py/stream.h"
@@ -126,7 +125,7 @@ STATIC int cc3k_gethostbyname(mp_obj_t nic, const char *name, mp_uint_t len, uin
 
     if (ip == 0) {
         // unknown host
-        return MP_ENOENT;
+        return -2;
     }
 
     out_ip[0] = ip >> 24;

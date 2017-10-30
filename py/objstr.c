@@ -28,11 +28,9 @@
 #include <string.h>
 #include <assert.h>
 
-#include "py/nlr.h"
 #include "py/unicode.h"
 #include "py/objstr.h"
 #include "py/objlist.h"
-#include "py/runtime0.h"
 #include "py/runtime.h"
 #include "py/stackctrl.h"
 
@@ -161,6 +159,11 @@ mp_obj_t mp_obj_str_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_
                 if (str_hash == 0) {
                     str_hash = qstr_compute_hash(str_data, str_len);
                 }
+                #if MICROPY_PY_BUILTINS_STR_UNICODE_CHECK
+                if (!utf8_check(str_data, str_len)) {
+                    mp_raise_msg(&mp_type_UnicodeError, NULL);
+                }
+                #endif
                 mp_obj_str_t *o = MP_OBJ_TO_PTR(mp_obj_new_str_of_type(type, NULL, str_len));
                 o->data = str_data;
                 o->hash = str_hash;
@@ -168,6 +171,11 @@ mp_obj_t mp_obj_str_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_
             } else {
                 mp_buffer_info_t bufinfo;
                 mp_get_buffer_raise(args[0], &bufinfo, MP_BUFFER_READ);
+                #if MICROPY_PY_BUILTINS_STR_UNICODE_CHECK
+                if (!utf8_check(bufinfo.buf, bufinfo.len)) {
+                    mp_raise_msg(&mp_type_UnicodeError, NULL);
+                }
+                #endif
                 return mp_obj_new_str(bufinfo.buf, bufinfo.len, false);
             }
     }
@@ -767,7 +775,7 @@ STATIC mp_obj_t str_uni_strip(int type, size_t n_args, const mp_obj_t *args) {
 
     if (n_args == 1) {
         chars_to_del = whitespace;
-        chars_to_del_len = sizeof(whitespace);
+        chars_to_del_len = sizeof(whitespace) - 1;
     } else {
         if (mp_obj_get_type(args[1]) != self_type) {
             bad_implicit_conversion(args[1]);
@@ -1965,8 +1973,8 @@ const mp_obj_type_t mp_type_bytes = {
     .locals_dict = (mp_obj_dict_t*)&str8_locals_dict,
 };
 
-// the zero-length bytes
-const mp_obj_str_t mp_const_empty_bytes_obj = {{&mp_type_bytes}, 0, 0, NULL};
+// The zero-length bytes object, with data that includes a null-terminating byte
+const mp_obj_str_t mp_const_empty_bytes_obj = {{&mp_type_bytes}, 0, 0, (const byte*)""};
 
 // Create a str/bytes object using the given data.  New memory is allocated and
 // the data is copied across.

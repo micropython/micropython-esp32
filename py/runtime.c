@@ -28,8 +28,6 @@
 #include <string.h>
 #include <assert.h>
 
-#include "py/mpstate.h"
-#include "py/nlr.h"
 #include "py/parsenum.h"
 #include "py/compile.h"
 #include "py/objstr.h"
@@ -38,7 +36,6 @@
 #include "py/objmodule.h"
 #include "py/objgenerator.h"
 #include "py/smallint.h"
-#include "py/runtime0.h"
 #include "py/runtime.h"
 #include "py/builtin.h"
 #include "py/stackctrl.h"
@@ -103,6 +100,13 @@ void mp_init(void) {
     #if MICROPY_CAN_OVERRIDE_BUILTINS
     // start with no extensions to builtins
     MP_STATE_VM(mp_module_builtins_override_dict) = NULL;
+    #endif
+
+    #if MICROPY_PY_OS_DUPTERM
+    for (size_t i = 0; i < MICROPY_PY_OS_DUPTERM; ++i) {
+        MP_STATE_VM(dupterm_objs[i]) = MP_OBJ_NULL;
+    }
+    MP_STATE_VM(dupterm_arr_obj) = MP_OBJ_NULL;
     #endif
 
     #if MICROPY_FSUSERMOUNT
@@ -227,6 +231,15 @@ mp_obj_t mp_unary_op(mp_unary_op_t op, mp_obj_t arg) {
             case MP_UNARY_OP_NEGATIVE:
                 // check for overflow
                 if (val == MP_SMALL_INT_MIN) {
+                    return mp_obj_new_int(-val);
+                } else {
+                    return MP_OBJ_NEW_SMALL_INT(-val);
+                }
+            case MP_UNARY_OP_ABS:
+                if (val >= 0) {
+                    return arg;
+                } else if (val == MP_SMALL_INT_MIN) {
+                    // check for overflow
                     return mp_obj_new_int(-val);
                 } else {
                     return MP_OBJ_NEW_SMALL_INT(-val);
@@ -555,7 +568,20 @@ generic_binary_op:
         }
     }
 
-    // TODO implement dispatch for reverse binary ops
+#if MICROPY_PY_REVERSE_SPECIAL_METHODS
+    if (op >= MP_BINARY_OP_OR && op <= MP_BINARY_OP_REVERSE_POWER) {
+        mp_obj_t t = rhs;
+        rhs = lhs;
+        lhs = t;
+        if (op <= MP_BINARY_OP_POWER) {
+            op += MP_BINARY_OP_REVERSE_OR - MP_BINARY_OP_OR;
+            goto generic_binary_op;
+        }
+
+        // Convert __rop__ back to __op__ for error message
+        op -= MP_BINARY_OP_REVERSE_OR - MP_BINARY_OP_OR;
+    }
+#endif
 
 unsupported_op:
     if (MICROPY_ERROR_REPORTING == MICROPY_ERROR_REPORTING_TERSE) {

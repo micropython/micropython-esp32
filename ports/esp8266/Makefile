@@ -7,6 +7,7 @@ MICROPY_PY_USSL = 1
 MICROPY_SSL_AXTLS = 1
 MICROPY_FATFS = 1
 MICROPY_PY_BTREE = 1
+BTREE_DEFS_EXTRA = -DDEFPSIZE=1024 -DMINCACHE=3
 
 FROZEN_DIR ?= scripts
 FROZEN_MPY_DIR ?= modules
@@ -85,7 +86,7 @@ SRC_C = \
 	moduos.c \
 	ets_alt_task.c \
 	fatfs_port.c \
-	axtls_helpers.c \
+	posix_helpers.c \
 	hspi.c \
 	$(SRC_MOD)
 

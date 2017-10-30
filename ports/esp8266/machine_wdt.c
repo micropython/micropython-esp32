@@ -27,8 +27,6 @@
 //#include <stdio.h>
 #include <string.h>
 
-#include "py/nlr.h"
-#include "py/obj.h"
 #include "py/runtime.h"
 #include "user_interface.h"
 #include "etshal.h"
@@ -53,7 +51,7 @@ STATIC mp_obj_t machine_wdt_make_new(const mp_obj_type_t *type_in, size_t n_args
     case 0:
         return &wdt_default;
     default:
-        mp_raise_ValueError("");
+        mp_raise_ValueError(NULL);
     }
 }
 

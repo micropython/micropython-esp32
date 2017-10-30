@@ -28,9 +28,9 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "py/nlr.h"
 #include "py/objlist.h"
 #include "py/runtime.h"
+#include "py/stream.h"
 #include "py/mperrno.h"
 #include "py/mphal.h"
 #include "lib/netutils/netutils.h"
@@ -93,7 +93,7 @@ STATIC int wiznet5k_gethostbyname(mp_obj_t nic, const char *name, mp_uint_t len,
         return 0;
     } else {
         // failure
-        return MP_ENOENT;
+        return -2;
     }
 }
 
@@ -174,11 +174,7 @@ STATIC int wiznet5k_socket_accept(mod_network_socket_obj_t *socket, mod_network_
         int sr = getSn_SR((uint8_t)socket->u_param.fileno);
         if (sr == SOCK_ESTABLISHED) {
             socket2->u_param = socket->u_param;
-            // TODO need to populate this with the correct values
-            ip[0] = 0;
-            ip[1] = 0;
-            ip[2] = 0;
-            ip[3] = 0;
+            getSn_DIPR((uint8_t)socket2->u_param.fileno, ip);
             *port = getSn_PORT(socket2->u_param.fileno);
 
             // WIZnet turns the listening socket into the client socket, so we
@@ -213,7 +209,10 @@ STATIC int wiznet5k_socket_connect(mod_network_socket_obj_t *socket, byte *ip, m
     }
 
     // now connect
+    MP_THREAD_GIL_EXIT();
     mp_int_t ret = WIZCHIP_EXPORT(connect)(socket->u_param.fileno, ip, port);
+    MP_THREAD_GIL_ENTER();
+
     if (ret < 0) {
         wiznet5k_socket_close(socket);
         *_errno = -ret;
@@ -225,7 +224,10 @@ STATIC int wiznet5k_socket_connect(mod_network_socket_obj_t *socket, byte *ip, m
 }
 
 STATIC mp_uint_t wiznet5k_socket_send(mod_network_socket_obj_t *socket, const byte *buf, mp_uint_t len, int *_errno) {
+    MP_THREAD_GIL_EXIT();
     mp_int_t ret = WIZCHIP_EXPORT(send)(socket->u_param.fileno, (byte*)buf, len);
+    MP_THREAD_GIL_ENTER();
+
     // TODO convert Wiz errno's to POSIX ones
     if (ret < 0) {
         wiznet5k_socket_close(socket);
@@ -236,7 +238,10 @@ STATIC mp_uint_t wiznet5k_socket_send(mod_network_socket_obj_t *socket, const by
 }
 
 STATIC mp_uint_t wiznet5k_socket_recv(mod_network_socket_obj_t *socket, byte *buf, mp_uint_t len, int *_errno) {
+    MP_THREAD_GIL_EXIT();
     mp_int_t ret = WIZCHIP_EXPORT(recv)(socket->u_param.fileno, buf, len);
+    MP_THREAD_GIL_ENTER();
+
     // TODO convert Wiz errno's to POSIX ones
     if (ret < 0) {
         wiznet5k_socket_close(socket);
@@ -254,7 +259,10 @@ STATIC mp_uint_t wiznet5k_socket_sendto(mod_network_socket_obj_t *socket, const 
         }
     }
 
+    MP_THREAD_GIL_EXIT();
     mp_int_t ret = WIZCHIP_EXPORT(sendto)(socket->u_param.fileno, (byte*)buf, len, ip, port);
+    MP_THREAD_GIL_ENTER();
+
     if (ret < 0) {
         wiznet5k_socket_close(socket);
         *_errno = -ret;
@@ -265,7 +273,9 @@ STATIC mp_uint_t wiznet5k_socket_sendto(mod_network_socket_obj_t *socket, const 
 
 STATIC mp_uint_t wiznet5k_socket_recvfrom(mod_network_socket_obj_t *socket, byte *buf, mp_uint_t len, byte *ip, mp_uint_t *port, int *_errno) {
     uint16_t port2;
+    MP_THREAD_GIL_EXIT();
     mp_int_t ret = WIZCHIP_EXPORT(recvfrom)(socket->u_param.fileno, buf, len, ip, &port2);
+    MP_THREAD_GIL_ENTER();
     *port = port2;
     if (ret < 0) {
         wiznet5k_socket_close(socket);
@@ -296,9 +306,19 @@ STATIC int wiznet5k_socket_settimeout(mod_network_socket_obj_t *socket, mp_uint_
 }
 
 STATIC int wiznet5k_socket_ioctl(mod_network_socket_obj_t *socket, mp_uint_t request, mp_uint_t arg, int *_errno) {
-    // TODO
-    *_errno = MP_EINVAL;
-    return -1;
+    if (request == MP_STREAM_POLL) {
+        int ret = 0;
+        if (arg & MP_STREAM_POLL_RD && getSn_RX_RSR(socket->u_param.fileno) != 0) {
+            ret |= MP_STREAM_POLL_RD;
+        }
+        if (arg & MP_STREAM_POLL_WR && getSn_TX_FSR(socket->u_param.fileno) != 0) {
+            ret |= MP_STREAM_POLL_WR;
+        }
+        return ret;
+    } else {
+        *_errno = MP_EINVAL;
+        return MP_STREAM_ERROR;
+    }
 }
 
 #if 0
@@ -337,7 +357,7 @@ STATIC mp_obj_t wiznet5k_make_new(const mp_obj_type_t *type, size_t n_args, size
     wiznet5k_obj.spi->Init.CLKPolarity = SPI_POLARITY_LOW; // clock is low when idle
     wiznet5k_obj.spi->Init.CLKPhase = SPI_PHASE_1EDGE; // data latched on first edge, which is rising edge for low-idle
     wiznet5k_obj.spi->Init.NSS = SPI_NSS_SOFT;
-    wiznet5k_obj.spi->Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_4; // clock freq = f_PCLK / this_prescale_value; Wiz820i can do up to 80MHz
+    wiznet5k_obj.spi->Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2; // clock freq = f_PCLK / this_prescale_value; Wiz820i can do up to 80MHz
     wiznet5k_obj.spi->Init.FirstBit = SPI_FIRSTBIT_MSB;
     wiznet5k_obj.spi->Init.TIMode = SPI_TIMODE_DISABLED;
     wiznet5k_obj.spi->Init.CRCCalculation = SPI_CRCCALCULATION_DISABLED;
@@ -389,7 +409,12 @@ STATIC mp_obj_t wiznet5k_regs(mp_obj_t self_in) {
         if (i % 16 == 0) {
             printf("\n  %04x:", i);
         }
-        printf(" %02x", WIZCHIP_READ(i));
+        #if MICROPY_PY_WIZNET5K == 5200
+        uint32_t reg = i;
+        #else
+        uint32_t reg = _W5500_IO_BASE_ | i << 8;
+        #endif
+        printf(" %02x", WIZCHIP_READ(reg));
     }
     for (int sn = 0; sn < 4; ++sn) {
         printf("\nWiz SREG[%d]:", sn);
@@ -397,13 +422,24 @@ STATIC mp_obj_t wiznet5k_regs(mp_obj_t self_in) {
             if (i % 16 == 0) {
                 printf("\n  %04x:", i);
             }
-            printf(" %02x", WIZCHIP_READ(WIZCHIP_SREG_ADDR(sn, i)));
+            #if MICROPY_PY_WIZNET5K == 5200
+            uint32_t reg = WIZCHIP_SREG_ADDR(sn, i);
+            #else
+            uint32_t reg = _W5500_IO_BASE_ | i << 8 | WIZCHIP_SREG_BLOCK(sn) << 3;
+            #endif
+            printf(" %02x", WIZCHIP_READ(reg));
         }
     }
     printf("\n");
     return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(wiznet5k_regs_obj, wiznet5k_regs);
+
+STATIC mp_obj_t wiznet5k_isconnected(mp_obj_t self_in) {
+    (void)self_in;
+    return mp_obj_new_bool(wizphy_getphylink() == PHY_LINK_ON);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(wiznet5k_isconnected_obj, wiznet5k_isconnected);
 
 /// \method ifconfig([(ip, subnet, gateway, dns)])
 /// Get/set IP address, subnet mask, gateway and DNS.
@@ -436,6 +472,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(wiznet5k_ifconfig_obj, 1, 2, wiznet5k
 STATIC const mp_rom_map_elem_t wiznet5k_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_regs), MP_ROM_PTR(&wiznet5k_regs_obj) },
     { MP_ROM_QSTR(MP_QSTR_ifconfig), MP_ROM_PTR(&wiznet5k_ifconfig_obj) },
+    { MP_ROM_QSTR(MP_QSTR_isconnected), MP_ROM_PTR(&wiznet5k_isconnected_obj) },
 };
 
 STATIC MP_DEFINE_CONST_DICT(wiznet5k_locals_dict, wiznet5k_locals_dict_table);
