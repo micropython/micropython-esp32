@@ -28,7 +28,7 @@
 
 #include "py/builtin.h"
 
-const char *esp32_help_text =
+const char esp32_help_text[] =
 "Welcome to MicroPython on the ESP32!\n"
 "\n"
 "For generic online docs please visit http://docs.micropython.org/\n"
