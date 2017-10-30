@@ -150,6 +150,9 @@
 #define mp_type_fileio                      fatfs_type_fileio
 #define mp_type_textio                      fatfs_type_textio
 
+// bluetooth configuration
+#define MICROPY_BLUETOOTH                   (1)
+
 // use vfs's functions for import stat and builtin open
 #define mp_import_stat mp_vfs_import_stat
 #define mp_builtin_open mp_vfs_open
