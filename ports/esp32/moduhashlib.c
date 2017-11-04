@@ -106,6 +106,7 @@ STATIC const mp_rom_map_elem_t sha256_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_update), MP_ROM_PTR(&sha256_update_obj) },
     { MP_ROM_QSTR(MP_QSTR_digest), MP_ROM_PTR(&sha256_digest_obj) },
     { MP_ROM_QSTR(MP_QSTR_digest_size), MP_ROM_INT(32) },
+    { MP_ROM_QSTR(MP_QSTR_block_size), MP_ROM_INT(64) },
 };
 
 STATIC MP_DEFINE_CONST_DICT(sha256_locals_dict, sha256_locals_dict_table);
@@ -121,6 +122,7 @@ STATIC const mp_rom_map_elem_t sha1_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_update), MP_ROM_PTR(&sha1_update_obj) },
     { MP_ROM_QSTR(MP_QSTR_digest), MP_ROM_PTR(&sha1_digest_obj) },
     { MP_ROM_QSTR(MP_QSTR_digest_size), MP_ROM_INT(20) },
+    { MP_ROM_QSTR(MP_QSTR_block_size), MP_ROM_INT(64) },
 };
 STATIC MP_DEFINE_CONST_DICT(sha1_locals_dict, sha1_locals_dict_table);
 
