@@ -43,6 +43,24 @@ typedef struct _mp_obj_hash_t {
 STATIC mp_obj_t sha256_update(mp_obj_t self_in, mp_obj_t arg);
 STATIC mp_obj_t sha1_update(mp_obj_t self_in, mp_obj_t arg);
 
+STATIC const char HEX_CHARS[] = "0123456789abcdef";
+
+STATIC void hexlify_digest(vstr_t* vstr) {
+    // vstr.len does not include the last '\0'
+    const size_t digest_length = vstr->len / 2;
+
+    for (size_t i = 0; i < digest_length; ++i) {
+        const char ch = vstr->buf[digest_length - i - 1];
+
+        const uint8_t lo = ch & 0x0F;
+        const uint8_t hi = (ch >> 4) & 0x0F;
+
+        const size_t j   = (digest_length - i - 1) * 2;
+        vstr->buf[j]     = HEX_CHARS[hi];
+        vstr->buf[j + 1] = HEX_CHARS[lo];
+    }
+}
+
 STATIC mp_obj_t sha256_make_new(const mp_obj_type_t *type,
         size_t n_args, size_t n_kw, const mp_obj_t *args) {
     mp_arg_check_num(n_args, n_kw, 0, 1, false);
@@ -96,6 +114,20 @@ STATIC mp_obj_t sha256_digest(mp_obj_t self_in) {
 }
 MP_DEFINE_CONST_FUN_OBJ_1(sha256_digest_obj, sha256_digest);
 
+STATIC mp_obj_t sha256_hexdigest(mp_obj_t self_in) {
+    mp_obj_hash_t *self = MP_OBJ_TO_PTR(self_in);
+    vstr_t vstr;
+
+    // allocate twice the buffer so that il will be reused
+    // to encode the digest as hex
+    vstr_init_len(&vstr, SHA256_DIGEST_SIZE * 2);
+    mbedtls_sha256_finish(&self->state.sha256, (unsigned char *)vstr.buf);
+    hexlify_digest(&vstr);
+
+    return mp_obj_new_str_from_vstr(&mp_type_bytes, &vstr);
+}
+MP_DEFINE_CONST_FUN_OBJ_1(sha256_hexdigest_obj, sha256_hexdigest);
+
 STATIC mp_obj_t sha1_digest(mp_obj_t self_in) {
     mp_obj_hash_t *self = MP_OBJ_TO_PTR(self_in);
     vstr_t vstr;
@@ -105,9 +137,24 @@ STATIC mp_obj_t sha1_digest(mp_obj_t self_in) {
 }
 MP_DEFINE_CONST_FUN_OBJ_1(sha1_digest_obj, sha1_digest);
 
+STATIC mp_obj_t sha1_hexdigest(mp_obj_t self_in) {
+    mp_obj_hash_t *self = MP_OBJ_TO_PTR(self_in);
+    vstr_t vstr;
+
+    // allocate twice the buffer so that il will be reused
+    // to encode the digest as hex
+    vstr_init_len(&vstr, SHA1_DIGEST_SIZE * 2);
+    mbedtls_sha1_finish(&self->state.sha1, (unsigned char *)vstr.buf);
+    hexlify_digest(&vstr);
+
+    return mp_obj_new_str_from_vstr(&mp_type_bytes, &vstr);
+}
+MP_DEFINE_CONST_FUN_OBJ_1(sha1_hexdigest_obj, sha1_hexdigest);
+
 STATIC const mp_rom_map_elem_t sha256_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_update), MP_ROM_PTR(&sha256_update_obj) },
     { MP_ROM_QSTR(MP_QSTR_digest), MP_ROM_PTR(&sha256_digest_obj) },
+    { MP_ROM_QSTR(MP_QSTR_hexdigest), MP_ROM_PTR(&sha256_hexdigest_obj) },
     { MP_ROM_QSTR(MP_QSTR_digest_size), MP_ROM_INT(SHA256_DIGEST_SIZE) },
     { MP_ROM_QSTR(MP_QSTR_block_size), MP_ROM_INT(64) },
 };
@@ -124,6 +171,7 @@ STATIC const mp_obj_type_t sha256_type = {
 STATIC const mp_rom_map_elem_t sha1_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_update), MP_ROM_PTR(&sha1_update_obj) },
     { MP_ROM_QSTR(MP_QSTR_digest), MP_ROM_PTR(&sha1_digest_obj) },
+    { MP_ROM_QSTR(MP_QSTR_hexdigest), MP_ROM_PTR(&sha1_hexdigest_obj) },
     { MP_ROM_QSTR(MP_QSTR_digest_size), MP_ROM_INT(SHA1_DIGEST_SIZE) },
     { MP_ROM_QSTR(MP_QSTR_block_size), MP_ROM_INT(64) },
 };
