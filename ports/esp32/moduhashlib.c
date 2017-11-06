@@ -28,6 +28,9 @@
 #include "mbedtls/sha256.h"
 #include "mbedtls/sha1.h"
 
+#define SHA1_DIGEST_SIZE 20
+#define SHA256_DIGEST_SIZE 32
+
 union sha_ctxs {
         mbedtls_sha256_context sha256;
         mbedtls_sha1_context sha1;
@@ -87,7 +90,7 @@ MP_DEFINE_CONST_FUN_OBJ_2(sha1_update_obj, sha1_update);
 STATIC mp_obj_t sha256_digest(mp_obj_t self_in) {
     mp_obj_hash_t *self = MP_OBJ_TO_PTR(self_in);
     vstr_t vstr;
-    vstr_init_len(&vstr, 32);
+    vstr_init_len(&vstr, SHA256_DIGEST_SIZE);
     mbedtls_sha256_finish(&self->state.sha256, (unsigned char *)vstr.buf);
     return mp_obj_new_str_from_vstr(&mp_type_bytes, &vstr);
 }
@@ -96,7 +99,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(sha256_digest_obj, sha256_digest);
 STATIC mp_obj_t sha1_digest(mp_obj_t self_in) {
     mp_obj_hash_t *self = MP_OBJ_TO_PTR(self_in);
     vstr_t vstr;
-    vstr_init_len(&vstr, 20);
+    vstr_init_len(&vstr, SHA1_DIGEST_SIZE);
     mbedtls_sha1_finish(&self->state.sha1, (unsigned char *)vstr.buf);
     return mp_obj_new_str_from_vstr(&mp_type_bytes, &vstr);
 }
@@ -105,7 +108,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(sha1_digest_obj, sha1_digest);
 STATIC const mp_rom_map_elem_t sha256_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_update), MP_ROM_PTR(&sha256_update_obj) },
     { MP_ROM_QSTR(MP_QSTR_digest), MP_ROM_PTR(&sha256_digest_obj) },
-    { MP_ROM_QSTR(MP_QSTR_digest_size), MP_ROM_INT(32) },
+    { MP_ROM_QSTR(MP_QSTR_digest_size), MP_ROM_INT(SHA256_DIGEST_SIZE) },
     { MP_ROM_QSTR(MP_QSTR_block_size), MP_ROM_INT(64) },
 };
 
@@ -121,7 +124,7 @@ STATIC const mp_obj_type_t sha256_type = {
 STATIC const mp_rom_map_elem_t sha1_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_update), MP_ROM_PTR(&sha1_update_obj) },
     { MP_ROM_QSTR(MP_QSTR_digest), MP_ROM_PTR(&sha1_digest_obj) },
-    { MP_ROM_QSTR(MP_QSTR_digest_size), MP_ROM_INT(20) },
+    { MP_ROM_QSTR(MP_QSTR_digest_size), MP_ROM_INT(SHA1_DIGEST_SIZE) },
     { MP_ROM_QSTR(MP_QSTR_block_size), MP_ROM_INT(64) },
 };
 STATIC MP_DEFINE_CONST_DICT(sha1_locals_dict, sha1_locals_dict_table);
