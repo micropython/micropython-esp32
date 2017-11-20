@@ -141,8 +141,10 @@ SRC_C = \
 	modesp.c \
 	moduhashlib.c \
 	espneopixel.c \
+	machine_rtc.c \
 	machine_hw_spi.c \
 	machine_wdt.c \
+	esprtcmem.c \
 	mpthreadport.c \
 	$(SRC_MOD)
 
@@ -229,6 +231,7 @@ ESPIDF_ESP32_O = $(addprefix $(ESPCOMP)/esp32/,\
 	cpu_start.o \
 	gdbstub.o \
 	crosscore_int.o \
+	sleep_modes.o \
 	ipc.o \
 	int_wdt.o \
 	event_loop.o \

@@ -65,6 +65,7 @@ void mp_task(void *pvParameter) {
     mp_thread_init(&mp_task_stack[0], MP_TASK_STACK_LEN);
     #endif
     uart_init();
+    machine_init();
 
 soft_reset:
     // initialise the stack pointer for the main thread
