@@ -33,6 +33,8 @@
 #include "py/runtime.h"
 #include "lib/timeutils/timeutils.h"
 #include "extmod/utime_mphal.h"
+#include "esp_timer_impl.h"
+
 
 STATIC mp_obj_t time_localtime(size_t n_args, const mp_obj_t *args) {
     timeutils_struct_time_t tm;
@@ -82,6 +84,20 @@ STATIC mp_obj_t time_time(void) {
 }
 MP_DEFINE_CONST_FUN_OBJ_0(time_time_obj, time_time);
 
+STATIC mp_obj_t time_ticks_ms(void) {
+    uint64_t us = esp_timer_impl_get_time();
+    uint32_t ms = (uint32_t)(us / 1000);
+    return MP_OBJ_NEW_SMALL_INT(ms);
+}
+MP_DEFINE_CONST_FUN_OBJ_0(mp_utime_esp32_ticks_ms_obj, time_ticks_ms);
+
+STATIC mp_obj_t time_ticks_us(void) {
+    uint64_t us = esp_timer_impl_get_time();
+    return mp_obj_new_int_from_ull(us);
+}
+MP_DEFINE_CONST_FUN_OBJ_0(mp_utime_esp32_ticks_us_obj, time_ticks_us);
+
+
 STATIC const mp_rom_map_elem_t time_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_utime) },
 
@@ -91,8 +107,8 @@ STATIC const mp_rom_map_elem_t time_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_sleep), MP_ROM_PTR(&mp_utime_sleep_obj) },
     { MP_ROM_QSTR(MP_QSTR_sleep_ms), MP_ROM_PTR(&mp_utime_sleep_ms_obj) },
     { MP_ROM_QSTR(MP_QSTR_sleep_us), MP_ROM_PTR(&mp_utime_sleep_us_obj) },
-    { MP_ROM_QSTR(MP_QSTR_ticks_ms), MP_ROM_PTR(&mp_utime_ticks_ms_obj) },
-    { MP_ROM_QSTR(MP_QSTR_ticks_us), MP_ROM_PTR(&mp_utime_ticks_us_obj) },
+    { MP_ROM_QSTR(MP_QSTR_ticks_ms), MP_ROM_PTR(&mp_utime_esp32_ticks_ms_obj) },
+    { MP_ROM_QSTR(MP_QSTR_ticks_us), MP_ROM_PTR(&mp_utime_esp32_ticks_us_obj) },
     { MP_ROM_QSTR(MP_QSTR_ticks_cpu), MP_ROM_PTR(&mp_utime_ticks_cpu_obj) },
     { MP_ROM_QSTR(MP_QSTR_ticks_add), MP_ROM_PTR(&mp_utime_ticks_add_obj) },
     { MP_ROM_QSTR(MP_QSTR_ticks_diff), MP_ROM_PTR(&mp_utime_ticks_diff_obj) },
