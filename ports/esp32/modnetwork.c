@@ -53,7 +53,7 @@
 
 #define MODNETWORK_INCLUDE_CONSTANTS (1)
 
-NORETURN void _esp_exceptions(esp_err_t e) {
+NORETURN void _esp_network_exceptions(esp_err_t e) {
    switch (e) {
       case ESP_ERR_WIFI_NOT_INIT: 
         mp_raise_msg(&mp_type_OSError, "Wifi Not Initialized");
@@ -95,16 +95,11 @@ NORETURN void _esp_exceptions(esp_err_t e) {
    }
 }
 
-static inline void esp_exceptions(esp_err_t e) {
-    if (e != ESP_OK) _esp_exceptions(e);
+static inline void esp_network_exceptions(esp_err_t e) {
+    if (e != ESP_OK) _esp_network_exceptions(e);
 }
 
-#define ESP_EXCEPTIONS(x) do { esp_exceptions(x); } while (0);
-
-typedef struct _wlan_if_obj_t {
-    mp_obj_base_t base;
-    int if_id;
-} wlan_if_obj_t;
+#define ESP_EXCEPTIONS(x) do { esp_network_exceptions(x); } while (0);
 
 const mp_obj_type_t wlan_if_type;
 STATIC const wlan_if_obj_t wlan_sta_obj = {{&wlan_if_type}, WIFI_IF_STA};
@@ -366,14 +361,14 @@ STATIC mp_obj_t esp_ifconfig(size_t n_args, const mp_obj_t *args) {
         netutils_parse_ipv4_addr(items[2], (void*)&info.gw, NETUTILS_BIG);
         netutils_parse_ipv4_addr(items[3], (void*)&dns_info.ip, NETUTILS_BIG);
         // To set a static IP we have to disable DHCP first
-        if (self->if_id == WIFI_IF_STA || self->if_id == ESP_IF_ETH) {
-            esp_err_t e = tcpip_adapter_dhcpc_stop(self->if_id);
-            if (e != ESP_OK && e != ESP_ERR_TCPIP_ADAPTER_DHCP_ALREADY_STOPPED) _esp_exceptions(e);
-            ESP_EXCEPTIONS(tcpip_adapter_set_ip_info(self->if_id, &info));
+        if (self->if_id == WIFI_IF_STA) {
+            esp_err_t e = tcpip_adapter_dhcpc_stop(WIFI_IF_STA);
+            if (e != ESP_OK && e != ESP_ERR_TCPIP_ADAPTER_DHCP_ALREADY_STOPPED) _esp_network_exceptions(e);
+            ESP_EXCEPTIONS(tcpip_adapter_set_ip_info(WIFI_IF_STA, &info));
             ESP_EXCEPTIONS(tcpip_adapter_set_dns_info(self->if_id, TCPIP_ADAPTER_DNS_MAIN, &dns_info));
         } else if (self->if_id == WIFI_IF_AP) {
             esp_err_t e = tcpip_adapter_dhcps_stop(WIFI_IF_AP);
-            if (e != ESP_OK && e != ESP_ERR_TCPIP_ADAPTER_DHCP_ALREADY_STOPPED) _esp_exceptions(e);
+            if (e != ESP_OK && e != ESP_ERR_TCPIP_ADAPTER_DHCP_ALREADY_STOPPED) _esp_network_exceptions(e);
             ESP_EXCEPTIONS(tcpip_adapter_set_ip_info(WIFI_IF_AP, &info));
             ESP_EXCEPTIONS(tcpip_adapter_set_dns_info(WIFI_IF_AP, TCPIP_ADAPTER_DNS_MAIN, &dns_info));
             ESP_EXCEPTIONS(tcpip_adapter_dhcps_start(WIFI_IF_AP));
@@ -412,6 +407,10 @@ STATIC mp_obj_t esp_config(size_t n_args, const mp_obj_t *args, mp_map_t *kwargs
                         ESP_EXCEPTIONS(esp_wifi_set_mac(self->if_id, bufinfo.buf));
                         break;
                     }
+                    case QS(MP_QSTR_protocol): {
+			esp_wifi_set_protocol(self->if_id, mp_obj_get_int(kwargs->table[i].value));
+			break;
+		    }
                     case QS(MP_QSTR_essid): {
                         req_if = WIFI_IF_AP;
                         mp_uint_t len;
@@ -556,6 +555,8 @@ STATIC const mp_map_elem_t mp_module_network_globals_table[] = {
         MP_OBJ_NEW_SMALL_INT(WIFI_PROTOCOL_11G) },
     { MP_OBJ_NEW_QSTR(MP_QSTR_MODE_11N),
         MP_OBJ_NEW_SMALL_INT(WIFI_PROTOCOL_11N) },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_MODE_LR),
+        MP_OBJ_NEW_SMALL_INT(WIFI_PROTOCOL_LR) },
 
     { MP_OBJ_NEW_QSTR(MP_QSTR_AUTH_OPEN),
         MP_OBJ_NEW_SMALL_INT(WIFI_AUTH_OPEN) },
