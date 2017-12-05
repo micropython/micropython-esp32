@@ -2622,12 +2622,14 @@ STATIC mp_obj_t network_bluetooth_ble_settings(size_t n_args, const mp_obj_t *po
     if (args[ARG_adv_uuid].u_obj != NULL) {
         if (mp_obj_get_type(args[ARG_adv_uuid].u_obj) == mp_const_none) {
             unset_adv_uuid = true;
-        } else if (!MP_OBJ_IS_TYPE(mp_obj_get_type(args[ARG_adv_uuid].u_obj), &mp_type_bytearray)) {
+        } else if (!MP_OBJ_IS_BYTEARRAY_OR_BYTES(args[ARG_adv_uuid].u_obj)) {
+            printf("there\n");
             goto NETWORK_BLUETOOTH_BAD_UUID;
         }
 
         mp_get_buffer(args[ARG_adv_uuid].u_obj, &adv_uuid_buf, MP_BUFFER_READ);
         if (adv_uuid_buf.len != UUID_LEN) {
+            printf("here\n");
             // FIXME: Is length really a fixed amount?
             goto NETWORK_BLUETOOTH_BAD_UUID;
         }
