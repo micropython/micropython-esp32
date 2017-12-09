@@ -88,7 +88,9 @@ STATIC mp_obj_t sha256_digest(mp_obj_t self_in) {
     mp_obj_hash_t *self = MP_OBJ_TO_PTR(self_in);
     vstr_t vstr;
     vstr_init_len(&vstr, 32);
-    mbedtls_sha256_finish(&self->state.sha256, (unsigned char *)vstr.buf);
+    mbedtls_sha256_context ctx;
+    mbedtls_sha256_clone(&ctx, (const mbedtls_sha256_context *)&self->state.sha256);
+    mbedtls_sha256_finish(&ctx, (unsigned char *)vstr.buf);
     return mp_obj_new_str_from_vstr(&mp_type_bytes, &vstr);
 }
 MP_DEFINE_CONST_FUN_OBJ_1(sha256_digest_obj, sha256_digest);
@@ -97,7 +99,9 @@ STATIC mp_obj_t sha1_digest(mp_obj_t self_in) {
     mp_obj_hash_t *self = MP_OBJ_TO_PTR(self_in);
     vstr_t vstr;
     vstr_init_len(&vstr, 20);
-    mbedtls_sha1_finish(&self->state.sha1, (unsigned char *)vstr.buf);
+    mbedtls_sha1_context ctx;
+    mbedtls_sha1_clone(&ctx, (const mbedtls_sha1_context *)&self->state.sha256);
+    mbedtls_sha1_finish(&ctx, (unsigned char *)vstr.buf);
     return mp_obj_new_str_from_vstr(&mp_type_bytes, &vstr);
 }
 MP_DEFINE_CONST_FUN_OBJ_1(sha1_digest_obj, sha1_digest);
