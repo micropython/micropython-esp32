@@ -21,15 +21,19 @@ FLASH_FREQ ?= 40m
 FLASH_SIZE ?= 4MB
 CROSS_COMPILE ?= xtensa-esp32-elf-
 
+ESPIDF_SUPHASH := 2c95a77cf93781f296883d5dbafcdc18e4389656
+
 # paths to ESP IDF and its components
 ifeq ($(ESPIDF),)
-$(error Please configure the ESPIDF variable)
+$(info The ESPIDF variable has not been set, please set it to the root of the esp-idf repository.)
+$(info See README.md for installation instructions.)
+$(info Supported git hash: $(ESPIDF_SUPHASH))
+$(error ESPIDF not set)
 endif
 ESPCOMP = $(ESPIDF)/components
 ESPTOOL ?= $(ESPCOMP)/esptool_py/esptool/esptool.py
 
 # verify the ESP IDF version
-ESPIDF_SUPHASH := 2c95a77cf93781f296883d5dbafcdc18e4389656
 ESPIDF_CURHASH := $(shell git -C $(ESPIDF) show -s --pretty=format:'%H')
 ifneq ($(ESPIDF_CURHASH),$(ESPIDF_SUPHASH))
 $(info ** WARNING **)
