@@ -1,5 +1,3 @@
-[![Build Status](https://travis-ci.org/micropython/micropython.png?branch=master)](https://travis-ci.org/micropython/micropython) [![Coverage Status](https://coveralls.io/repos/micropython/micropython/badge.png?branch=master)](https://coveralls.io/r/micropython/micropython?branch=master)
-
 The MicroPython project
 =======================
 <p align="center">
@@ -13,24 +11,12 @@ You can find the official website at [micropython.org](http://www.micropython.or
 A note about this ESP32 repository
 ----------------------------------
 
-This repository is a clone of the main, upstream repository found at
-https://github.com/micropython/micropython.  This repository adds a new
-branch called `esp32` which contains a port of MicroPython to the ESP32
-microcontroller, under the MIT license.  Please see the `README.md` file
-in the `ports/esp32/` subdirectory for details of this port.
+**The ESP32 port has now been merged back into the
+[main MicroPython repository](https://github.com/micropython/micropython/) 
+and this repository is maintained for historical purposes.**
 
-This `esp32` branch is the default branch and all pull requests should be
-made to this branch, and any issues should discuss only the code developed
-in the `ports/esp32/` subdirectory.
-
-The `esp32` branch will not be rebased so it is safe to clone/fork it and
-base your work on it.  New commits from the upstream repository will
-occasionally be merged in the `esp32` branch.  Any additional branches in
-this repository (apart from `master`) may be rebased or deleted at any time.
-
-If there is enough interest in the port to the ESP32 then this code can
-eventually be merged into the upstream repository.  So please do let your
-interest be known!
+**This repository is now getting out of date and new pull requests should
+be made against the master branch of the main repository!**
 
 About MicroPython
 -----------------
