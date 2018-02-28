@@ -350,6 +350,15 @@ STATIC mp_obj_t esp_ifconfig(size_t n_args, const mp_obj_t *args) {
         return mp_obj_new_tuple(4, tuple);
     } else {
         // set
+        if((self->if_id == WIFI_IF_STA || self->if_id == ESP_IF_ETH) &&
+                n_args == 2 && 
+                MP_OBJ_IS_STR(args[1]) && 
+                strcmp(mp_obj_str_get_str(args[1]), "dhcp") == 0)  {
+            esp_err_t e = tcpip_adapter_dhcpc_start(self->if_id);
+            if ( e != ESP_OK && e != ESP_ERR_TCPIP_ADAPTER_DHCP_ALREADY_STARTED) _esp_exceptions(e);
+            return mp_const_none;
+        }
+
         mp_obj_t *items;
         mp_obj_get_array_fixed_n(args[1], 4, &items);
         netutils_parse_ipv4_addr(items[0], (void*)&info.ip, NETUTILS_BIG);
