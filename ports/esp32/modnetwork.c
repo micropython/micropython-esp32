@@ -116,6 +116,9 @@ static wifi_config_t wifi_sta_config = {{{0}}};
 // Set to "true" if the STA interface is requested to be connected by the
 // user, used for automatic reassociation.
 static bool wifi_sta_connected = false;
+// Flags keeping trail of the connection status
+static bool wifi_isconnected = false;
+
 
 // This function is called by the system-event task and so runs in a different
 // thread to the main MicroPython task.  It must not raise any Python exceptions.
@@ -123,6 +126,10 @@ static esp_err_t event_handler(void *ctx, system_event_t *event) {
    switch(event->event_id) {
     case SYSTEM_EVENT_STA_START:
         ESP_LOGI("wifi", "STA_START");
+        break;
+    case SYSTEM_EVENT_STA_CONNECTED:
+        ESP_LOGI("network", "CONNECTED");
+        wifi_isconnected = true;
         break;
     case SYSTEM_EVENT_STA_GOT_IP:
         ESP_LOGI("network", "GOT_IP");
@@ -132,6 +139,7 @@ static esp_err_t event_handler(void *ctx, system_event_t *event) {
         // auto-reassociate.
         system_event_sta_disconnected_t *disconn = &event->event_info.disconnected;
         ESP_LOGI("wifi", "STA_DISCONNECTED, reason:%d", disconn->reason);
+        wifi_isconnected = false;
         switch (disconn->reason) {
             case WIFI_REASON_BEACON_TIMEOUT:
                 mp_printf(MP_PYTHON_PRINTER, "beacon timeout\n");
@@ -322,9 +330,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(esp_scan_obj, esp_scan);
 STATIC mp_obj_t esp_isconnected(mp_obj_t self_in) {
     wlan_if_obj_t *self = MP_OBJ_TO_PTR(self_in);
     if (self->if_id == WIFI_IF_STA) {
-        tcpip_adapter_ip_info_t info;
-        tcpip_adapter_get_ip_info(WIFI_IF_STA, &info);
-        return mp_obj_new_bool(info.ip.addr != 0);
+        return mp_obj_new_bool(wifi_isconnected);
     } else {
         wifi_sta_list_t sta;
         esp_wifi_ap_get_sta_list(&sta);
